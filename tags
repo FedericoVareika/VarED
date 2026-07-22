@@ -1,0 +1,200 @@
+!_TAG_FILE_FORMAT	2	/extended format; --format=1 will not append ;" to lines/
+!_TAG_FILE_SORTED	1	/0=unsorted, 1=sorted, 2=foldcase/
+!_TAG_PROGRAM_AUTHOR	Darren Hiebert	/dhiebert@users.sourceforge.net/
+!_TAG_PROGRAM_NAME	Exuberant Ctags	//
+!_TAG_PROGRAM_URL	http://ctags.sourceforge.net	/official site/
+!_TAG_PROGRAM_VERSION	5.9~svn20110310	//
+Arena	src/vared_arena.h	/^} Arena;$/;"	t	typeref:struct:__anon1
+COMPILER_CLANG	src/vared_platform.h	11;"	d
+COMPILER_GCC	src/vared_platform.h	9;"	d
+DEBUGPlatformFreeEntireFileMemory	src/vared_platform.h	/^typedef DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeEntireFileMemory);$/;"	t
+DEBUGPlatformReadEntireFile	src/vared_platform.h	/^typedef DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUGPlatformReadEntireFile);$/;"	t
+DEBUGPlatformWriteEntireFile	src/vared_platform.h	/^typedef DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile);$/;"	t
+DEBUG_PLATFORM_FREE_FILE_MEMORY	src/linux_vared.c	/^internal DEBUG_PLATFORM_FREE_FILE_MEMORY(debug_platform_free_file_memory) {$/;"	f
+DEBUG_PLATFORM_FREE_FILE_MEMORY	src/vared_platform.h	/^internal DEBUG_PLATFORM_FREE_FILE_MEMORY(debug_platform_free_file_memory);$/;"	p
+DEBUG_PLATFORM_FREE_FILE_MEMORY	src/vared_platform.h	64;"	d
+DEBUG_PLATFORM_READ_ENTIRE_FILE	src/linux_vared.c	/^internal DEBUG_PLATFORM_READ_ENTIRE_FILE(debug_platform_read_entire_file) {$/;"	f
+DEBUG_PLATFORM_READ_ENTIRE_FILE	src/vared_platform.h	/^internal DEBUG_PLATFORM_READ_ENTIRE_FILE(debug_platform_read_entire_file);$/;"	p
+DEBUG_PLATFORM_READ_ENTIRE_FILE	src/vared_platform.h	58;"	d
+DEBUG_PLATFORM_WRITE_ENTIRE_FILE	src/linux_vared.c	/^internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file) {$/;"	f
+DEBUG_PLATFORM_WRITE_ENTIRE_FILE	src/vared_platform.h	/^internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file);$/;"	p
+DEBUG_PLATFORM_WRITE_ENTIRE_FILE	src/vared_platform.h	70;"	d
+DebugReadFileResult	src/vared_platform.h	/^} DebugReadFileResult;$/;"	t	typeref:struct:__anon12
+EDITOR_UPDATE_AND_RENDER	src/linux_vared.c	/^EDITOR_UPDATE_AND_RENDER(editor_update_and_render_stub) {}$/;"	f
+EDITOR_UPDATE_AND_RENDER	src/vared.c	/^extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {$/;"	f
+EDITOR_UPDATE_AND_RENDER	src/vared_platform.h	/^extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render);$/;"	p
+EDITOR_UPDATE_AND_RENDER	src/vared_platform.h	101;"	d
+EditorInput	src/vared_platform.h	/^} EditorInput;$/;"	t	typeref:struct:__anon13
+EditorLib	src/linux_vared.h	/^} EditorLib;$/;"	t	typeref:struct:__anon8
+EditorMemory	src/vared_platform.h	/^} EditorMemory;$/;"	t	typeref:struct:__anon14
+EditorState	src/vared.h	/^} EditorState;$/;"	t	typeref:struct:__anon15
+EditorUpdateAndRender	src/vared_platform.h	/^typedef EDITOR_UPDATE_AND_RENDER(EditorUpdateAndRender);$/;"	t
+GL_GLEXT_PROTOTYPES	src/linux_vared.c	4;"	d	file:
+LINUX_FILEPATH_MAX_COUNT	src/linux_vared.h	16;"	d
+LINUX_VARED_H	src/linux_vared.h	2;"	d
+LinuxState	src/linux_vared.h	/^} LinuxState;$/;"	t	typeref:struct:__anon9
+MAX_VERTICES	src/vared_renderer.h	8;"	d
+MemoryIndex	src/vared_platform.h	/^typedef size_t MemoryIndex; $/;"	t
+MessageCallback	src/linux_vared.c	/^internal void MessageCallback(GLenum source,$/;"	f
+PI	src/vared.h	32;"	d
+Rect2	src/vared_math.h	/^} Rect2;$/;"	t	typeref:struct:__anon26
+RenderEntryHeader	src/vared_renderer.h	/^} RenderEntryHeader;$/;"	t	typeref:struct:__anon5
+RenderEntryQuad	src/vared_renderer.h	/^} RenderEntryQuad;$/;"	t	typeref:struct:__anon6
+RenderEntryType	src/vared_renderer.h	/^} RenderEntryType;$/;"	t	typeref:enum:__anon4
+RenderEntryType_Count	src/vared_renderer.h	/^    RenderEntryType_Count,$/;"	e	enum:__anon4
+RenderEntryType_None	src/vared_renderer.h	/^    RenderEntryType_None,$/;"	e	enum:__anon4
+RenderEntryType_Quad	src/vared_renderer.h	/^    RenderEntryType_Quad,$/;"	e	enum:__anon4
+RenderGroup	src/vared_renderer.h	/^} RenderGroup;$/;"	t	typeref:struct:__anon7
+Renderer	src/vared_renderer.h	/^} Renderer;$/;"	t	typeref:struct:__anon3
+SDL_INCLUDE_STDBOOL_H	src/linux_vared.c	1;"	d	file:
+ThreadContext	src/vared_platform.h	/^} ThreadContext;$/;"	t	typeref:struct:__anon11
+VARED_ARENA_H	src/vared_arena.h	2;"	d
+VARED_H	src/vared.h	2;"	d
+VARED_MATH_H	src/vared_math.h	2;"	d
+VARED_PLATFORM_H	src/vared_platform.h	2;"	d
+VARED_RENDERER_H	src/vared_renderer.h	2;"	d
+Vertex	src/vared_renderer.h	/^} Vertex;$/;"	t	typeref:struct:__anon2
+WINDOW_HEIGHT	src/linux_vared.c	25;"	d	file:
+WINDOW_WIDTH	src/linux_vared.c	24;"	d	file:
+a	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon22::__anon23::__anon25
+abs	src/vared.h	41;"	d
+arena	src/vared.h	/^    Arena arena;$/;"	m	struct:__anon15
+array_count	src/vared.h	43;"	d
+assert	src/vared.h	21;"	d
+assert	src/vared.h	28;"	d
+b	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon22::__anon23::__anon25
+base	src/vared_arena.h	/^    u8 *base;$/;"	m	struct:__anon1
+bool	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	t	typeref:enum:__anon10
+bytes_read	src/linux_vared.h	/^    u64 bytes_read;$/;"	m	struct:__anon9
+bytes_written	src/linux_vared.h	/^    u64 bytes_written;$/;"	m	struct:__anon9
+callback_severity_as_cstr	src/linux_vared.c	/^internal const char *callback_severity_as_cstr(GLenum severity) {$/;"	f
+callback_type_as_cstr	src/linux_vared.c	/^internal const char *callback_type_as_cstr(GLenum type) {$/;"	f
+cat_strings	src/linux_vared.c	/^internal void cat_strings(int source_a_count, char *source_a,$/;"	f
+color	src/vared_renderer.h	/^    v4 color;$/;"	m	struct:__anon2
+compile_shader_source	src/vared_renderer_opengl.c	/^internal bool compile_shader_source(const GLchar *shader_source, GLuint shader_type, GLuint *shader) {$/;"	f
+debug_platform_free_file_memory	src/vared_platform.h	/^    DEBUGPlatformFreeEntireFileMemory *debug_platform_free_file_memory;$/;"	m	struct:__anon14
+debug_platform_read_entire_file	src/vared_platform.h	/^    DEBUGPlatformReadEntireFile *debug_platform_read_entire_file;$/;"	m	struct:__anon14
+debug_platform_write_entire_file	src/vared_platform.h	/^    DEBUGPlatformWriteEntireFile *debug_platform_write_entire_file;$/;"	m	struct:__anon14
+e	src/vared_math.h	/^        f32 e[2];$/;"	m	union:__anon16::__anon17
+e	src/vared_math.h	/^        f32 e[3];$/;"	m	union:__anon19::__anon20
+e	src/vared_math.h	/^        f32 e[4];$/;"	m	union:__anon22::__anon23
+ebo	src/vared_renderer.h	/^    u32 ebo;$/;"	m	struct:__anon3
+editor_memory_block	src/linux_vared.h	/^    void *editor_memory_block; $/;"	m	struct:__anon9
+editor_memory_size	src/linux_vared.h	/^    u64 editor_memory_size;$/;"	m	struct:__anon9
+exe_filename	src/linux_vared.h	/^    char exe_filename[LINUX_FILEPATH_MAX_COUNT];$/;"	m	struct:__anon9
+f32	src/vared_platform.h	/^typedef float f32;$/;"	t
+f64	src/vared_platform.h	/^typedef double f64;$/;"	t
+false	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	e	enum:__anon10
+filename	src/linux_vared.h	/^    char *filename;$/;"	m	struct:__anon8
+g	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon22::__anon23::__anon25
+gigabytes	src/vared.h	36;"	d
+global	src/vared_platform.h	19;"	d
+global_editor_running	src/linux_vared.c	/^global bool global_editor_running = true;$/;"	v
+handle	src/linux_vared.h	/^    void *handle;$/;"	m	struct:__anon8
+height	src/vared_renderer.h	/^    u32 height;$/;"	m	struct:__anon7
+i16	src/vared_platform.h	/^typedef int16_t i16;$/;"	t
+i32	src/vared_platform.h	/^typedef int32_t i32;$/;"	t
+i64	src/vared_platform.h	/^typedef int64_t i64;$/;"	t
+i8	src/vared_platform.h	/^typedef int8_t i8;$/;"	t
+index_buffer	src/vared_renderer.h	/^    u16 *index_buffer;$/;"	m	struct:__anon3
+index_buffer_	src/vared_renderer.h	/^    u16 *index_buffer_; $/;"	m	struct:__anon7
+index_buffer_arena	src/vared_renderer.h	/^    Arena index_buffer_arena;$/;"	m	struct:__anon7
+index_count	src/vared_renderer.h	/^    u32 index_count;$/;"	m	struct:__anon3
+index_offset	src/vared_renderer.h	/^    u32 index_offset;$/;"	m	struct:__anon6
+initialize_arena	src/vared_arena.c	/^internal void initialize_arena($/;"	f
+input_char	src/vared_platform.h	/^    char input_char;$/;"	m	struct:__anon13
+inside_rect2	src/vared_math.h	/^internal inline bool inside_rect2(Rect2 rect, v2 test) {$/;"	f
+internal	src/vared_platform.h	18;"	d
+is_initialized	src/vared_platform.h	/^    bool is_initialized;$/;"	m	struct:__anon14
+is_valid	src/linux_vared.h	/^    bool is_valid; $/;"	m	struct:__anon8
+kilobytes	src/vared.h	34;"	d
+last_modified	src/linux_vared.h	/^    struct timespec last_modified;$/;"	m	struct:__anon8	typeref:struct:__anon8::timespec
+linux_build_global_filename_at_exe_location	src/linux_vared.c	/^internal void linux_build_global_filename_at_exe_location(LinuxState *state,$/;"	f
+linux_editor_has_changed	src/linux_vared.c	/^internal bool linux_editor_has_changed(EditorLib *editor, char *filename) {$/;"	f
+linux_get_exe_path	src/linux_vared.c	/^internal void linux_get_exe_path(LinuxState *state) {$/;"	f
+linux_load_editorlib	src/linux_vared.c	/^internal EditorLib linux_load_editorlib(char *filename) {$/;"	f
+linux_reload_editorlib	src/linux_vared.c	/^internal void linux_reload_editorlib(EditorLib *editor, char *filename) {$/;"	f
+linux_unload_editorlib	src/linux_vared.c	/^internal void linux_unload_editorlib(EditorLib *editor) {$/;"	f
+local_persist	src/vared_platform.h	20;"	d
+main	src/linux_vared.c	/^int main(void) {$/;"	f
+max	src/vared.h	39;"	d
+max	src/vared_math.h	/^    v2 min, max;$/;"	m	struct:__anon26
+megabytes	src/vared.h	35;"	d
+memory	src/vared_platform.h	/^    void *memory;$/;"	m	struct:__anon12
+memory_map	src/linux_vared.h	/^    void *memory_map;$/;"	m	struct:__anon9
+memory_map_size	src/linux_vared.h	/^    u64 memory_map_size;$/;"	m	struct:__anon9
+min	src/vared.h	40;"	d
+min	src/vared_math.h	/^    v2 min, max;$/;"	m	struct:__anon26
+one_past_last_slash	src/linux_vared.h	/^    char *one_past_last_slash;$/;"	m	struct:__anon9
+permanent_storage	src/vared_platform.h	/^    void *permanent_storage;$/;"	m	struct:__anon14
+permanent_storage_size	src/vared_platform.h	/^    MemoryIndex permanent_storage_size;$/;"	m	struct:__anon14
+placeholder	src/vared_platform.h	/^    int placeholder;$/;"	m	struct:__anon11
+playback_fd	src/linux_vared.h	/^    int playback_fd;$/;"	m	struct:__anon9
+playing_index	src/linux_vared.h	/^    int playing_index; $/;"	m	struct:__anon9
+position	src/vared_renderer.h	/^    v3 position; $/;"	m	struct:__anon2
+push_array	src/vared_arena.c	20;"	d	file:
+push_buffer_arena	src/vared_renderer.h	/^    Arena push_buffer_arena;$/;"	m	struct:__anon7
+push_buffer_base	src/vared_renderer.h	/^    u8 *push_buffer_base;$/;"	m	struct:__anon7
+push_size	src/vared_arena.c	/^internal void *push_size(Arena *arena, MemoryIndex size) {$/;"	f
+push_struct	src/vared_arena.c	19;"	d	file:
+r	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon22::__anon23::__anon25
+recording_fd	src/linux_vared.h	/^    int recording_fd;$/;"	m	struct:__anon9
+recording_index	src/linux_vared.h	/^    int recording_index; $/;"	m	struct:__anon9
+rect2_center_dim	src/vared_math.h	/^internal inline Rect2 rect2_center_dim(v2 center, v2 dim) {$/;"	f
+rect2_center_halfdim	src/vared_math.h	/^internal inline Rect2 rect2_center_halfdim(v2 center, v2 halfdim) {$/;"	f
+rect2_min_dim	src/vared_math.h	/^internal inline Rect2 rect2_min_dim(v2 min, v2 dim) {$/;"	f
+rect2_min_max	src/vared_math.h	/^internal inline Rect2 rect2_min_max(v2 min, v2 max) {$/;"	f
+reflect	src/vared_math.h	/^internal inline v2 reflect(v2 a, v2 normal, f32 bounce) {$/;"	f
+renderer_draw	src/vared_renderer_opengl.c	/^internal void renderer_draw(Renderer *renderer, RenderGroup rg) {$/;"	f
+renderer_init	src/vared_renderer_opengl.c	/^internal void renderer_init(Renderer *renderer) {$/;"	f
+renderer_sync	src/vared_renderer_opengl.c	/^internal void renderer_sync(Renderer *renderer) {$/;"	f
+rg_init_vertex_index_buffers	src/vared_renderer.c	/^void rg_init_vertex_index_buffers(RenderGroup *render_group, Renderer *renderer) {$/;"	f
+rg_push_quad	src/vared_renderer.c	/^void rg_push_quad(RenderGroup *render_group,$/;"	f
+rg_push_rect2	src/vared_renderer.c	/^void rg_push_rect2(RenderGroup *render_group, Rect2 rect, v4 color) {$/;"	f
+scc	src/linux_vared.c	/^void scc(int code) {$/;"	f
+scp	src/linux_vared.c	/^void *scp(void *ptr) {$/;"	f
+shader_program	src/vared_renderer.h	/^    u32 shader_program;$/;"	m	struct:__anon3
+shader_type_as_cstr	src/vared_renderer_opengl.c	/^internal const char *shader_type_as_cstr(GLuint shader) {$/;"	f
+size	src/vared_arena.h	/^    MemoryIndex size;$/;"	m	struct:__anon1
+size	src/vared_platform.h	/^    u64 size;$/;"	m	struct:__anon12
+square	src/vared_math.h	/^internal inline f32 square(f32 a) {$/;"	f
+string_len	src/linux_vared.c	/^internal int string_len(char *str) {$/;"	f
+terabytes	src/vared.h	37;"	d
+transient_storage	src/vared_platform.h	/^    void *transient_storage;$/;"	m	struct:__anon14
+transient_storage_size	src/vared_platform.h	/^    MemoryIndex transient_storage_size;$/;"	m	struct:__anon14
+true	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	e	enum:__anon10
+type	src/vared_renderer.h	/^    RenderEntryType type;$/;"	m	struct:__anon5
+u16	src/vared_platform.h	/^typedef uint16_t u16;$/;"	t
+u32	src/vared_platform.h	/^typedef uint32_t u32;$/;"	t
+u64	src/vared_platform.h	/^typedef uint64_t u64;$/;"	t
+u8	src/vared_platform.h	/^typedef uint8_t u8;$/;"	t
+update_and_render	src/linux_vared.h	/^    EditorUpdateAndRender *update_and_render;$/;"	m	struct:__anon8
+used	src/vared_arena.h	/^    MemoryIndex used;$/;"	m	struct:__anon1
+v2	src/vared_math.h	/^} v2;$/;"	t	typeref:struct:__anon16
+v2_add	src/vared_math.h	/^internal inline v2 v2_add(v2 a, v2 b) {$/;"	f
+v2_dot	src/vared_math.h	/^internal inline f32 v2_dot(v2 a, v2 b) {$/;"	f
+v2_length2	src/vared_math.h	/^internal inline f32 v2_length2(v2 v) {$/;"	f
+v2_neg	src/vared_math.h	/^internal inline v2 v2_neg(v2 a) {$/;"	f
+v2_sdiv	src/vared_math.h	/^internal inline v2 v2_sdiv(v2 a, f32 m) {$/;"	f
+v2_smul	src/vared_math.h	/^internal inline v2 v2_smul(v2 a, f32 m) {$/;"	f
+v2_sub	src/vared_math.h	/^internal inline v2 v2_sub(v2 a, v2 b) {$/;"	f
+v2_vmul	src/vared_math.h	/^internal inline v2 v2_vmul(v2 a, v2 b) {$/;"	f
+v3	src/vared_math.h	/^} v3;$/;"	t	typeref:struct:__anon19
+v4	src/vared_math.h	/^} v4;$/;"	t	typeref:struct:__anon22
+vao	src/vared_renderer.h	/^    u32 vao;$/;"	m	struct:__anon3
+vbo	src/vared_renderer.h	/^    u32 vbo;$/;"	m	struct:__anon3
+vertex_buffer	src/vared_renderer.h	/^    Vertex *vertex_buffer;$/;"	m	struct:__anon3
+vertex_buffer_	src/vared_renderer.h	/^    Vertex *vertex_buffer_; $/;"	m	struct:__anon7
+vertex_buffer_arena	src/vared_renderer.h	/^    Arena vertex_buffer_arena;$/;"	m	struct:__anon7
+vertex_count	src/vared_renderer.h	/^    u32 vertex_count;$/;"	m	struct:__anon3
+vertex_offset	src/vared_renderer.h	/^    u32 vertex_offset;$/;"	m	struct:__anon6
+w	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon22::__anon23::__anon24
+width	src/vared_renderer.h	/^    u32 width;$/;"	m	struct:__anon7
+x	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon22::__anon23::__anon24
+x	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon19::__anon20::__anon21
+x	src/vared_math.h	/^            f32 x, y;$/;"	m	struct:__anon16::__anon17::__anon18
+y	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon22::__anon23::__anon24
+y	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon19::__anon20::__anon21
+y	src/vared_math.h	/^            f32 x, y;$/;"	m	struct:__anon16::__anon17::__anon18
+z	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon22::__anon23::__anon24
+z	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon19::__anon20::__anon21
