@@ -11,20 +11,59 @@
 #include "vared_renderer_opengl.c"
 
 #include <sys/mman.h>
-
 #include <stdlib.h>
-
 #include <fcntl.h>
 #include <unistd.h>
-
 #include <dlfcn.h>
-
 #include <errno.h>
+#include <time.h>
+#include <sys/stat.h>
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
 
 global bool global_editor_running = true;
+global u64 performance_frequency;
+
+internal inline f64 sdl_get_seconds_elapsed(u64 start_counter,
+                                            u64 end_counter) {
+    return (f64)(end_counter - start_counter) / performance_frequency;
+}
+
+internal void linux_sleep_to_target(u64 last_counter, f64 target_seconds) {
+    f64 seconds_elapsed_for_frame;
+
+    struct timespec sleep_time = {0};
+    struct timespec remaining_time = {0};
+    do {
+        seconds_elapsed_for_frame =
+            sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+
+        // NOTE(fede): truncate the amount of ms to sleep
+        f64 ms_to_sleep =
+            (f64)(u64)(1000.0f * (target_seconds - seconds_elapsed_for_frame));
+
+        // NOTE(fede): give 1,000,000 ns of leeway
+        ms_to_sleep -= 1.0f;
+
+        u64 nsec_to_sleep = (u64)(ms_to_sleep * 1000000.0f);
+
+        sleep_time.tv_sec = 0;
+        sleep_time.tv_nsec = nsec_to_sleep;
+    } while (nanosleep(&sleep_time, &remaining_time) == -1);
+
+    seconds_elapsed_for_frame =
+        sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+
+    if (seconds_elapsed_for_frame <= target_seconds) {
+        while (seconds_elapsed_for_frame < target_seconds)
+            seconds_elapsed_for_frame = sdl_get_seconds_elapsed(
+                last_counter, SDL_GetPerformanceCounter());
+    } else {
+        // TODO(fede): ERROR -- missed target frame rate
+        printf("Missed target frame rate!\n");
+    }
+}
 
 #if VARED_INTERNAL
 
@@ -313,6 +352,29 @@ int main(void) {
                 WINDOW_WIDTH, WINDOW_HEIGHT,
                 SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL));
 
+    // NOTE(fede): get highest display refresh rate
+    int display_index = SDL_GetWindowDisplayIndex(window);
+    int n_display_modes = SDL_GetNumDisplayModes(display_index);
+
+    SDL_DisplayMode mode = {0};
+    SDL_GetDisplayMode(display_index, 0, &mode); // highest
+
+    performance_frequency = SDL_GetPerformanceFrequency();
+
+    /*
+     * STUDY(fede): This is 144hz for my machine and probably a lot more.
+     *              However, we are doing software rendering, so ~30hz is
+     *              probably the goal.
+     *
+     *              ** Investigate ways to chose FPS reliably. **
+     */
+
+    int refresh_rate = mode.refresh_rate;
+
+    int game_update_rate = refresh_rate;
+    f32 target_seconds_per_frame = 1.0f / (f32)game_update_rate;
+    printf("refresh_rate: %d\n", refresh_rate);
+
     // NOTE(fede): init opengl
     {
         SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
@@ -342,6 +404,8 @@ int main(void) {
     } else {
         fprintf(stderr, "WARNING: GLEW_ARB_debug_output is not available");
     }
+
+    scc(SDL_GL_SetSwapInterval(0));
 
     EditorLib editor = {0};
 
@@ -380,6 +444,8 @@ int main(void) {
     render_group.width = WINDOW_WIDTH;
     render_group.height = WINDOW_HEIGHT;
     rg_init_vertex_index_buffers(&render_group, &renderer);
+
+    u64 last_counter = SDL_GetPerformanceCounter();
 
     while (global_editor_running) {
         if (linux_editor_has_changed(&editor, editor_dll_filename)) {
@@ -422,6 +488,27 @@ int main(void) {
         renderer_draw(&renderer, render_group);
 
         SDL_GL_SwapWindow(window);
+
+        {
+            u64 end_counter = SDL_GetPerformanceCounter();
+
+            f64 work_seconds_elapsed =
+                sdl_get_seconds_elapsed(last_counter, end_counter);
+
+            linux_sleep_to_target(last_counter, target_seconds_per_frame);
+
+            f64 seconds_elapsed_for_frame =
+                sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+
+            last_counter = SDL_GetPerformanceCounter();
+
+#if 0
+            f64 ms_per_frame = seconds_elapsed_for_frame * 1000;
+            f64 fps = 1000.0f / ms_per_frame;
+
+            printf("%.02fms/f, %.02ffps \n", ms_per_frame, fps);
+#endif
+        }
     }
 
     SDL_DestroyWindow(window);

@@ -45,12 +45,12 @@ internal void renderer_init(Renderer *renderer) {
                      GL_DYNAMIC_DRAW);
 
         // TODO(fede): should i do an ebo? performance maybe? 
-        // glGenBuffers(1, &renderer->ebo);
-        // glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->ebo);  
-        // glBufferData(GL_ELEMENT_ARRAY_BUFFER,
-        //              renderer->index_count * sizeof(u16),
-        //              renderer->index_buffer,
-        //              GL_DYNAMIC_DRAW);
+        glGenBuffers(1, &renderer->ebo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, renderer->ebo);  
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER,
+                     renderer->index_count * sizeof(u16),
+                     renderer->index_buffer,
+                     GL_DYNAMIC_DRAW);
 
         // NOTE(fede): vec3 position
         glEnableVertexAttribArray(0);
@@ -115,6 +115,11 @@ internal void renderer_sync(Renderer *renderer) {
                     0,
                     renderer->vertex_count * sizeof(Vertex),
                     renderer->vertex_buffer);
+
+    glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,
+                    0,
+                    renderer->index_count * sizeof(u16),
+                    renderer->index_buffer);
 }
 
 internal void renderer_draw(Renderer *renderer, RenderGroup rg) {
@@ -128,11 +133,13 @@ internal void renderer_draw(Renderer *renderer, RenderGroup rg) {
             RenderEntryQuad *quad = (RenderEntryQuad *)(rg.push_buffer_base + buffer_idx);
             buffer_idx += sizeof(RenderEntryQuad);
 
-            glDrawElementsBaseVertex(
+            glDrawRangeElementsBaseVertex(
                     GL_TRIANGLES,
+                    quad->index_offset,
+                    quad->index_offset + 6,
                     6,
                     GL_UNSIGNED_SHORT,
-                    renderer->index_buffer + quad->index_offset,
+                    NULL,
                     quad->vertex_offset);
         } break;
         case RenderEntryType_Count:

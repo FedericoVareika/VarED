@@ -54,8 +54,8 @@ VARED_MATH_H	src/vared_math.h	2;"	d
 VARED_PLATFORM_H	src/vared_platform.h	2;"	d
 VARED_RENDERER_H	src/vared_renderer.h	2;"	d
 Vertex	src/vared_renderer.h	/^} Vertex;$/;"	t	typeref:struct:__anon2
-WINDOW_HEIGHT	src/linux_vared.c	25;"	d	file:
-WINDOW_WIDTH	src/linux_vared.c	24;"	d	file:
+WINDOW_HEIGHT	src/linux_vared.c	23;"	d	file:
+WINDOW_WIDTH	src/linux_vared.c	22;"	d	file:
 a	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon22::__anon23::__anon25
 abs	src/vared.h	41;"	d
 arena	src/vared.h	/^    Arena arena;$/;"	m	struct:__anon15
@@ -114,6 +114,7 @@ linux_editor_has_changed	src/linux_vared.c	/^internal bool linux_editor_has_chan
 linux_get_exe_path	src/linux_vared.c	/^internal void linux_get_exe_path(LinuxState *state) {$/;"	f
 linux_load_editorlib	src/linux_vared.c	/^internal EditorLib linux_load_editorlib(char *filename) {$/;"	f
 linux_reload_editorlib	src/linux_vared.c	/^internal void linux_reload_editorlib(EditorLib *editor, char *filename) {$/;"	f
+linux_sleep_to_target	src/linux_vared.c	/^internal void linux_sleep_to_target(u64 last_counter, f64 target_seconds) {$/;"	f
 linux_unload_editorlib	src/linux_vared.c	/^internal void linux_unload_editorlib(EditorLib *editor) {$/;"	f
 local_persist	src/vared_platform.h	20;"	d
 main	src/linux_vared.c	/^int main(void) {$/;"	f
@@ -126,6 +127,7 @@ memory_map_size	src/linux_vared.h	/^    u64 memory_map_size;$/;"	m	struct:__anon
 min	src/vared.h	40;"	d
 min	src/vared_math.h	/^    v2 min, max;$/;"	m	struct:__anon26
 one_past_last_slash	src/linux_vared.h	/^    char *one_past_last_slash;$/;"	m	struct:__anon9
+performance_frequency	src/linux_vared.c	/^global u64 performance_frequency;$/;"	v
 permanent_storage	src/vared_platform.h	/^    void *permanent_storage;$/;"	m	struct:__anon14
 permanent_storage_size	src/vared_platform.h	/^    MemoryIndex permanent_storage_size;$/;"	m	struct:__anon14
 placeholder	src/vared_platform.h	/^    int placeholder;$/;"	m	struct:__anon11
@@ -153,6 +155,7 @@ rg_push_quad	src/vared_renderer.c	/^void rg_push_quad(RenderGroup *render_group,
 rg_push_rect2	src/vared_renderer.c	/^void rg_push_rect2(RenderGroup *render_group, Rect2 rect, v4 color) {$/;"	f
 scc	src/linux_vared.c	/^void scc(int code) {$/;"	f
 scp	src/linux_vared.c	/^void *scp(void *ptr) {$/;"	f
+sdl_get_seconds_elapsed	src/linux_vared.c	/^internal inline f64 sdl_get_seconds_elapsed(u64 start_counter,$/;"	f
 shader_program	src/vared_renderer.h	/^    u32 shader_program;$/;"	m	struct:__anon3
 shader_type_as_cstr	src/vared_renderer_opengl.c	/^internal const char *shader_type_as_cstr(GLuint shader) {$/;"	f
 size	src/vared_arena.h	/^    MemoryIndex size;$/;"	m	struct:__anon1
