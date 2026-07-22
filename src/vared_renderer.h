@@ -10,6 +10,7 @@
 typedef struct {
     v3 position; 
     v4 color;
+    v2 uv;
 } Vertex;
 
 typedef struct {
@@ -17,6 +18,8 @@ typedef struct {
     u32 vbo;
     u32 ebo;
     u32 shader_program;
+
+    u32 font_texture;
 
     Vertex *vertex_buffer;
     u32 vertex_count;
@@ -28,7 +31,8 @@ typedef struct {
 typedef enum {
     RenderEntryType_None,
 
-    // RenderGroupEntryType_Clear,
+    // TODO(fede): Maybe the IR should not be rendering per se, more like 'Commands'
+    RenderEntryType_TextureLoad,
     RenderEntryType_Quad,
 
     RenderEntryType_Count,
@@ -38,20 +42,21 @@ typedef struct {
     RenderEntryType type;
 } RenderEntryHeader;
 
+// TODO(fede): Change to batch rendering. ** IMPORTANT **
 typedef struct {
     u32 vertex_offset;
     u32 index_offset;
 } RenderEntryQuad;
 
 typedef struct {
-    Arena push_buffer_arena;
-    u8 *push_buffer_base;
+    u8 *data;
+    u32 width, height;
+} RenderEntryTextureLoad;
 
-    Arena vertex_buffer_arena;
-    Vertex *vertex_buffer_; 
-
-    Arena index_buffer_arena;
-    u16 *index_buffer_; 
+typedef struct {
+    Arena push_buffer_arena;    // NOTE(fede): Base allocated on permanent storage 
+    Arena vertex_buffer_arena;  // NOTE(fede): Shares base with Renderer vertex_buffer
+    Arena index_buffer_arena;   // NOTE(fede): Shares base with Renderer index_buffer
 
     u32 width;
     u32 height;

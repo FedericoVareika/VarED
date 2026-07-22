@@ -71,6 +71,16 @@ internal void renderer_init(Renderer *renderer) {
                 GL_FALSE,
                 sizeof(Vertex),
                 (GLvoid *)offsetof(Vertex, color));
+
+        // NOTE(fede): vec2 uv
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(
+                2,
+                2,
+                GL_FLOAT,
+                GL_FALSE,
+                sizeof(Vertex),
+                (GLvoid *)offsetof(Vertex, uv));
     }
 
     {
@@ -80,8 +90,8 @@ internal void renderer_init(Renderer *renderer) {
             DebugReadFileResult vert_shader_file = debug_platform_read_entire_file(0, "shaders/simple.vert"); 
             DebugReadFileResult frag_shader_file = debug_platform_read_entire_file(0, "shaders/simple.frag"); 
 
-            assert(compile_shader_source(vert_shader_file.memory, GL_VERTEX_SHADER, &vert_shader))
-            assert(compile_shader_source(frag_shader_file.memory, GL_FRAGMENT_SHADER, &frag_shader))
+            assert(compile_shader_source(vert_shader_file.memory, GL_VERTEX_SHADER, &vert_shader));
+            assert(compile_shader_source(frag_shader_file.memory, GL_FRAGMENT_SHADER, &frag_shader));
 
             debug_platform_free_file_memory(0, vert_shader_file);
             debug_platform_free_file_memory(0, frag_shader_file);
@@ -123,14 +133,41 @@ internal void renderer_sync(Renderer *renderer) {
 }
 
 internal void renderer_draw(Renderer *renderer, RenderGroup rg) {
+    GLuint location = glGetUniformLocation(renderer->shader_program, "screen_resolution");
+    glUniform2f(location, (f32)rg.width, (f32)rg.height);
+
+    if (renderer->font_texture)
+        glBindTexture(GL_TEXTURE_2D, renderer->font_texture);
+
+    u8 *push_buffer = rg.push_buffer_arena.base;
+
     u32 buffer_idx = 0; 
     while (buffer_idx < rg.push_buffer_arena.used) {
-        RenderEntryHeader *header = (RenderEntryHeader *)(rg.push_buffer_base + buffer_idx);
+        RenderEntryHeader *header = (RenderEntryHeader *)(push_buffer + buffer_idx);
         buffer_idx += sizeof(RenderEntryHeader);
 
         switch (header->type) {
+        case RenderEntryType_TextureLoad: {
+            RenderEntryTextureLoad *texture_load = (RenderEntryTextureLoad *)(push_buffer + buffer_idx);
+            buffer_idx += sizeof(RenderEntryTextureLoad);
+
+            // TODO(fede): Consume this into something else so that it is used 
+            //      apart from fonts.
+            glGenTextures(1, &renderer->font_texture);
+            glBindTexture(GL_TEXTURE_2D, renderer->font_texture);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glTexImage2D(
+                    GL_TEXTURE_2D, 0, GL_RED,
+                    texture_load->width, texture_load->height,
+                    0, GL_RED, GL_UNSIGNED_BYTE, texture_load->data);
+
+            // NOTE(fede): Do not know what this does. (linear filtering ?)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            
+        } break;
         case RenderEntryType_Quad: {
-            RenderEntryQuad *quad = (RenderEntryQuad *)(rg.push_buffer_base + buffer_idx);
+            RenderEntryQuad *quad = (RenderEntryQuad *)(push_buffer + buffer_idx);
             buffer_idx += sizeof(RenderEntryQuad);
 
             glDrawRangeElementsBaseVertex(
@@ -141,6 +178,16 @@ internal void renderer_draw(Renderer *renderer, RenderGroup rg) {
                     GL_UNSIGNED_SHORT,
                     NULL,
                     quad->vertex_offset);
+
+            GLint active_texture_unit = 0;
+            glGetIntegerv(GL_ACTIVE_TEXTURE, &active_texture_unit);
+
+            GLint bound_texture_id = 0;
+            glGetIntegerv(GL_TEXTURE_BINDING_2D, &bound_texture_id);
+
+            printf("Active Unit: GL_TEXTURE%d | Bound ID: %d\n", 
+                    active_texture_unit - GL_TEXTURE0, 
+                    bound_texture_id);
         } break;
         case RenderEntryType_Count:
         case RenderEntryType_None:

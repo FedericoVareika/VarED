@@ -36,16 +36,40 @@
 #define gigabytes(value) (megabytes(value) * 1024)
 #define terabytes(value) (gigabytes(value) * 1024)
 
+#include <stdlib.h>
+#if 0
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define abs(a) ((a) < 0 ? -(a) : (a))
+
+// TODO(fede): does not work
+#define STBTT_fabs(abs); 
+#define STBTT_max(abs); 
+#define STBTT_min(min); 
+#endif 
+
 
 #define array_count(a) (sizeof((a)) / sizeof((a)[0]))
 
 #include "vared_arena.c"
 
+#define STB_TRUETYPE_IMPLEMENTATION
+#include "stb_truetype.h"
+
+typedef struct {
+    int num_chars;
+    f32 pixel_height;
+
+    u32 bitmap_width;
+    u32 bitmap_height;
+
+    stbtt_bakedchar *cdata;
+} Font;
+
 typedef struct {
     Arena arena;
+
+    Font font;
 } EditorState;
 
 #endif // VARED_H

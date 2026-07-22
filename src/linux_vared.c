@@ -11,7 +11,6 @@
 #include "vared_renderer_opengl.c"
 
 #include <sys/mman.h>
-#include <stdlib.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <dlfcn.h>
@@ -465,13 +464,15 @@ int main(void) {
             case SDL_WINDOWEVENT: {
                 SDL_WindowEvent window_event = event.window;
                 switch (window_event.event) {
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
                 case SDL_WINDOWEVENT_RESIZED: {
+                    int render_width, render_height;
+                    SDL_GL_GetDrawableSize(window, &render_width, &render_height);
 
-                    // NOTE(fede): 
-                    //  window_event.data1 -> new width
-                    //  window_event.data2 -> new height
-                    render_group.width = window_event.data1;
-                    render_group.height = window_event.data2;
+                    glViewport(0, 0, render_width, render_height);
+
+                    render_group.width = render_width;
+                    render_group.height = render_height;
                 } break;
                 }
             } break;
