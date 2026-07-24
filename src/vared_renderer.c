@@ -1,5 +1,19 @@
 #include "vared_renderer.h"
 
+internal void rg_init_vertex_index_buffers(RenderGroup *render_group,
+        Vertex *vertex_buffer, u32 vertex_count,
+        u16 *index_buffer, u32 index_count) {
+    initialize_arena(
+            &render_group->vertex_buffer_arena,
+            vertex_count * sizeof(Vertex),
+            (u8 *)vertex_buffer);
+
+    initialize_arena(
+            &render_group->index_buffer_arena,
+            index_count * sizeof(u16),
+            (u8 *)index_buffer);
+}
+
 #define rg_push_entry(render_group, type) (RenderEntry##type *)rg_push_entry_(render_group, sizeof(RenderEntry##type), RenderEntryType_##type)
 internal void *rg_push_entry_(
         RenderGroup *render_group,
@@ -111,14 +125,9 @@ internal void rg_push_texture_load(RenderGroup *render_group, u8 *data, u32 widt
     texture_load->height = height;
 }
 
-internal void rg_init_vertex_index_buffers(RenderGroup *render_group, Renderer *renderer) {
-    initialize_arena(
-            &render_group->vertex_buffer_arena,
-            renderer->vertex_count * sizeof(Vertex),
-            (u8 *)renderer->vertex_buffer);
+internal void rg_push_set_shader(RenderGroup *render_group, ShaderType shader) {
+    assert(shader < RenderEntryType_Count);
 
-    initialize_arena(
-            &render_group->index_buffer_arena,
-            renderer->index_count * sizeof(u16),
-            (u8 *)renderer->index_buffer);
+    RenderEntryShaderSet *shader_set = rg_push_entry(render_group, ShaderSet);
+    shader_set->shader = shader;
 }

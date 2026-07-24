@@ -53,23 +53,43 @@
 
 #include "vared_arena.c"
 
+#define STB_RECT_PACK_IMPLEMENTATION
+#include "stb_rect_pack.h"
+
 #define STB_TRUETYPE_IMPLEMENTATION
 #include "stb_truetype.h"
 
 typedef struct {
-    int num_chars;
-    f32 pixel_height;
+    stbtt_fontinfo font_info;
+    stbtt_packedchar *char_data_for_range;
 
-    u32 bitmap_width;
-    u32 bitmap_height;
+    u32 pixels_width;
+    u32 pixels_height;
+    u32 first_char;
+    u32 num_chars;
+    f32 font_height;
 
-    stbtt_bakedchar *cdata;
+    f32 scale;
+    int ascent;
+    int descent;
+    int line_gap;
+
+    int y_increment;
 } Font;
+
+typedef struct {
+    u8 *buf;
+    u32 count;
+    u32 size;
+} S8;
 
 typedef struct {
     Arena arena;
 
     Font font;
+
+    Rect2 text_window;
+    S8 string;
 } EditorState;
 
 #endif // VARED_H

@@ -19,48 +19,86 @@ DEBUG_PLATFORM_READ_ENTIRE_FILE	src/vared_platform.h	58;"	d
 DEBUG_PLATFORM_WRITE_ENTIRE_FILE	src/linux_vared.c	/^internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file) {$/;"	f
 DEBUG_PLATFORM_WRITE_ENTIRE_FILE	src/vared_platform.h	/^internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file);$/;"	p
 DEBUG_PLATFORM_WRITE_ENTIRE_FILE	src/vared_platform.h	70;"	d
-DebugReadFileResult	src/vared_platform.h	/^} DebugReadFileResult;$/;"	t	typeref:struct:__anon31
+DebugReadFileResult	src/vared_platform.h	/^} DebugReadFileResult;$/;"	t	typeref:struct:__anon33
 EDITOR_UPDATE_AND_RENDER	src/linux_vared.c	/^EDITOR_UPDATE_AND_RENDER(editor_update_and_render_stub) {}$/;"	f
 EDITOR_UPDATE_AND_RENDER	src/vared.c	/^extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {$/;"	f
 EDITOR_UPDATE_AND_RENDER	src/vared_platform.h	/^extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render);$/;"	p
-EDITOR_UPDATE_AND_RENDER	src/vared_platform.h	101;"	d
-EditorInput	src/vared_platform.h	/^} EditorInput;$/;"	t	typeref:struct:__anon32
-EditorLib	src/linux_vared.h	/^} EditorLib;$/;"	t	typeref:struct:__anon27
-EditorMemory	src/vared_platform.h	/^} EditorMemory;$/;"	t	typeref:struct:__anon33
-EditorState	src/vared.h	/^} EditorState;$/;"	t	typeref:struct:__anon35
+EDITOR_UPDATE_AND_RENDER	src/vared_platform.h	132;"	d
+EditorInput	src/vared_platform.h	/^} EditorInput;$/;"	t	typeref:struct:__anon36
+EditorLib	src/linux_vared.h	/^} EditorLib;$/;"	t	typeref:struct:__anon29
+EditorMemory	src/vared_platform.h	/^} EditorMemory;$/;"	t	typeref:struct:__anon37
+EditorState	src/vared.h	/^} EditorState;$/;"	t	typeref:struct:__anon40
 EditorUpdateAndRender	src/vared_platform.h	/^typedef EDITOR_UPDATE_AND_RENDER(EditorUpdateAndRender);$/;"	t
-Font	src/vared.h	/^} Font;$/;"	t	typeref:struct:__anon34
+Font	src/vared.h	/^} Font;$/;"	t	typeref:struct:__anon38
 GL_GLEXT_PROTOTYPES	src/linux_vared.c	4;"	d	file:
+KeyInput	src/vared_platform.h	/^} KeyInput;$/;"	t	typeref:struct:__anon35
+KeymodFlag	src/vared_platform.h	/^} KeymodFlag;$/;"	t	typeref:enum:__anon34
+KeymodFlag_alt	src/vared_platform.h	/^    KeymodFlag_alt = KeymodFlag_lalt | KeymodFlag_ralt,$/;"	e	enum:__anon34
+KeymodFlag_caps	src/vared_platform.h	/^    KeymodFlag_caps = 0x2000,$/;"	e	enum:__anon34
+KeymodFlag_ctrl	src/vared_platform.h	/^    KeymodFlag_ctrl = KeymodFlag_lctrl | KeymodFlag_rctrl,$/;"	e	enum:__anon34
+KeymodFlag_gui	src/vared_platform.h	/^    KeymodFlag_gui = KeymodFlag_lgui | KeymodFlag_rgui,$/;"	e	enum:__anon34
+KeymodFlag_lalt	src/vared_platform.h	/^    KeymodFlag_lalt = 0x0100,$/;"	e	enum:__anon34
+KeymodFlag_lctrl	src/vared_platform.h	/^    KeymodFlag_lctrl = 0x0040,$/;"	e	enum:__anon34
+KeymodFlag_lgui	src/vared_platform.h	/^    KeymodFlag_lgui = 0x0400,$/;"	e	enum:__anon34
+KeymodFlag_lshift	src/vared_platform.h	/^    KeymodFlag_lshift = 0x0001,$/;"	e	enum:__anon34
+KeymodFlag_mode	src/vared_platform.h	/^    KeymodFlag_mode = 0x4000,$/;"	e	enum:__anon34
+KeymodFlag_none	src/vared_platform.h	/^    KeymodFlag_none = 0x0000,$/;"	e	enum:__anon34
+KeymodFlag_num	src/vared_platform.h	/^    KeymodFlag_num = 0x1000,$/;"	e	enum:__anon34
+KeymodFlag_ralt	src/vared_platform.h	/^    KeymodFlag_ralt = 0x0200,$/;"	e	enum:__anon34
+KeymodFlag_rctrl	src/vared_platform.h	/^    KeymodFlag_rctrl = 0x0080,$/;"	e	enum:__anon34
+KeymodFlag_reserved	src/vared_platform.h	/^    KeymodFlag_reserved = KeymodFlag_scroll,$/;"	e	enum:__anon34
+KeymodFlag_rgui	src/vared_platform.h	/^    KeymodFlag_rgui = 0x0800,$/;"	e	enum:__anon34
+KeymodFlag_rshift	src/vared_platform.h	/^    KeymodFlag_rshift = 0x0002,$/;"	e	enum:__anon34
+KeymodFlag_scroll	src/vared_platform.h	/^    KeymodFlag_scroll = 0x8000,$/;"	e	enum:__anon34
+KeymodFlag_shift	src/vared_platform.h	/^    KeymodFlag_shift = KeymodFlag_lshift | KeymodFlag_rshift,$/;"	e	enum:__anon34
 LINUX_FILEPATH_MAX_COUNT	src/linux_vared.h	16;"	d
 LINUX_VARED_H	src/linux_vared.h	2;"	d
-LinuxState	src/linux_vared.h	/^} LinuxState;$/;"	t	typeref:struct:__anon28
+LinuxState	src/linux_vared.h	/^} LinuxState;$/;"	t	typeref:struct:__anon30
 MAX_VERTICES	src/vared_renderer.h	8;"	d
 MemoryIndex	src/vared_platform.h	/^typedef size_t MemoryIndex; $/;"	t
 MessageCallback	src/linux_vared.c	/^internal void MessageCallback(GLenum source,$/;"	f
 PI	src/vared.h	32;"	d
-Rect2	src/vared_math.h	/^} Rect2;$/;"	t	typeref:struct:__anon46
-RenderEntryHeader	src/vared_renderer.h	/^} RenderEntryHeader;$/;"	t	typeref:struct:__anon23
-RenderEntryQuad	src/vared_renderer.h	/^} RenderEntryQuad;$/;"	t	typeref:struct:__anon24
-RenderEntryTextureLoad	src/vared_renderer.h	/^} RenderEntryTextureLoad;$/;"	t	typeref:struct:__anon25
-RenderEntryType	src/vared_renderer.h	/^} RenderEntryType;$/;"	t	typeref:enum:__anon22
-RenderEntryType_Count	src/vared_renderer.h	/^    RenderEntryType_Count,$/;"	e	enum:__anon22
-RenderEntryType_None	src/vared_renderer.h	/^    RenderEntryType_None,$/;"	e	enum:__anon22
-RenderEntryType_Quad	src/vared_renderer.h	/^    RenderEntryType_Quad,$/;"	e	enum:__anon22
-RenderEntryType_TextureLoad	src/vared_renderer.h	/^    RenderEntryType_TextureLoad,$/;"	e	enum:__anon22
-RenderGroup	src/vared_renderer.h	/^} RenderGroup;$/;"	t	typeref:struct:__anon26
-Renderer	src/vared_renderer.h	/^} Renderer;$/;"	t	typeref:struct:__anon21
+PrintKeyInfo	src/linux_vared.c	/^void PrintKeyInfo( SDL_KeyboardEvent *key ){$/;"	f
+PrintModifiers	src/linux_vared.c	/^void PrintModifiers( SDL_Keymod mod ){$/;"	f
+Rect2	src/vared_math.h	/^} Rect2;$/;"	t	typeref:struct:__anon54
+RenderEntryHeader	src/vared_renderer.h	/^} RenderEntryHeader;$/;"	t	typeref:struct:__anon24
+RenderEntryQuad	src/vared_renderer.h	/^} RenderEntryQuad;$/;"	t	typeref:struct:__anon25
+RenderEntryShaderSet	src/vared_renderer.h	/^} RenderEntryShaderSet;$/;"	t	typeref:struct:__anon27
+RenderEntryTextureLoad	src/vared_renderer.h	/^} RenderEntryTextureLoad;$/;"	t	typeref:struct:__anon26
+RenderEntryType	src/vared_renderer.h	/^} RenderEntryType;$/;"	t	typeref:enum:__anon23
+RenderEntryType_Count	src/vared_renderer.h	/^    RenderEntryType_Count,$/;"	e	enum:__anon23
+RenderEntryType_None	src/vared_renderer.h	/^    RenderEntryType_None,$/;"	e	enum:__anon23
+RenderEntryType_Quad	src/vared_renderer.h	/^    RenderEntryType_Quad,$/;"	e	enum:__anon23
+RenderEntryType_ShaderSet	src/vared_renderer.h	/^    RenderEntryType_ShaderSet,$/;"	e	enum:__anon23
+RenderEntryType_TextureLoad	src/vared_renderer.h	/^    RenderEntryType_TextureLoad,$/;"	e	enum:__anon23
+RenderGroup	src/vared_renderer.h	/^} RenderGroup;$/;"	t	typeref:struct:__anon28
+RendererOpengl	src/vared_renderer_opengl.h	/^} RendererOpengl;$/;"	t	typeref:struct:__anon20
+S8	src/vared.h	/^} S8;$/;"	t	typeref:struct:__anon39
 SDL_INCLUDE_STDBOOL_H	src/linux_vared.c	1;"	d	file:
+STBRP_ASSERT	src/stb_rect_pack.h	213;"	d
+STBRP_DEF	src/stb_rect_pack.h	72;"	d
+STBRP_DEF	src/stb_rect_pack.h	74;"	d
+STBRP_HEURISTIC_Skyline_BF_sortHeight	src/stb_rect_pack.h	/^   STBRP_HEURISTIC_Skyline_BF_sortHeight$/;"	e	enum:__anon41
+STBRP_HEURISTIC_Skyline_BL_sortHeight	src/stb_rect_pack.h	/^   STBRP_HEURISTIC_Skyline_BL_sortHeight = STBRP_HEURISTIC_Skyline_default,$/;"	e	enum:__anon41
+STBRP_HEURISTIC_Skyline_default	src/stb_rect_pack.h	/^   STBRP_HEURISTIC_Skyline_default=0,$/;"	e	enum:__anon41
+STBRP_SORT	src/stb_rect_pack.h	208;"	d
+STBRP__CDECL	src/stb_rect_pack.h	218;"	d
+STBRP__CDECL	src/stb_rect_pack.h	221;"	d
+STBRP__INIT_skyline	src/stb_rect_pack.h	/^   STBRP__INIT_skyline = 1$/;"	e	enum:__anon42
+STBRP__MAXVAL	src/stb_rect_pack.h	87;"	d
+STBRP__NOTUSED	src/stb_rect_pack.h	217;"	d
+STBRP__NOTUSED	src/stb_rect_pack.h	220;"	d
 STBTT_DEF	src/stb_truetype.h	503;"	d
 STBTT_DEF	src/stb_truetype.h	505;"	d
-STBTT_FIX	src/stb_truetype.h	2832;"	d
-STBTT_FIXMASK	src/stb_truetype.h	2833;"	d
-STBTT_FIXSHIFT	src/stb_truetype.h	2831;"	d
-STBTT_GPOS_TODO_assert	src/stb_truetype.h	2494;"	d
-STBTT_MACSTYLE_BOLD	src/stb_truetype.h	1027;"	d
-STBTT_MACSTYLE_DONTCARE	src/stb_truetype.h	1026;"	d
-STBTT_MACSTYLE_ITALIC	src/stb_truetype.h	1028;"	d
-STBTT_MACSTYLE_NONE	src/stb_truetype.h	1030;"	d
-STBTT_MACSTYLE_UNDERSCORE	src/stb_truetype.h	1029;"	d
+STBTT_FIX	src/stb_truetype.h	2840;"	d
+STBTT_FIXMASK	src/stb_truetype.h	2841;"	d
+STBTT_FIXSHIFT	src/stb_truetype.h	2839;"	d
+STBTT_GPOS_TODO_assert	src/stb_truetype.h	2502;"	d
+STBTT_MACSTYLE_BOLD	src/stb_truetype.h	1035;"	d
+STBTT_MACSTYLE_DONTCARE	src/stb_truetype.h	1034;"	d
+STBTT_MACSTYLE_ITALIC	src/stb_truetype.h	1036;"	d
+STBTT_MACSTYLE_NONE	src/stb_truetype.h	1038;"	d
+STBTT_MACSTYLE_UNDERSCORE	src/stb_truetype.h	1037;"	d
 STBTT_MAC_EID_ARABIC	src/stb_truetype.h	/^   STBTT_MAC_EID_ROMAN        =0,   STBTT_MAC_EID_ARABIC       =4,$/;"	e	enum:__anon12
 STBTT_MAC_EID_CHINESE_TRAD	src/stb_truetype.h	/^   STBTT_MAC_EID_CHINESE_TRAD =2,   STBTT_MAC_EID_GREEK        =6,$/;"	e	enum:__anon12
 STBTT_MAC_EID_GREEK	src/stb_truetype.h	/^   STBTT_MAC_EID_CHINESE_TRAD =2,   STBTT_MAC_EID_GREEK        =6,$/;"	e	enum:__anon12
@@ -83,7 +121,7 @@ STBTT_MAC_LANG_KOREAN	src/stb_truetype.h	/^   STBTT_MAC_LANG_ARABIC       =12,  
 STBTT_MAC_LANG_RUSSIAN	src/stb_truetype.h	/^   STBTT_MAC_LANG_DUTCH        =4 ,   STBTT_MAC_LANG_RUSSIAN      =32,$/;"	e	enum:__anon14
 STBTT_MAC_LANG_SPANISH	src/stb_truetype.h	/^   STBTT_MAC_LANG_FRENCH       =1 ,   STBTT_MAC_LANG_SPANISH      =6 ,$/;"	e	enum:__anon14
 STBTT_MAC_LANG_SWEDISH	src/stb_truetype.h	/^   STBTT_MAC_LANG_GERMAN       =2 ,   STBTT_MAC_LANG_SWEDISH      =5 ,$/;"	e	enum:__anon14
-STBTT_MAX_OVERSAMPLE	src/stb_truetype.h	1109;"	d
+STBTT_MAX_OVERSAMPLE	src/stb_truetype.h	1117;"	d
 STBTT_MS_EID_SHIFTJIS	src/stb_truetype.h	/^   STBTT_MS_EID_SHIFTJIS      =2,$/;"	e	enum:__anon11
 STBTT_MS_EID_SYMBOL	src/stb_truetype.h	/^   STBTT_MS_EID_SYMBOL        =0,$/;"	e	enum:__anon11
 STBTT_MS_EID_UNICODE_BMP	src/stb_truetype.h	/^   STBTT_MS_EID_UNICODE_BMP   =1,$/;"	e	enum:__anon11
@@ -104,20 +142,20 @@ STBTT_PLATFORM_ID_ISO	src/stb_truetype.h	/^   STBTT_PLATFORM_ID_ISO       =2,$/;
 STBTT_PLATFORM_ID_MAC	src/stb_truetype.h	/^   STBTT_PLATFORM_ID_MAC       =1,$/;"	e	enum:__anon9
 STBTT_PLATFORM_ID_MICROSOFT	src/stb_truetype.h	/^   STBTT_PLATFORM_ID_MICROSOFT =3$/;"	e	enum:__anon9
 STBTT_PLATFORM_ID_UNICODE	src/stb_truetype.h	/^   STBTT_PLATFORM_ID_UNICODE   =0,$/;"	e	enum:__anon9
-STBTT_POINT_SIZE	src/stb_truetype.h	602;"	d
-STBTT_RASTERIZER_VERSION	src/stb_truetype.h	1119;"	d
+STBTT_POINT_SIZE	src/stb_truetype.h	606;"	d
+STBTT_RASTERIZER_VERSION	src/stb_truetype.h	1127;"	d
 STBTT_UNICODE_EID_ISO_10646	src/stb_truetype.h	/^   STBTT_UNICODE_EID_ISO_10646      =2,$/;"	e	enum:__anon10
 STBTT_UNICODE_EID_UNICODE_1_0	src/stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_1_0    =0,$/;"	e	enum:__anon10
 STBTT_UNICODE_EID_UNICODE_1_1	src/stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_1_1    =1,$/;"	e	enum:__anon10
 STBTT_UNICODE_EID_UNICODE_2_0_BMP	src/stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_2_0_BMP=3,$/;"	e	enum:__anon10
 STBTT_UNICODE_EID_UNICODE_2_0_FULL	src/stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_2_0_FULL=4$/;"	e	enum:__anon10
-STBTT__COMPARE	src/stb_truetype.h	3397;"	d
-STBTT__CSCTX_INIT	src/stb_truetype.h	1909;"	d
-STBTT__CSERR	src/stb_truetype.h	2018;"	d
-STBTT__CSERR	src/stb_truetype.h	2266;"	d
-STBTT__NOTUSED	src/stb_truetype.h	1123;"	d
-STBTT__NOTUSED	src/stb_truetype.h	1125;"	d
-STBTT__OVER_MASK	src/stb_truetype.h	4010;"	d
+STBTT__COMPARE	src/stb_truetype.h	3405;"	d
+STBTT__CSCTX_INIT	src/stb_truetype.h	1917;"	d
+STBTT__CSERR	src/stb_truetype.h	2026;"	d
+STBTT__CSERR	src/stb_truetype.h	2274;"	d
+STBTT__NOTUSED	src/stb_truetype.h	1131;"	d
+STBTT__NOTUSED	src/stb_truetype.h	1133;"	d
+STBTT__OVER_MASK	src/stb_truetype.h	4018;"	d
 STBTT_acos	src/stb_truetype.h	460;"	d
 STBTT_assert	src/stb_truetype.h	477;"	d
 STBTT_cos	src/stb_truetype.h	459;"	d
@@ -127,10 +165,10 @@ STBTT_free	src/stb_truetype.h	472;"	d
 STBTT_iceil	src/stb_truetype.h	443;"	d
 STBTT_ifloor	src/stb_truetype.h	442;"	d
 STBTT_malloc	src/stb_truetype.h	471;"	d
-STBTT_max	src/stb_truetype.h	4396;"	d
+STBTT_max	src/stb_truetype.h	4404;"	d
 STBTT_memcpy	src/stb_truetype.h	487;"	d
 STBTT_memset	src/stb_truetype.h	488;"	d
-STBTT_min	src/stb_truetype.h	4395;"	d
+STBTT_min	src/stb_truetype.h	4403;"	d
 STBTT_pow	src/stb_truetype.h	449;"	d
 STBTT_sqrt	src/stb_truetype.h	448;"	d
 STBTT_strlen	src/stb_truetype.h	482;"	d
@@ -138,43 +176,58 @@ STBTT_vcubic	src/stb_truetype.h	/^      STBTT_vcubic$/;"	e	enum:__anon6
 STBTT_vcurve	src/stb_truetype.h	/^      STBTT_vcurve,$/;"	e	enum:__anon6
 STBTT_vline	src/stb_truetype.h	/^      STBTT_vline,$/;"	e	enum:__anon6
 STBTT_vmove	src/stb_truetype.h	/^      STBTT_vmove=1,$/;"	e	enum:__anon6
-STB_TRUETYPE_IMPLEMENTATION	src/vared.h	56;"	d
-ThreadContext	src/vared_platform.h	/^} ThreadContext;$/;"	t	typeref:struct:__anon30
+STB_INCLUDE_STB_RECT_PACK_H	src/stb_rect_pack.h	67;"	d
+STB_RECT_PACK_IMPLEMENTATION	src/vared.h	56;"	d
+STB_RECT_PACK_VERSION	src/stb_rect_pack.h	69;"	d
+STB_TRUETYPE_IMPLEMENTATION	src/vared.h	59;"	d
+ShaderType	src/vared_renderer.h	/^} ShaderType;$/;"	t	typeref:enum:__anon21
+ShaderType_Color	src/vared_renderer.h	/^    ShaderType_Color,$/;"	e	enum:__anon21
+ShaderType_Count	src/vared_renderer.h	/^    ShaderType_Count,$/;"	e	enum:__anon21
+ShaderType_None	src/vared_renderer.h	/^    ShaderType_None,$/;"	e	enum:__anon21
+ShaderType_Text	src/vared_renderer.h	/^    ShaderType_Text,$/;"	e	enum:__anon21
+ThreadContext	src/vared_platform.h	/^} ThreadContext;$/;"	t	typeref:struct:__anon32
 VARED_ARENA_H	src/vared_arena.h	2;"	d
 VARED_H	src/vared.h	2;"	d
 VARED_MATH_H	src/vared_math.h	2;"	d
 VARED_PLATFORM_H	src/vared_platform.h	2;"	d
 VARED_RENDERER_H	src/vared_renderer.h	2;"	d
-Vertex	src/vared_renderer.h	/^} Vertex;$/;"	t	typeref:struct:__anon20
+VARED_RENDERER_OPENGL_H	src/vared_renderer_opengl.h	2;"	d
+Vertex	src/vared_renderer.h	/^} Vertex;$/;"	t	typeref:struct:__anon22
 WINDOW_HEIGHT	src/linux_vared.c	22;"	d	file:
 WINDOW_WIDTH	src/linux_vared.c	21;"	d	file:
 __STB_INCLUDE_STB_TRUETYPE_H__	src/stb_truetype.h	500;"	d
-a	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon42::__anon43::__anon45
+a	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon50::__anon51::__anon53
+active_head	src/stb_rect_pack.h	/^   stbrp_node *active_head;$/;"	m	struct:stbrp_context
 advance	src/stb_truetype.h	/^   int advance;$/;"	m	struct:stbtt_kerningentry
-arena	src/vared.h	/^    Arena arena;$/;"	m	struct:__anon35
+align	src/stb_rect_pack.h	/^   int align;$/;"	m	struct:stbrp_context
+arena	src/vared.h	/^    Arena arena;$/;"	m	struct:__anon40
 array_count	src/vared.h	52;"	d
 array_of_unicode_codepoints	src/stb_truetype.h	/^   int *array_of_unicode_codepoints;       \/\/ if non-zero, then this is an array of unicode codepoints$/;"	m	struct:__anon5
+ascent	src/vared.h	/^    int ascent;$/;"	m	struct:__anon38
 assert	src/vared.h	21;"	d
 assert	src/vared.h	28;"	d
-b	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon42::__anon43::__anon45
+b	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon50::__anon51::__anon53
 base	src/vared_arena.h	/^    u8 *base;$/;"	m	struct:__anon19
-bitmap_height	src/vared.h	/^    u32 bitmap_height;$/;"	m	struct:__anon34
-bitmap_width	src/vared.h	/^    u32 bitmap_width;$/;"	m	struct:__anon34
-bool	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	t	typeref:enum:__anon29
+bool	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	t	typeref:enum:__anon31
 bottom_y	src/stb_truetype.h	/^   int x,y,bottom_y;$/;"	m	struct:__anon17
 bounds	src/stb_truetype.h	/^   int bounds;$/;"	m	struct:__anon15
-bytes_read	src/linux_vared.h	/^    u64 bytes_read;$/;"	m	struct:__anon28
-bytes_written	src/linux_vared.h	/^    u64 bytes_written;$/;"	m	struct:__anon28
+buf	src/vared.h	/^    u8 *buf;$/;"	m	struct:__anon39
+bytes_read	src/linux_vared.h	/^    u64 bytes_read;$/;"	m	struct:__anon30
+bytes_written	src/linux_vared.h	/^    u64 bytes_written;$/;"	m	struct:__anon30
 callback_severity_as_cstr	src/linux_vared.c	/^internal const char *callback_severity_as_cstr(GLenum severity) {$/;"	f
 callback_type_as_cstr	src/linux_vared.c	/^internal const char *callback_type_as_cstr(GLenum type) {$/;"	f
 cat_strings	src/linux_vared.c	/^internal void cat_strings(int source_a_count, char *source_a,$/;"	f
 cdata	src/stb_truetype.h	/^stbtt_bakedchar cdata[96]; \/\/ ASCII 32..126 is 95 glyphs$/;"	v
-cdata	src/vared.h	/^    stbtt_bakedchar *cdata;$/;"	m	struct:__anon34
 cff	src/stb_truetype.h	/^   stbtt__buf cff;                    \/\/ cff font data$/;"	m	struct:stbtt_fontinfo
+char_data_for_range	src/vared.h	/^    stbtt_packedchar *char_data_for_range;$/;"	m	struct:__anon38
 chardata_for_range	src/stb_truetype.h	/^   stbtt_packedchar *chardata_for_range; \/\/ output$/;"	m	struct:__anon5
 charstrings	src/stb_truetype.h	/^   stbtt__buf charstrings;            \/\/ the charstring index$/;"	m	struct:stbtt_fontinfo
-color	src/vared_renderer.h	/^    v4 color;$/;"	m	struct:__anon20
+color	src/vared_renderer.h	/^    v4 color;$/;"	m	struct:__anon22
+compile_shader_file	src/vared_renderer_opengl.c	/^internal bool compile_shader_file(char *shader_filepath, GLuint shader_type, GLuint *shader) {$/;"	f
 compile_shader_source	src/vared_renderer_opengl.c	/^internal bool compile_shader_source(const GLchar *shader_source, GLuint shader_type, GLuint *shader) {$/;"	f
+consume_render_entry	src/vared_renderer_opengl.c	158;"	d	file:
+count	src/vared.h	/^    u32 count;$/;"	m	struct:__anon39
+current_shader	src/vared_renderer_opengl.h	/^    ShaderType current_shader;$/;"	m	struct:__anon20
 cursor	src/stb_truetype.h	/^   int cursor;$/;"	m	struct:__anon1
 cx	src/stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon7
 cx1	src/stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon7
@@ -182,41 +235,48 @@ cy	src/stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:
 cy1	src/stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon7
 data	src/stb_truetype.h	/^   unsigned char  * data;              \/\/ pointer to .ttf file$/;"	m	struct:stbtt_fontinfo
 data	src/stb_truetype.h	/^   unsigned char *data;$/;"	m	struct:__anon1
-data	src/vared_renderer.h	/^    u8 *data;$/;"	m	struct:__anon25
-debug_platform_free_file_memory	src/vared_platform.h	/^    DEBUGPlatformFreeEntireFileMemory *debug_platform_free_file_memory;$/;"	m	struct:__anon33
-debug_platform_read_entire_file	src/vared_platform.h	/^    DEBUGPlatformReadEntireFile *debug_platform_read_entire_file;$/;"	m	struct:__anon33
-debug_platform_write_entire_file	src/vared_platform.h	/^    DEBUGPlatformWriteEntireFile *debug_platform_write_entire_file;$/;"	m	struct:__anon33
+data	src/vared_renderer.h	/^    u8 *data;$/;"	m	struct:__anon26
+debug_platform_free_file_memory	src/vared_platform.h	/^    DEBUGPlatformFreeEntireFileMemory *debug_platform_free_file_memory;$/;"	m	struct:__anon37
+debug_platform_read_entire_file	src/vared_platform.h	/^    DEBUGPlatformReadEntireFile *debug_platform_read_entire_file;$/;"	m	struct:__anon37
+debug_platform_write_entire_file	src/vared_platform.h	/^    DEBUGPlatformWriteEntireFile *debug_platform_write_entire_file;$/;"	m	struct:__anon37
+descent	src/vared.h	/^    int descent;$/;"	m	struct:__anon38
 direction	src/stb_truetype.h	/^   float direction;$/;"	m	struct:stbtt__active_edge
 direction	src/stb_truetype.h	/^   int direction;$/;"	m	struct:stbtt__active_edge
 dx	src/stb_truetype.h	/^   int x,dx;$/;"	m	struct:stbtt__active_edge
-e	src/vared_math.h	/^        f32 e[2];$/;"	m	union:__anon36::__anon37
-e	src/vared_math.h	/^        f32 e[3];$/;"	m	union:__anon39::__anon40
-e	src/vared_math.h	/^        f32 e[4];$/;"	m	union:__anon42::__anon43
-ebo	src/vared_renderer.h	/^    u32 ebo;$/;"	m	struct:__anon21
-editor_memory_block	src/linux_vared.h	/^    void *editor_memory_block; $/;"	m	struct:__anon28
-editor_memory_size	src/linux_vared.h	/^    u64 editor_memory_size;$/;"	m	struct:__anon28
+e	src/vared_math.h	/^        f32 e[2];$/;"	m	union:__anon44::__anon45
+e	src/vared_math.h	/^        f32 e[3];$/;"	m	union:__anon47::__anon48
+e	src/vared_math.h	/^        f32 e[4];$/;"	m	union:__anon50::__anon51
+ebo	src/vared_renderer_opengl.h	/^    u32 ebo;$/;"	m	struct:__anon20
+editor_memory_block	src/linux_vared.h	/^    void *editor_memory_block; $/;"	m	struct:__anon30
+editor_memory_size	src/linux_vared.h	/^    u64 editor_memory_size;$/;"	m	struct:__anon30
 equal	src/stb_truetype.h	/^static int equal(float *a, float *b)$/;"	f
-exe_filename	src/linux_vared.h	/^    char exe_filename[LINUX_FILEPATH_MAX_COUNT];$/;"	m	struct:__anon28
+exe_filename	src/linux_vared.h	/^    char exe_filename[LINUX_FILEPATH_MAX_COUNT];$/;"	m	struct:__anon30
+extra	src/stb_rect_pack.h	/^   stbrp_node extra[2]; \/\/ we allocate two extra nodes so optimal user-node-count is 'width' not 'width+2'$/;"	m	struct:stbrp_context
 ey	src/stb_truetype.h	/^   float ey;$/;"	m	struct:stbtt__active_edge
 f32	src/vared_platform.h	/^typedef float f32;$/;"	t
 f64	src/vared_platform.h	/^typedef double f64;$/;"	t
-false	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	e	enum:__anon29
+false	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	e	enum:__anon31
 fdselect	src/stb_truetype.h	/^   stbtt__buf fdselect;               \/\/ map from glyph to fontdict$/;"	m	struct:stbtt_fontinfo
 fdx	src/stb_truetype.h	/^   float fx,fdx,fdy;$/;"	m	struct:stbtt__active_edge
 fdy	src/stb_truetype.h	/^   float fx,fdx,fdy;$/;"	m	struct:stbtt__active_edge
-filename	src/linux_vared.h	/^    char *filename;$/;"	m	struct:__anon27
+filename	src/linux_vared.h	/^    char *filename;$/;"	m	struct:__anon29
+first_char	src/vared.h	/^    u32 first_char;$/;"	m	struct:__anon38
 first_free	src/stb_truetype.h	/^   void   *first_free;$/;"	m	struct:stbtt__hheap
 first_unicode_codepoint_in_range	src/stb_truetype.h	/^   int first_unicode_codepoint_in_range;  \/\/ if non-zero, then the chars are continuous, and this is the first codepoint$/;"	m	struct:__anon5
 first_x	src/stb_truetype.h	/^   float first_x, first_y;$/;"	m	struct:__anon15
 first_y	src/stb_truetype.h	/^   float first_x, first_y;$/;"	m	struct:__anon15
-font	src/vared.h	/^    Font font;$/;"	m	struct:__anon35
+font	src/vared.h	/^    Font font;$/;"	m	struct:__anon40
+font_height	src/vared.h	/^    f32 font_height;$/;"	m	struct:__anon38
+font_info	src/vared.h	/^    stbtt_fontinfo font_info;$/;"	m	struct:__anon38
 font_size	src/stb_truetype.h	/^   float font_size;$/;"	m	struct:__anon5
-font_texture	src/vared_renderer.h	/^    u32 font_texture;$/;"	m	struct:__anon21
+font_texture	src/vared_renderer_opengl.h	/^    u32 font_texture;$/;"	m	struct:__anon20
 fontdicts	src/stb_truetype.h	/^   stbtt__buf fontdicts;              \/\/ array of font dicts$/;"	m	struct:stbtt_fontinfo
 fontstart	src/stb_truetype.h	/^   int              fontstart;         \/\/ offset of start of font$/;"	m	struct:stbtt_fontinfo
+frag_shader_filepaths	src/vared_renderer_opengl.c	/^char *frag_shader_filepaths[ShaderType_Count] = {$/;"	v
+free_head	src/stb_rect_pack.h	/^   stbrp_node *free_head;$/;"	m	struct:stbrp_context
 ftex	src/stb_truetype.h	/^GLuint ftex;$/;"	v
 fx	src/stb_truetype.h	/^   float fx,fdx,fdy;$/;"	m	struct:stbtt__active_edge
-g	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon42::__anon43::__anon45
+g	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon50::__anon51::__anon53
 gigabytes	src/vared.h	36;"	d
 global	src/vared_platform.h	19;"	d
 global_editor_running	src/linux_vared.c	/^global bool global_editor_running = true;$/;"	v
@@ -225,40 +285,48 @@ glyph1	src/stb_truetype.h	/^   int glyph1; \/\/ use stbtt_FindGlyphIndex$/;"	m	s
 glyph2	src/stb_truetype.h	/^   int glyph2;$/;"	m	struct:stbtt_kerningentry
 gpos	src/stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo
 gsubrs	src/stb_truetype.h	/^   stbtt__buf gsubrs;                 \/\/ global charstring subroutines index$/;"	m	struct:stbtt_fontinfo
+h	src/stb_rect_pack.h	/^   stbrp_coord    w, h;$/;"	m	struct:stbrp_rect
 h	src/stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect
 h	src/stb_truetype.h	/^   int w,h,stride;$/;"	m	struct:__anon8
 h_oversample	src/stb_truetype.h	/^   unsigned char h_oversample, v_oversample; \/\/ don't set these, they're used internally$/;"	m	struct:__anon5
 h_oversample	src/stb_truetype.h	/^   unsigned int   h_oversample, v_oversample;$/;"	m	struct:stbtt_pack_context
-handle	src/linux_vared.h	/^    void *handle;$/;"	m	struct:__anon27
+handle	src/linux_vared.h	/^    void *handle;$/;"	m	struct:__anon29
 head	src/stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo
 head	src/stb_truetype.h	/^   struct stbtt__hheap_chunk *head;$/;"	m	struct:stbtt__hheap	typeref:struct:stbtt__hheap::stbtt__hheap_chunk
+height	src/stb_rect_pack.h	/^   int height;$/;"	m	struct:stbrp_context
 height	src/stb_truetype.h	/^   int   height;$/;"	m	struct:stbtt_pack_context
 height	src/stb_truetype.h	/^   int width,height;$/;"	m	struct:__anon17
-height	src/vared_renderer.h	/^    u32 height;$/;"	m	struct:__anon26
-height	src/vared_renderer.h	/^    u32 width, height;$/;"	m	struct:__anon25
+height	src/vared_renderer.h	/^    u32 height;$/;"	m	struct:__anon28
+height	src/vared_renderer.h	/^    u32 width, height;$/;"	m	struct:__anon26
+heuristic	src/stb_rect_pack.h	/^   int heuristic;$/;"	m	struct:stbrp_context
 hhea	src/stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo
 hmtx	src/stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo
 i16	src/vared_platform.h	/^typedef int16_t i16;$/;"	t
 i32	src/vared_platform.h	/^typedef int32_t i32;$/;"	t
 i64	src/vared_platform.h	/^typedef int64_t i64;$/;"	t
 i8	src/vared_platform.h	/^typedef int8_t i8;$/;"	t
+id	src/stb_rect_pack.h	/^   int            id;$/;"	m	struct:stbrp_rect
 id	src/stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect
 indexToLocFormat	src/stb_truetype.h	/^   int indexToLocFormat;              \/\/ format needed to map from glyph index to glyph$/;"	m	struct:stbtt_fontinfo
-index_buffer	src/vared_renderer.h	/^    u16 *index_buffer;$/;"	m	struct:__anon21
-index_buffer_arena	src/vared_renderer.h	/^    Arena index_buffer_arena;   \/\/ NOTE(fede): Shares base with Renderer index_buffer$/;"	m	struct:__anon26
-index_count	src/vared_renderer.h	/^    u32 index_count;$/;"	m	struct:__anon21
+index_buffer	src/vared_renderer_opengl.h	/^    u16 *index_buffer;$/;"	m	struct:__anon20
+index_buffer_arena	src/vared_renderer.h	/^    Arena index_buffer_arena;   \/\/ NOTE(fede): Shares base with Renderer index_buffer$/;"	m	struct:__anon28
+index_count	src/vared_renderer_opengl.h	/^    u32 index_count;$/;"	m	struct:__anon20
 index_map	src/stb_truetype.h	/^   int index_map;                     \/\/ a cmap mapping for our chosen character encoding$/;"	m	struct:stbtt_fontinfo
-index_offset	src/vared_renderer.h	/^    u32 index_offset;$/;"	m	struct:__anon24
+index_offset	src/vared_renderer.h	/^    u32 index_offset;$/;"	m	struct:__anon25
+init_mode	src/stb_rect_pack.h	/^   int init_mode;$/;"	m	struct:stbrp_context
 initialize_arena	src/vared_arena.c	/^internal void initialize_arena($/;"	f
-input_char	src/vared_platform.h	/^    char input_char;$/;"	m	struct:__anon32
 inside_rect2	src/vared_math.h	/^internal inline bool inside_rect2(Rect2 rect, v2 test) {$/;"	f
 internal	src/vared_platform.h	18;"	d
 invert	src/stb_truetype.h	/^   int invert;$/;"	m	struct:stbtt__edge
-is_initialized	src/vared_platform.h	/^    bool is_initialized;$/;"	m	struct:__anon33
-is_valid	src/linux_vared.h	/^    bool is_valid; $/;"	m	struct:__anon27
+is_initialized	src/vared_platform.h	/^    bool is_initialized;$/;"	m	struct:__anon37
+is_valid	src/linux_vared.h	/^    bool is_valid; $/;"	m	struct:__anon29
 kern	src/stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo
+key	src/vared_platform.h	/^    i32 key;$/;"	m	struct:__anon35
+key_input_count	src/vared_platform.h	/^    u32 key_input_count;$/;"	m	struct:__anon36
+key_inputs	src/vared_platform.h	/^    KeyInput key_inputs[512];$/;"	m	struct:__anon36
 kilobytes	src/vared.h	34;"	d
-last_modified	src/linux_vared.h	/^    struct timespec last_modified;$/;"	m	struct:__anon27	typeref:struct:__anon27::timespec
+last_modified	src/linux_vared.h	/^    struct timespec last_modified;$/;"	m	struct:__anon29	typeref:struct:__anon29::timespec
+line_gap	src/vared.h	/^    int line_gap;$/;"	m	struct:__anon38
 linux_build_global_filename_at_exe_location	src/linux_vared.c	/^internal void linux_build_global_filename_at_exe_location(LinuxState *state,$/;"	f
 linux_editor_has_changed	src/linux_vared.c	/^internal bool linux_editor_has_changed(EditorLib *editor, char *filename) {$/;"	f
 linux_get_exe_path	src/linux_vared.c	/^internal void linux_get_exe_path(LinuxState *state) {$/;"	f
@@ -270,84 +338,118 @@ loca	src/stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ ta
 local_persist	src/vared_platform.h	20;"	d
 main	src/linux_vared.c	/^int main(void) {$/;"	f
 main	src/stb_truetype.h	/^int main(int argc, char **argv)$/;"	f
-max	src/vared_math.h	/^    v2 min, max;$/;"	m	struct:__anon46
+max	src/vared_math.h	/^    v2 min, max;$/;"	m	struct:__anon54
 max_x	src/stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon15
 max_y	src/stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon15
 megabytes	src/vared.h	35;"	d
-memory	src/vared_platform.h	/^    void *memory;$/;"	m	struct:__anon31
-memory_map	src/linux_vared.h	/^    void *memory_map;$/;"	m	struct:__anon28
-memory_map_size	src/linux_vared.h	/^    u64 memory_map_size;$/;"	m	struct:__anon28
-min	src/vared_math.h	/^    v2 min, max;$/;"	m	struct:__anon46
+memory	src/vared_platform.h	/^    void *memory;$/;"	m	struct:__anon33
+memory_map	src/linux_vared.h	/^    void *memory_map;$/;"	m	struct:__anon30
+memory_map_size	src/linux_vared.h	/^    u64 memory_map_size;$/;"	m	struct:__anon30
+min	src/vared_math.h	/^    v2 min, max;$/;"	m	struct:__anon54
 min_x	src/stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon15
 min_y	src/stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon15
+mod	src/vared_platform.h	/^    KeymodFlag mod;$/;"	m	struct:__anon35
 my_stbtt_initfont	src/stb_truetype.h	/^void my_stbtt_initfont(void)$/;"	f
 my_stbtt_print	src/stb_truetype.h	/^void my_stbtt_print(float x, float y, char *text)$/;"	f
+next	src/stb_rect_pack.h	/^   stbrp_node  *next;$/;"	m	struct:stbrp_node
 next	src/stb_truetype.h	/^   struct stbtt__active_edge *next;$/;"	m	struct:stbtt__active_edge	typeref:struct:stbtt__active_edge::stbtt__active_edge
 next	src/stb_truetype.h	/^   struct stbtt__hheap_chunk *next;$/;"	m	struct:stbtt__hheap_chunk	typeref:struct:stbtt__hheap_chunk::stbtt__hheap_chunk
 nodes	src/stb_truetype.h	/^   void  *nodes;$/;"	m	struct:stbtt_pack_context
 numGlyphs	src/stb_truetype.h	/^   int numGlyphs;                     \/\/ number of glyphs, needed for range checking$/;"	m	struct:stbtt_fontinfo
 num_chars	src/stb_truetype.h	/^   int num_chars;$/;"	m	struct:__anon5
-num_chars	src/vared.h	/^    int num_chars;$/;"	m	struct:__anon34
+num_chars	src/vared.h	/^    u32 num_chars;$/;"	m	struct:__anon38
+num_nodes	src/stb_rect_pack.h	/^   int num_nodes;$/;"	m	struct:stbrp_context
 num_remaining_in_head_chunk	src/stb_truetype.h	/^   int    num_remaining_in_head_chunk;$/;"	m	struct:stbtt__hheap
 num_vertices	src/stb_truetype.h	/^   int num_vertices;$/;"	m	struct:__anon15
-one_past_last_slash	src/linux_vared.h	/^    char *one_past_last_slash;$/;"	m	struct:__anon28
+one_past_last_slash	src/linux_vared.h	/^    char *one_past_last_slash;$/;"	m	struct:__anon30
 pack_info	src/stb_truetype.h	/^   void *pack_info;$/;"	m	struct:stbtt_pack_context
 padding	src/stb_truetype.h	/^      unsigned char type,padding;$/;"	m	struct:__anon7
 padding	src/stb_truetype.h	/^   int   padding;$/;"	m	struct:stbtt_pack_context
 performance_frequency	src/linux_vared.c	/^global u64 performance_frequency;$/;"	v
-permanent_storage	src/vared_platform.h	/^    void *permanent_storage;$/;"	m	struct:__anon33
-permanent_storage_size	src/vared_platform.h	/^    MemoryIndex permanent_storage_size;$/;"	m	struct:__anon33
-pixel_height	src/vared.h	/^    f32 pixel_height;$/;"	m	struct:__anon34
+permanent_storage	src/vared_platform.h	/^    void *permanent_storage;$/;"	m	struct:__anon37
+permanent_storage_size	src/vared_platform.h	/^    MemoryIndex permanent_storage_size;$/;"	m	struct:__anon37
 pixels	src/stb_truetype.h	/^   unsigned char *pixels;$/;"	m	struct:__anon8
 pixels	src/stb_truetype.h	/^   unsigned char *pixels;$/;"	m	struct:stbtt_pack_context
-placeholder	src/vared_platform.h	/^    int placeholder;$/;"	m	struct:__anon30
-playback_fd	src/linux_vared.h	/^    int playback_fd;$/;"	m	struct:__anon28
-playing_index	src/linux_vared.h	/^    int playing_index; $/;"	m	struct:__anon28
-position	src/vared_renderer.h	/^    v3 position; $/;"	m	struct:__anon20
+pixels_height	src/vared.h	/^    u32 pixels_height;$/;"	m	struct:__anon38
+pixels_width	src/vared.h	/^    u32 pixels_width;$/;"	m	struct:__anon38
+placeholder	src/vared_platform.h	/^    int placeholder;$/;"	m	struct:__anon32
+playback_fd	src/linux_vared.h	/^    int playback_fd;$/;"	m	struct:__anon30
+playing_index	src/linux_vared.h	/^    int playing_index; $/;"	m	struct:__anon30
+position	src/vared_renderer.h	/^    v3 position; $/;"	m	struct:__anon22
+prev_link	src/stb_rect_pack.h	/^   stbrp_node **prev_link;$/;"	m	struct:__anon43
+programs	src/vared_renderer_opengl.h	/^    u32 programs[ShaderType_Count];$/;"	m	struct:__anon20
 push_array	src/vared_arena.c	20;"	d	file:
-push_buffer_arena	src/vared_renderer.h	/^    Arena push_buffer_arena;    \/\/ NOTE(fede): Base allocated on permanent storage $/;"	m	struct:__anon26
+push_buffer_arena	src/vared_renderer.h	/^    Arena push_buffer_arena;    \/\/ NOTE(fede): Base allocated on permanent storage $/;"	m	struct:__anon28
 push_size	src/vared_arena.c	/^internal void *push_size(Arena *arena, MemoryIndex size) {$/;"	f
 push_struct	src/vared_arena.c	19;"	d	file:
 pvertices	src/stb_truetype.h	/^   stbtt_vertex *pvertices;$/;"	m	struct:__anon15
-r	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon42::__anon43::__anon45
-recording_fd	src/linux_vared.h	/^    int recording_fd;$/;"	m	struct:__anon28
-recording_index	src/linux_vared.h	/^    int recording_index; $/;"	m	struct:__anon28
+r	src/vared_math.h	/^            f32 r, g, b, a;$/;"	m	struct:__anon50::__anon51::__anon53
+recording_fd	src/linux_vared.h	/^    int recording_fd;$/;"	m	struct:__anon30
+recording_index	src/linux_vared.h	/^    int recording_index; $/;"	m	struct:__anon30
 rect2_center_dim	src/vared_math.h	/^internal inline Rect2 rect2_center_dim(v2 center, v2 dim) {$/;"	f
 rect2_center_halfdim	src/vared_math.h	/^internal inline Rect2 rect2_center_halfdim(v2 center, v2 halfdim) {$/;"	f
 rect2_min_dim	src/vared_math.h	/^internal inline Rect2 rect2_min_dim(v2 min, v2 dim) {$/;"	f
 rect2_min_max	src/vared_math.h	/^internal inline Rect2 rect2_min_max(v2 min, v2 max) {$/;"	f
+rect_height_compare	src/stb_rect_pack.h	/^static int STBRP__CDECL rect_height_compare(const void *a, const void *b)$/;"	f
+rect_original_order	src/stb_rect_pack.h	/^static int STBRP__CDECL rect_original_order(const void *a, const void *b)$/;"	f
 reflect	src/vared_math.h	/^internal inline v2 reflect(v2 a, v2 normal, f32 bounce) {$/;"	f
-renderer_draw	src/vared_renderer_opengl.c	/^internal void renderer_draw(Renderer *renderer, RenderGroup rg) {$/;"	f
-renderer_init	src/vared_renderer_opengl.c	/^internal void renderer_init(Renderer *renderer) {$/;"	f
-renderer_sync	src/vared_renderer_opengl.c	/^internal void renderer_sync(Renderer *renderer) {$/;"	f
-rg_init_vertex_index_buffers	src/vared_renderer.c	/^internal void rg_init_vertex_index_buffers(RenderGroup *render_group, Renderer *renderer) {$/;"	f
-rg_push_entry	src/vared_renderer.c	3;"	d	file:
+render_s8_in_rect2	src/vared.c	/^internal void render_s8_in_rect2($/;"	f
+renderer_draw	src/vared_renderer_opengl.c	/^internal void renderer_draw(RendererOpengl *renderer, RenderGroup rg) {$/;"	f
+renderer_init	src/vared_renderer_opengl.c	/^internal void renderer_init(RendererOpengl *renderer) {$/;"	f
+renderer_sync	src/vared_renderer_opengl.c	/^internal void renderer_sync(RendererOpengl *renderer) {$/;"	f
+repeat	src/vared_platform.h	/^    i32 repeat;$/;"	m	struct:__anon35
+rg_init_vertex_index_buffers	src/vared_renderer.c	/^internal void rg_init_vertex_index_buffers(RenderGroup *render_group,$/;"	f
+rg_push_entry	src/vared_renderer.c	17;"	d	file:
 rg_push_entry_	src/vared_renderer.c	/^internal void *rg_push_entry_($/;"	f
 rg_push_quad	src/vared_renderer.c	/^internal void rg_push_quad(RenderGroup *render_group,$/;"	f
 rg_push_rect2	src/vared_renderer.c	/^internal void rg_push_rect2(RenderGroup *render_group, Rect2 rect, v4 color) {$/;"	f
+rg_push_set_shader	src/vared_renderer.c	/^internal void rg_push_set_shader(RenderGroup *render_group, ShaderType shader) {$/;"	f
 rg_push_texture_load	src/vared_renderer.c	/^internal void rg_push_texture_load(RenderGroup *render_group, u8 *data, u32 width, u32 height) {$/;"	f
 rg_push_textured_quad	src/vared_renderer.c	/^internal void rg_push_textured_quad(RenderGroup *render_group,$/;"	f
 rg_push_textured_rect2	src/vared_renderer.c	/^internal void rg_push_textured_rect2(RenderGroup *render_group, Rect2 pos_rect, v4 color, Rect2 uv_rect) {$/;"	f
 s0	src/stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon3
 s1	src/stb_truetype.h	/^   float x1,y1,s1,t1; \/\/ bottom-right$/;"	m	struct:__anon3
+scale	src/vared.h	/^    f32 scale;$/;"	m	struct:__anon38
 scc	src/linux_vared.c	/^void scc(int code) {$/;"	f
 scp	src/linux_vared.c	/^void *scp(void *ptr) {$/;"	f
 sdl_get_seconds_elapsed	src/linux_vared.c	/^internal inline f64 sdl_get_seconds_elapsed(u64 start_counter,$/;"	f
-shader_program	src/vared_renderer.h	/^    u32 shader_program;$/;"	m	struct:__anon21
+sdl_keymod_to_keymodflag	src/linux_vared.c	/^internal KeymodFlag sdl_keymod_to_keymodflag(SDL_Keymod mod) {$/;"	f
+set_shader	src/vared_renderer_opengl.c	/^internal void set_shader(RendererOpengl *renderer, RenderGroup rg, ShaderType shader) {$/;"	f
+shader	src/vared_renderer.h	/^    ShaderType shader;$/;"	m	struct:__anon27
 shader_type_as_cstr	src/vared_renderer_opengl.c	/^internal const char *shader_type_as_cstr(GLuint shader) {$/;"	f
 size	src/stb_truetype.h	/^   int size;$/;"	m	struct:__anon1
+size	src/vared.h	/^    u32 size;$/;"	m	struct:__anon39
 size	src/vared_arena.h	/^    MemoryIndex size;$/;"	m	struct:__anon19
-size	src/vared_platform.h	/^    u64 size;$/;"	m	struct:__anon31
+size	src/vared_platform.h	/^    u64 size;$/;"	m	struct:__anon33
 skip_missing	src/stb_truetype.h	/^   int   skip_missing;$/;"	m	struct:stbtt_pack_context
 square	src/vared_math.h	/^internal inline f32 square(f32 a) {$/;"	f
 started	src/stb_truetype.h	/^   int started;$/;"	m	struct:__anon15
+stbrp__findresult	src/stb_rect_pack.h	/^} stbrp__findresult;$/;"	t	typeref:struct:__anon43
+stbrp__skyline_find_best_pos	src/stb_rect_pack.h	/^static stbrp__findresult stbrp__skyline_find_best_pos(stbrp_context *c, int width, int height)$/;"	f
+stbrp__skyline_find_min_y	src/stb_rect_pack.h	/^static int stbrp__skyline_find_min_y(stbrp_context *c, stbrp_node *first, int x0, int width, int *pwaste)$/;"	f
+stbrp__skyline_pack_rectangle	src/stb_rect_pack.h	/^static stbrp__findresult stbrp__skyline_pack_rectangle(stbrp_context *context, int width, int height)$/;"	f
+stbrp_context	src/stb_rect_pack.h	/^struct stbrp_context$/;"	s
+stbrp_context	src/stb_rect_pack.h	/^typedef struct stbrp_context stbrp_context;$/;"	t	typeref:struct:stbrp_context
 stbrp_context	src/stb_truetype.h	/^} stbrp_context;$/;"	t	typeref:struct:__anon17
+stbrp_coord	src/stb_rect_pack.h	/^typedef int            stbrp_coord;$/;"	t
 stbrp_coord	src/stb_truetype.h	/^typedef int stbrp_coord;$/;"	t
+stbrp_init_target	src/stb_rect_pack.h	/^STBRP_DEF void stbrp_init_target (stbrp_context *context, int width, int height, stbrp_node *nodes, int num_nodes);$/;"	p
+stbrp_init_target	src/stb_rect_pack.h	/^STBRP_DEF void stbrp_init_target(stbrp_context *context, int width, int height, stbrp_node *nodes, int num_nodes)$/;"	f
 stbrp_init_target	src/stb_truetype.h	/^static void stbrp_init_target(stbrp_context *con, int pw, int ph, stbrp_node *nodes, int num_nodes)$/;"	f
+stbrp_node	src/stb_rect_pack.h	/^struct stbrp_node$/;"	s
+stbrp_node	src/stb_rect_pack.h	/^typedef struct stbrp_node    stbrp_node;$/;"	t	typeref:struct:stbrp_node
 stbrp_node	src/stb_truetype.h	/^} stbrp_node;$/;"	t	typeref:struct:__anon18
+stbrp_pack_rects	src/stb_rect_pack.h	/^STBRP_DEF int stbrp_pack_rects (stbrp_context *context, stbrp_rect *rects, int num_rects);$/;"	p
+stbrp_pack_rects	src/stb_rect_pack.h	/^STBRP_DEF int stbrp_pack_rects(stbrp_context *context, stbrp_rect *rects, int num_rects)$/;"	f
 stbrp_pack_rects	src/stb_truetype.h	/^static void stbrp_pack_rects(stbrp_context *con, stbrp_rect *rects, int num_rects)$/;"	f
+stbrp_rect	src/stb_rect_pack.h	/^struct stbrp_rect$/;"	s
+stbrp_rect	src/stb_rect_pack.h	/^typedef struct stbrp_rect    stbrp_rect;$/;"	t	typeref:struct:stbrp_rect
 stbrp_rect	src/stb_truetype.h	/^struct stbrp_rect$/;"	s
 stbrp_rect	src/stb_truetype.h	/^typedef struct stbrp_rect stbrp_rect;$/;"	t	typeref:struct:stbrp_rect
+stbrp_setup_allow_out_of_mem	src/stb_rect_pack.h	/^STBRP_DEF void stbrp_setup_allow_out_of_mem (stbrp_context *context, int allow_out_of_mem);$/;"	p
+stbrp_setup_allow_out_of_mem	src/stb_rect_pack.h	/^STBRP_DEF void stbrp_setup_allow_out_of_mem(stbrp_context *context, int allow_out_of_mem)$/;"	f
+stbrp_setup_heuristic	src/stb_rect_pack.h	/^STBRP_DEF void stbrp_setup_heuristic (stbrp_context *context, int heuristic);$/;"	p
+stbrp_setup_heuristic	src/stb_rect_pack.h	/^STBRP_DEF void stbrp_setup_heuristic(stbrp_context *context, int heuristic)$/;"	f
 stbtt_BakeFontBitmap	src/stb_truetype.h	/^STBTT_DEF int stbtt_BakeFontBitmap(const unsigned char *data, int offset,  \/\/ font location (use offset=0 for plain .ttf)$/;"	p
 stbtt_BakeFontBitmap	src/stb_truetype.h	/^STBTT_DEF int stbtt_BakeFontBitmap(const unsigned char *data, int offset,$/;"	f
 stbtt_BakeFontBitmap_internal	src/stb_truetype.h	/^static int stbtt_BakeFontBitmap_internal(unsigned char *data, int offset,  \/\/ font location (use offset=0 for plain .ttf)$/;"	f
@@ -428,7 +530,7 @@ stbtt_GetKerningTableLength	src/stb_truetype.h	/^STBTT_DEF int  stbtt_GetKerning
 stbtt_GetNumberOfFonts	src/stb_truetype.h	/^STBTT_DEF int stbtt_GetNumberOfFonts(const unsigned char *data)$/;"	f
 stbtt_GetNumberOfFonts	src/stb_truetype.h	/^STBTT_DEF int stbtt_GetNumberOfFonts(const unsigned char *data);$/;"	p
 stbtt_GetNumberOfFonts_internal	src/stb_truetype.h	/^static int stbtt_GetNumberOfFonts_internal(unsigned char *font_collection)$/;"	f
-stbtt_GetPackedQuad	src/stb_truetype.h	/^STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, int pw, int ph,  \/\/ same data as above$/;"	p
+stbtt_GetPackedQuad	src/stb_truetype.h	/^STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, $/;"	p
 stbtt_GetPackedQuad	src/stb_truetype.h	/^STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, int pw, int ph, int char_index, float *xpos, float *ypos, stbtt_aligned_quad *q, int align_to_integer)$/;"	f
 stbtt_GetScaledFontVMetrics	src/stb_truetype.h	/^STBTT_DEF void stbtt_GetScaledFontVMetrics(const unsigned char *fontdata, int index, float size, float *ascent, float *descent, float *lineGap)$/;"	f
 stbtt_GetScaledFontVMetrics	src/stb_truetype.h	/^STBTT_DEF void stbtt_GetScaledFontVMetrics(const unsigned char *fontdata, int index, float size, float *ascent, float *descent, float *lineGap);$/;"	p
@@ -449,11 +551,11 @@ stbtt_MakeGlyphBitmapSubpixel	src/stb_truetype.h	/^STBTT_DEF void stbtt_MakeGlyp
 stbtt_MakeGlyphBitmapSubpixel	src/stb_truetype.h	/^STBTT_DEF void stbtt_MakeGlyphBitmapSubpixel(const stbtt_fontinfo *info, unsigned char *output, int out_w, int out_h, int out_stride, float scale_x, float scale_y, float shift_x, float shift_y, int glyph);$/;"	p
 stbtt_MakeGlyphBitmapSubpixelPrefilter	src/stb_truetype.h	/^STBTT_DEF void stbtt_MakeGlyphBitmapSubpixelPrefilter(const stbtt_fontinfo *info, unsigned char *output, int out_w, int out_h, int out_stride, float scale_x, float scale_y, float shift_x, float shift_y, int oversample_x, int oversample_y, float *sub_x, float *sub_y, int glyph);$/;"	p
 stbtt_MakeGlyphBitmapSubpixelPrefilter	src/stb_truetype.h	/^STBTT_DEF void stbtt_MakeGlyphBitmapSubpixelPrefilter(const stbtt_fontinfo *info, unsigned char *output, int out_w, int out_h, int out_stride, float scale_x, float scale_y, float shift_x, float shift_y, int prefilter_x, int prefilter_y, float *sub_x, float *sub_y, int glyph)$/;"	f
-stbtt_PackBegin	src/stb_truetype.h	/^STBTT_DEF int  stbtt_PackBegin(stbtt_pack_context *spc, unsigned char *pixels, int width, int height, int stride_in_bytes, int padding, void *alloc_context);$/;"	p
+stbtt_PackBegin	src/stb_truetype.h	/^STBTT_DEF int  stbtt_PackBegin(stbtt_pack_context *spc,$/;"	p
 stbtt_PackBegin	src/stb_truetype.h	/^STBTT_DEF int stbtt_PackBegin(stbtt_pack_context *spc, unsigned char *pixels, int pw, int ph, int stride_in_bytes, int padding, void *alloc_context)$/;"	f
 stbtt_PackEnd	src/stb_truetype.h	/^STBTT_DEF void stbtt_PackEnd  (stbtt_pack_context *spc)$/;"	f
 stbtt_PackEnd	src/stb_truetype.h	/^STBTT_DEF void stbtt_PackEnd  (stbtt_pack_context *spc);$/;"	p
-stbtt_PackFontRange	src/stb_truetype.h	/^STBTT_DEF int  stbtt_PackFontRange(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, float font_size,$/;"	p
+stbtt_PackFontRange	src/stb_truetype.h	/^STBTT_DEF int  stbtt_PackFontRange(stbtt_pack_context *spc,$/;"	p
 stbtt_PackFontRange	src/stb_truetype.h	/^STBTT_DEF int stbtt_PackFontRange(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, float font_size,$/;"	f
 stbtt_PackFontRanges	src/stb_truetype.h	/^STBTT_DEF int  stbtt_PackFontRanges(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, stbtt_pack_range *ranges, int num_ranges);$/;"	p
 stbtt_PackFontRanges	src/stb_truetype.h	/^STBTT_DEF int stbtt_PackFontRanges(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, stbtt_pack_range *ranges, int num_ranges)$/;"	f
@@ -489,8 +591,8 @@ stbtt__add_point	src/stb_truetype.h	/^static void stbtt__add_point(stbtt__point 
 stbtt__bitmap	src/stb_truetype.h	/^} stbtt__bitmap;$/;"	t	typeref:struct:__anon8
 stbtt__buf	src/stb_truetype.h	/^} stbtt__buf;$/;"	t	typeref:struct:__anon1
 stbtt__buf_get	src/stb_truetype.h	/^static stbtt_uint32 stbtt__buf_get(stbtt__buf *b, int n)$/;"	f
-stbtt__buf_get16	src/stb_truetype.h	1178;"	d
-stbtt__buf_get32	src/stb_truetype.h	1179;"	d
+stbtt__buf_get16	src/stb_truetype.h	1186;"	d
+stbtt__buf_get32	src/stb_truetype.h	1187;"	d
 stbtt__buf_get8	src/stb_truetype.h	/^static stbtt_uint8 stbtt__buf_get8(stbtt__buf *b)$/;"	f
 stbtt__buf_peek8	src/stb_truetype.h	/^static stbtt_uint8 stbtt__buf_peek8(stbtt__buf *b)$/;"	f
 stbtt__buf_range	src/stb_truetype.h	/^static stbtt__buf stbtt__buf_range(const stbtt__buf *b, int o, int s)$/;"	f
@@ -569,15 +671,16 @@ stbtt_pack_context	src/stb_truetype.h	/^typedef struct stbtt_pack_context stbtt_
 stbtt_pack_range	src/stb_truetype.h	/^} stbtt_pack_range;$/;"	t	typeref:struct:__anon5
 stbtt_packedchar	src/stb_truetype.h	/^} stbtt_packedchar;$/;"	t	typeref:struct:__anon4
 stbtt_setvertex	src/stb_truetype.h	/^static void stbtt_setvertex(stbtt_vertex *v, stbtt_uint8 type, stbtt_int32 x, stbtt_int32 y, stbtt_int32 cx, stbtt_int32 cy)$/;"	f
-stbtt_tag	src/stb_truetype.h	1292;"	d
-stbtt_tag4	src/stb_truetype.h	1291;"	d
+stbtt_tag	src/stb_truetype.h	1300;"	d
+stbtt_tag4	src/stb_truetype.h	1299;"	d
 stbtt_uint16	src/stb_truetype.h	/^   typedef unsigned short  stbtt_uint16;$/;"	t
 stbtt_uint32	src/stb_truetype.h	/^   typedef unsigned int    stbtt_uint32;$/;"	t
 stbtt_uint8	src/stb_truetype.h	/^   typedef unsigned char   stbtt_uint8;$/;"	t
 stbtt_vertex	src/stb_truetype.h	/^   } stbtt_vertex;$/;"	t	typeref:struct:__anon7
-stbtt_vertex_type	src/stb_truetype.h	834;"	d
+stbtt_vertex_type	src/stb_truetype.h	842;"	d
 stride	src/stb_truetype.h	/^   int w,h,stride;$/;"	m	struct:__anon8
 stride_in_bytes	src/stb_truetype.h	/^   int   stride_in_bytes;$/;"	m	struct:stbtt_pack_context
+string	src/vared.h	/^    S8 string;$/;"	m	struct:__anon40
 string_len	src/linux_vared.c	/^internal int string_len(char *str) {$/;"	f
 subrs	src/stb_truetype.h	/^   stbtt__buf subrs;                  \/\/ private charstring subroutines index$/;"	m	struct:stbtt_fontinfo
 svg	src/stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo
@@ -586,12 +689,13 @@ t0	src/stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon3
 t1	src/stb_truetype.h	/^   float x1,y1,s1,t1; \/\/ bottom-right$/;"	m	struct:__anon3
 temp_bitmap	src/stb_truetype.h	/^unsigned char temp_bitmap[512*512];$/;"	v
 terabytes	src/vared.h	37;"	d
-transient_storage	src/vared_platform.h	/^    void *transient_storage;$/;"	m	struct:__anon33
-transient_storage_size	src/vared_platform.h	/^    MemoryIndex transient_storage_size;$/;"	m	struct:__anon33
-true	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	e	enum:__anon29
-ttBYTE	src/stb_truetype.h	1282;"	d
-ttCHAR	src/stb_truetype.h	1283;"	d
-ttFixed	src/stb_truetype.h	1284;"	d
+text_window	src/vared.h	/^    Rect2 text_window;$/;"	m	struct:__anon40
+transient_storage	src/vared_platform.h	/^    void *transient_storage;$/;"	m	struct:__anon37
+transient_storage_size	src/vared_platform.h	/^    MemoryIndex transient_storage_size;$/;"	m	struct:__anon37
+true	src/vared_platform.h	/^typedef enum { false, true } bool;$/;"	e	enum:__anon31
+ttBYTE	src/stb_truetype.h	1290;"	d
+ttCHAR	src/stb_truetype.h	1291;"	d
+ttFixed	src/stb_truetype.h	1292;"	d
 ttLONG	src/stb_truetype.h	/^static stbtt_int32 ttLONG(stbtt_uint8 *p)    { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]; }$/;"	f
 ttSHORT	src/stb_truetype.h	/^static stbtt_int16 ttSHORT(stbtt_uint8 *p)   { return p[0]*256 + p[1]; }$/;"	f
 ttULONG	src/stb_truetype.h	/^static stbtt_uint32 ttULONG(stbtt_uint8 *p)  { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]; }$/;"	f
@@ -599,17 +703,17 @@ ttUSHORT	src/stb_truetype.h	/^static stbtt_uint16 ttUSHORT(stbtt_uint8 *p) { ret
 ttf_buffer	src/stb_truetype.h	/^char ttf_buffer[1<<25];$/;"	v
 ttf_buffer	src/stb_truetype.h	/^unsigned char ttf_buffer[1<<20];$/;"	v
 type	src/stb_truetype.h	/^      unsigned char type,padding;$/;"	m	struct:__anon7
-type	src/vared_renderer.h	/^    RenderEntryType type;$/;"	m	struct:__anon23
+type	src/vared_renderer.h	/^    RenderEntryType type;$/;"	m	struct:__anon24
 u16	src/vared_platform.h	/^typedef uint16_t u16;$/;"	t
 u32	src/vared_platform.h	/^typedef uint32_t u32;$/;"	t
 u64	src/vared_platform.h	/^typedef uint64_t u64;$/;"	t
 u8	src/vared_platform.h	/^typedef uint8_t u8;$/;"	t
-update_and_render	src/linux_vared.h	/^    EditorUpdateAndRender *update_and_render;$/;"	m	struct:__anon27
+update_and_render	src/linux_vared.h	/^    EditorUpdateAndRender *update_and_render;$/;"	m	struct:__anon29
 used	src/vared_arena.h	/^    MemoryIndex used;$/;"	m	struct:__anon19
 user_allocator_context	src/stb_truetype.h	/^   void *user_allocator_context;$/;"	m	struct:stbtt_pack_context
 userdata	src/stb_truetype.h	/^   void           * userdata;$/;"	m	struct:stbtt_fontinfo
-uv	src/vared_renderer.h	/^    v2 uv;$/;"	m	struct:__anon20
-v2	src/vared_math.h	/^} v2;$/;"	t	typeref:struct:__anon36
+uv	src/vared_renderer.h	/^    v2 uv;$/;"	m	struct:__anon22
+v2	src/vared_math.h	/^} v2;$/;"	t	typeref:struct:__anon44
 v2_add	src/vared_math.h	/^internal inline v2 v2_add(v2 a, v2 b) {$/;"	f
 v2_dot	src/vared_math.h	/^internal inline f32 v2_dot(v2 a, v2 b) {$/;"	f
 v2_length2	src/vared_math.h	/^internal inline f32 v2_length2(v2 v) {$/;"	f
@@ -618,24 +722,31 @@ v2_sdiv	src/vared_math.h	/^internal inline v2 v2_sdiv(v2 a, f32 m) {$/;"	f
 v2_smul	src/vared_math.h	/^internal inline v2 v2_smul(v2 a, f32 m) {$/;"	f
 v2_sub	src/vared_math.h	/^internal inline v2 v2_sub(v2 a, v2 b) {$/;"	f
 v2_vmul	src/vared_math.h	/^internal inline v2 v2_vmul(v2 a, v2 b) {$/;"	f
-v3	src/vared_math.h	/^} v3;$/;"	t	typeref:struct:__anon39
-v4	src/vared_math.h	/^} v4;$/;"	t	typeref:struct:__anon42
+v3	src/vared_math.h	/^} v3;$/;"	t	typeref:struct:__anon47
+v4	src/vared_math.h	/^} v4;$/;"	t	typeref:struct:__anon50
 v_oversample	src/stb_truetype.h	/^   unsigned char h_oversample, v_oversample; \/\/ don't set these, they're used internally$/;"	m	struct:__anon5
 v_oversample	src/stb_truetype.h	/^   unsigned int   h_oversample, v_oversample;$/;"	m	struct:stbtt_pack_context
-vao	src/vared_renderer.h	/^    u32 vao;$/;"	m	struct:__anon21
-vbo	src/vared_renderer.h	/^    u32 vbo;$/;"	m	struct:__anon21
-vertex_buffer	src/vared_renderer.h	/^    Vertex *vertex_buffer;$/;"	m	struct:__anon21
-vertex_buffer_arena	src/vared_renderer.h	/^    Arena vertex_buffer_arena;  \/\/ NOTE(fede): Shares base with Renderer vertex_buffer$/;"	m	struct:__anon26
-vertex_count	src/vared_renderer.h	/^    u32 vertex_count;$/;"	m	struct:__anon21
-vertex_offset	src/vared_renderer.h	/^    u32 vertex_offset;$/;"	m	struct:__anon24
+vao	src/vared_renderer_opengl.h	/^    u32 vao;$/;"	m	struct:__anon20
+vbo	src/vared_renderer_opengl.h	/^    u32 vbo;$/;"	m	struct:__anon20
+vert_shader_filepath	src/vared_renderer_opengl.c	/^char *vert_shader_filepath = "shaders\/simple.vert";$/;"	v
+vertex_buffer	src/vared_renderer_opengl.h	/^    Vertex *vertex_buffer;$/;"	m	struct:__anon20
+vertex_buffer_arena	src/vared_renderer.h	/^    Arena vertex_buffer_arena;  \/\/ NOTE(fede): Shares base with Renderer vertex_buffer$/;"	m	struct:__anon28
+vertex_count	src/vared_renderer_opengl.h	/^    u32 vertex_count;$/;"	m	struct:__anon20
+vertex_offset	src/vared_renderer.h	/^    u32 vertex_offset;$/;"	m	struct:__anon25
+w	src/stb_rect_pack.h	/^   stbrp_coord    w, h;$/;"	m	struct:stbrp_rect
 w	src/stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect
 w	src/stb_truetype.h	/^   int w,h,stride;$/;"	m	struct:__anon8
-w	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon42::__anon43::__anon44
+w	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon50::__anon51::__anon52
+was_packed	src/stb_rect_pack.h	/^   int            was_packed;  \/\/ non-zero if valid packing$/;"	m	struct:stbrp_rect
 was_packed	src/stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect
+width	src/stb_rect_pack.h	/^   int width;$/;"	m	struct:stbrp_context
 width	src/stb_truetype.h	/^   int   width;$/;"	m	struct:stbtt_pack_context
 width	src/stb_truetype.h	/^   int width,height;$/;"	m	struct:__anon17
-width	src/vared_renderer.h	/^    u32 width, height;$/;"	m	struct:__anon25
-width	src/vared_renderer.h	/^    u32 width;$/;"	m	struct:__anon26
+width	src/vared_renderer.h	/^    u32 width, height;$/;"	m	struct:__anon26
+width	src/vared_renderer.h	/^    u32 width;$/;"	m	struct:__anon28
+x	src/stb_rect_pack.h	/^   int x,y;$/;"	m	struct:__anon43
+x	src/stb_rect_pack.h	/^   stbrp_coord    x, y;$/;"	m	struct:stbrp_rect
+x	src/stb_rect_pack.h	/^   stbrp_coord  x,y;$/;"	m	struct:stbrp_node
 x	src/stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon7
 x	src/stb_truetype.h	/^   float x, y;$/;"	m	struct:__anon15
 x	src/stb_truetype.h	/^   float x,y;$/;"	m	struct:__anon16
@@ -643,9 +754,9 @@ x	src/stb_truetype.h	/^   int x,dx;$/;"	m	struct:stbtt__active_edge
 x	src/stb_truetype.h	/^   int x,y,bottom_y;$/;"	m	struct:__anon17
 x	src/stb_truetype.h	/^   stbrp_coord x,y;$/;"	m	struct:stbrp_rect
 x	src/stb_truetype.h	/^   unsigned char x;$/;"	m	struct:__anon18
-x	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon42::__anon43::__anon44
-x	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon39::__anon40::__anon41
-x	src/vared_math.h	/^            f32 x, y;$/;"	m	struct:__anon36::__anon37::__anon38
+x	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon50::__anon51::__anon52
+x	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon47::__anon48::__anon49
+x	src/vared_math.h	/^            f32 x, y;$/;"	m	struct:__anon44::__anon45::__anon46
 x0	src/stb_truetype.h	/^   float x0,y0, x1,y1;$/;"	m	struct:stbtt__edge
 x0	src/stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon3
 x0	src/stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon2
@@ -659,14 +770,17 @@ xadvance	src/stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon4
 xoff	src/stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon2
 xoff	src/stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon4
 xoff2	src/stb_truetype.h	/^   float xoff2,yoff2;$/;"	m	struct:__anon4
+y	src/stb_rect_pack.h	/^   int x,y;$/;"	m	struct:__anon43
+y	src/stb_rect_pack.h	/^   stbrp_coord    x, y;$/;"	m	struct:stbrp_rect
+y	src/stb_rect_pack.h	/^   stbrp_coord  x,y;$/;"	m	struct:stbrp_node
 y	src/stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon7
 y	src/stb_truetype.h	/^   float x, y;$/;"	m	struct:__anon15
 y	src/stb_truetype.h	/^   float x,y;$/;"	m	struct:__anon16
 y	src/stb_truetype.h	/^   int x,y,bottom_y;$/;"	m	struct:__anon17
 y	src/stb_truetype.h	/^   stbrp_coord x,y;$/;"	m	struct:stbrp_rect
-y	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon42::__anon43::__anon44
-y	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon39::__anon40::__anon41
-y	src/vared_math.h	/^            f32 x, y;$/;"	m	struct:__anon36::__anon37::__anon38
+y	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon50::__anon51::__anon52
+y	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon47::__anon48::__anon49
+y	src/vared_math.h	/^            f32 x, y;$/;"	m	struct:__anon44::__anon45::__anon46
 y0	src/stb_truetype.h	/^   float x0,y0, x1,y1;$/;"	m	struct:stbtt__edge
 y0	src/stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon3
 y0	src/stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon2
@@ -675,8 +789,9 @@ y1	src/stb_truetype.h	/^   float x0,y0, x1,y1;$/;"	m	struct:stbtt__edge
 y1	src/stb_truetype.h	/^   float x1,y1,s1,t1; \/\/ bottom-right$/;"	m	struct:__anon3
 y1	src/stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon2
 y1	src/stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon4
+y_increment	src/vared.h	/^    int y_increment;$/;"	m	struct:__anon38
 yoff	src/stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon2
 yoff	src/stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon4
 yoff2	src/stb_truetype.h	/^   float xoff2,yoff2;$/;"	m	struct:__anon4
-z	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon42::__anon43::__anon44
-z	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon39::__anon40::__anon41
+z	src/vared_math.h	/^            f32 x, y, z, w;$/;"	m	struct:__anon50::__anon51::__anon52
+z	src/vared_math.h	/^            f32 x, y, z;$/;"	m	struct:__anon47::__anon48::__anon49

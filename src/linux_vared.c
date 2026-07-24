@@ -306,6 +306,110 @@ internal void linux_unload_editorlib(EditorLib *editor) {
     }
 }
 
+internal KeymodFlag sdl_keymod_to_keymodflag(SDL_Keymod mod) {
+    switch (mod) {
+    case KMOD_NONE:
+        return KeymodFlag_none;
+    case KMOD_LSHIFT:
+        return KeymodFlag_lshift;
+    case KMOD_RSHIFT:
+        return KeymodFlag_rshift;
+    case KMOD_LCTRL:
+        return KeymodFlag_lctrl;
+    case KMOD_RCTRL:
+        return KeymodFlag_rctrl;
+    case KMOD_LALT:
+        return KeymodFlag_lalt;
+    case KMOD_RALT:
+        return KeymodFlag_ralt;
+    case KMOD_LGUI:
+        return KeymodFlag_lgui;
+    case KMOD_RGUI:
+        return KeymodFlag_rgui;
+    case KMOD_NUM:
+        return KeymodFlag_num;
+    case KMOD_CAPS:
+        return KeymodFlag_caps;
+    case KMOD_MODE:
+        return KeymodFlag_mode;
+    case KMOD_SCROLL:
+        return KeymodFlag_scroll;
+
+    case KMOD_CTRL:
+        return KeymodFlag_ctrl;
+    case KMOD_SHIFT:
+        return KeymodFlag_shift;
+    case KMOD_ALT:
+        return KeymodFlag_alt;
+    case KMOD_GUI:
+        return KeymodFlag_gui;
+
+    // NOTE(fede): Same as scroll
+    // case KMOD_RESERVED:
+    //     return KeymodFlag_reserved;
+    }
+} 
+
+/* Print modifier info */
+void PrintModifiers( SDL_Keymod mod ){
+    printf( "Modifers: " );
+
+    /* If there are none then say so and return */
+    if( mod == KMOD_NONE ){
+        printf( "None\n" );
+        return;
+    }
+
+    /* Check for the presence of each SDLMod value */
+    /* This looks messy, but there really isn't    */
+    /* a clearer way.                              */
+    if( mod & KMOD_NUM ) printf( "NUMLOCK " );
+    if( mod & KMOD_CAPS ) printf( "CAPSLOCK " );
+    if( mod & KMOD_LCTRL ) printf( "LCTRL " );
+    if( mod & KMOD_RCTRL ) printf( "RCTRL " );
+    if( mod & KMOD_RSHIFT ) printf( "RSHIFT " );
+    if( mod & KMOD_LSHIFT ) printf( "LSHIFT " );
+    if( mod & KMOD_RALT ) printf( "RALT " );
+    if( mod & KMOD_LALT ) printf( "LALT " );
+    if( mod & KMOD_CTRL ) printf( "CTRL " );
+    if( mod & KMOD_SHIFT ) printf( "SHIFT " );
+    if( mod & KMOD_ALT ) printf( "ALT " );
+    printf( "\n" );
+}
+
+
+void PrintKeyInfo( SDL_KeyboardEvent *key ){
+    /* Is it a release or a press? */
+    if( key->type == SDL_KEYUP )
+        printf( "Release:- " );
+    else
+        printf( "Press:- " );
+
+    /* Print the hardware scancode first */
+    printf( "Scancode: 0x%02X", key->keysym.scancode );
+    /* Print the name of the key */
+    printf( ", Name: %s", SDL_GetKeyName( key->keysym.sym ) );
+    /* We want to print the unicode info, but we need to make */
+    /* sure its a press event first (remember, release events */
+    /* don't have unicode info                                */
+    if( key->type == SDL_KEYDOWN ){
+        /* If the Unicode value is less than 0x80 then the    */
+        /* unicode value can be used to get a printable       */
+        /* representation of the key, using (char)unicode.    */
+        // printf(", Unicode: " );
+        // if( key->keysym.unicode < 0x80 && key->keysym.unicode > 0 ){
+        //     printf( "%c (0x%04X)", (char)key->keysym.unicode,
+        //             key->keysym.unicode );
+        // }
+        // else{
+        //     printf( "? (0x%04X)", key->keysym.unicode );
+        // }
+    }
+    printf( "\n" );
+    /* Print modifier info */
+    PrintModifiers( (SDL_Keymod)key->keysym.mod );
+}
+
 int main(void) {
     LinuxState state = {0};
 
@@ -414,7 +518,7 @@ int main(void) {
         printf("dll filename: %s\n", editor_dll_filename);
     }
 
-    Renderer renderer;
+    RendererOpengl renderer;
     {
         u32 max_quads = 100 * 1000; // 100_000
         u32 vertex_count = max_quads * 4;
@@ -429,7 +533,7 @@ int main(void) {
                 PROT_READ | PROT_WRITE,
                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-        renderer = (Renderer){
+        renderer = (RendererOpengl){
             .vertex_buffer = (Vertex *)buffer_memory,
             .vertex_count = vertex_count,
             .index_buffer = (u16 *)(buffer_memory + vertex_buffer_size),
@@ -442,7 +546,13 @@ int main(void) {
     RenderGroup render_group = {0};
     render_group.width = WINDOW_WIDTH;
     render_group.height = WINDOW_HEIGHT;
-    rg_init_vertex_index_buffers(&render_group, &renderer);
+
+    rg_init_vertex_index_buffers(&render_group, 
+            renderer.vertex_buffer, 
+            renderer.vertex_count, 
+            renderer.index_buffer, 
+            renderer.index_count);
+
 
     u64 last_counter = SDL_GetPerformanceCounter();
 
@@ -454,6 +564,7 @@ int main(void) {
             }
         }
 
+        EditorInput input = {0};
         SDL_Event event = {0};
 
         while (SDL_PollEvent(&event)) {
@@ -476,11 +587,35 @@ int main(void) {
                 } break;
                 }
             } break;
+            // case SDL_KEYUP:
+            case SDL_KEYDOWN: {
+                SDL_KeyboardEvent key_event = event.key;
+                // PrintKeyInfo(&key_event);
+
+                input.key_inputs[input.key_input_count++] = (KeyInput){
+                    .key = key_event.keysym.sym,
+                    .repeat =  key_event.repeat,
+                    .mod = sdl_keymod_to_keymodflag((SDL_Keymod)key_event.keysym.mod),
+                };
+
+                // TODO(fede): Handle key repeat
+                if (key_event.repeat)
+                    break;
+
+                // TODO(fede): handle cursor
+                switch (key_event.keysym.sym) {
+                case SDLK_UP:
+                case SDLK_LEFT:
+                case SDLK_DOWN:
+                case SDLK_RIGHT:
+                    {} break;
+                }
+            } break;
             }
         }
 
         // TODO(fede): editor input
-        editor.update_and_render(&editor_memory, 0, &render_group);
+        editor.update_and_render(&editor_memory, &input, &render_group);
 
         glClearColor(0x0, 0x0, 0x0, 0xFF);
         glClear(GL_COLOR_BUFFER_BIT);

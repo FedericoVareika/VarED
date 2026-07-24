@@ -75,8 +75,39 @@ internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file);
 
 #endif // VARED_INTERNAL
 
+// NOTE(fede): Copied from SDL2 SDL_Keymod
+typedef enum {
+    KeymodFlag_none = 0x0000,
+    KeymodFlag_lshift = 0x0001,
+    KeymodFlag_rshift = 0x0002,
+    KeymodFlag_lctrl = 0x0040,
+    KeymodFlag_rctrl = 0x0080,
+    KeymodFlag_lalt = 0x0100,
+    KeymodFlag_ralt = 0x0200,
+    KeymodFlag_lgui = 0x0400,
+    KeymodFlag_rgui = 0x0800,
+    KeymodFlag_num = 0x1000,
+    KeymodFlag_caps = 0x2000,
+    KeymodFlag_mode = 0x4000,
+    KeymodFlag_scroll = 0x8000,
+
+    KeymodFlag_ctrl = KeymodFlag_lctrl | KeymodFlag_rctrl,
+    KeymodFlag_shift = KeymodFlag_lshift | KeymodFlag_rshift,
+    KeymodFlag_alt = KeymodFlag_lalt | KeymodFlag_ralt,
+    KeymodFlag_gui = KeymodFlag_lgui | KeymodFlag_rgui,
+
+    KeymodFlag_reserved = KeymodFlag_scroll,
+} KeymodFlag;
+
 typedef struct {
-    char input_char;
+    i32 key;
+    i32 repeat;
+    KeymodFlag mod;
+} KeyInput;
+
+typedef struct {
+    KeyInput key_inputs[512];
+    u32 key_input_count;
 } EditorInput;
 
 typedef struct {

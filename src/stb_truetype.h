@@ -585,7 +585,11 @@ typedef struct stbtt_fontinfo stbtt_fontinfo;
 typedef struct stbrp_rect stbrp_rect;
 #endif
 
-STBTT_DEF int  stbtt_PackBegin(stbtt_pack_context *spc, unsigned char *pixels, int width, int height, int stride_in_bytes, int padding, void *alloc_context);
+STBTT_DEF int  stbtt_PackBegin(stbtt_pack_context *spc,
+        unsigned char *pixels,
+        int width, int height,
+        int stride_in_bytes, int padding,
+        void *alloc_context);
 // Initializes a packing context stored in the passed-in stbtt_pack_context.
 // Future calls using this context will pack characters into the bitmap passed
 // in here: a 1-channel bitmap that is width * height. stride_in_bytes is
@@ -601,8 +605,11 @@ STBTT_DEF void stbtt_PackEnd  (stbtt_pack_context *spc);
 
 #define STBTT_POINT_SIZE(x)   (-(x))
 
-STBTT_DEF int  stbtt_PackFontRange(stbtt_pack_context *spc, const unsigned char *fontdata, int font_index, float font_size,
-                                int first_unicode_char_in_range, int num_chars_in_range, stbtt_packedchar *chardata_for_range);
+STBTT_DEF int  stbtt_PackFontRange(stbtt_pack_context *spc,
+        const unsigned char *fontdata,
+        int font_index, float font_size,
+        int first_unicode_char_in_range, int num_chars_in_range, 
+        stbtt_packedchar *chardata_for_range);
 // Creates character bitmaps from the font_index'th font found in fontdata (use
 // font_index=0 if you don't know what that is). It creates num_chars_in_range
 // bitmaps for characters with unicode values starting at first_unicode_char_in_range
@@ -654,7 +661,8 @@ STBTT_DEF void stbtt_PackSetSkipMissingCodepoints(stbtt_pack_context *spc, int s
 // codepoints without a glyph recived the font's "missing character" glyph,
 // typically an empty box by convention.
 
-STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, int pw, int ph,  // same data as above
+STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, 
+                               int pw, int ph,             // same data as above
                                int char_index,             // character to display
                                float *xpos, float *ypos,   // pointers to current position in screen pixel space
                                stbtt_aligned_quad *q,      // output: quad to draw

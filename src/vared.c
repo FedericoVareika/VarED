@@ -5,6 +5,59 @@
 
 #include <stdio.h>
 
+internal void render_s8_in_rect2(
+        RenderGroup *render_group,
+        EditorState *editor_state,
+        S8 string,
+        Rect2 window_rect,
+        v4 color) {
+    Font *font = &editor_state->font; 
+
+    f32 scale = font->font_height / (font->ascent - font->descent);
+
+    stbtt_aligned_quad q;
+
+    f32 current_x = window_rect.min.x;
+    f32 current_y = window_rect.min.y; 
+    current_y += scale * (f32)font->ascent;
+
+    char *c = (char *)string.buf;
+    for (u32 string_idx = 0;
+            string_idx < string.count; 
+            string_idx++, c++) {
+        int advance_width, left_side_bearing; 
+        stbtt_GetCodepointHMetrics(&font->font_info, *c, &advance_width, &left_side_bearing);
+
+        if (string_idx == 0) {
+            current_x += scale * left_side_bearing;
+        }
+
+        if (current_x + scale * advance_width > editor_state->text_window.max.x) {
+            current_x = window_rect.min.x + scale * left_side_bearing;
+            current_y += scale * (f32)(font->y_increment);
+        }
+
+        stbtt_GetPackedQuad(
+                font->char_data_for_range,
+                font->pixels_width, font->pixels_height,
+                *c - font->first_char, 
+                &current_x, &current_y, &q,
+                true);
+
+        if (current_y - scale * font->descent > window_rect.max.y)
+            break;
+
+        rg_push_textured_rect2(render_group, 
+                rect2_min_max((v2){q.x0, q.y0}, (v2){q.x1, q.y1}),
+                color,
+                rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}));
+
+        // if (string_idx < string.count) {
+        //     current_x += scale * (f32)stbtt_GetCodepointKernAdvance(&font->font_info, *c, *(c + 1));
+        // }
+    }
+}
+
 extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
     EditorState *editor_state = (EditorState *)memory->permanent_storage;
 
@@ -32,66 +85,90 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
 
         Font *font = &editor_state->font;
         {
+            font->pixels_width = 512;
+            font->pixels_height = 512;
+            font->first_char = 32;
             font->num_chars = 96;
-            font->pixel_height = 32.0f;
-            font->bitmap_width = 256;
-            font->bitmap_height = 256;
+            font->font_height = 64; // NOTE(fede): pixels i think
+            stbtt_fontinfo *font_info = &font->font_info;
 
-            font->cdata = push_array(
-                    &editor_state->arena,
-                    stbtt_bakedchar,
-                    font->num_chars);
-
-            u8 *temp_bitmap = push_array(
-                    &frame_arena, 
-                    u8, font->bitmap_width * font->bitmap_height);
-
-            DebugReadFileResult file = memory->debug_platform_read_entire_file(
+            DebugReadFileResult font_file = memory->debug_platform_read_entire_file(
                     0, "fonts/IosevkaTermNerdFontMono-Light.ttf");
 
-            int bake_result = stbtt_BakeFontBitmap(
-                    file.memory, 0,
-                    font->pixel_height,
-                    temp_bitmap,
-                    font->bitmap_width, font->bitmap_height,
-                    32, font->num_chars,
-                    font->cdata); 
+            assert(stbtt_InitFont(font_info, font_file.memory, 0));
 
-            printf("bake result: %d\n", bake_result);
+            u8 *pixels = push_array(&frame_arena, u8, 
+                    font->pixels_width * font->pixels_height);
 
-            memory->debug_platform_free_file_memory(0, file);
+            stbtt_pack_context spc;
+            assert(stbtt_PackBegin(&spc,
+                    pixels,
+                    font->pixels_width, font->pixels_height,
+                    0, 1,
+                    0));
 
-            // TODO(fede): When we have multiple of these, we need to 
-            //      distinguish them. We can use a hash map, or local id's or 
-            //      something.
-            rg_push_texture_load(
-                    render_group,
-                    temp_bitmap,
-                    font->bitmap_width,
-                    font->bitmap_height);
+            font->char_data_for_range = push_array(
+                    &editor_state->arena, stbtt_packedchar, font->num_chars);
+            assert(stbtt_PackFontRange(&spc,
+                font_file.memory,
+                0, font->font_height, 
+                font->first_char, font->num_chars,
+                font->char_data_for_range));
 
-            memory->debug_platform_write_entire_file(0, "fonts/bitmap.bin", font->bitmap_width * font->bitmap_height, temp_bitmap);
+            stbtt_PackEnd(&spc);
+
+            stbtt_GetFontVMetrics(&font->font_info,
+                    &font->ascent, &font->descent, &font->line_gap);
+            font->y_increment = font->ascent - font->descent + font->line_gap;
+
+            rg_push_texture_load(render_group, pixels,
+                    font->pixels_width, font->pixels_height);
         }
 
+        editor_state->string.size = megabytes(4);
+        editor_state->string.buf = push_size(&editor_state->arena, editor_state->string.size);
+        editor_state->string.count = 0;
 
         memory->is_initialized = true;
     }
 
-    char *hello = "hola mama!";
+    editor_state->text_window = rect2_center_dim(
+            (v2){render_group->width / 2, render_group->height / 2},
+            (v2){500, 2 * editor_state->font.font_height});
 
-    stbtt_aligned_quad q;
-    float current_x = 500;
-    float current_y = render_group->height / 2;
-    for (char *c = hello; *c; c++) {
-        stbtt_GetBakedQuad(editor_state->font.cdata,
-                editor_state->font.bitmap_width, editor_state->font.bitmap_height,
-                *c - 32, 
-                &current_x, &current_y, &q,
-                true);
+    Font font = editor_state->font;
+    int min_key = font.first_char;
+    int max_key = font.first_char + font.num_chars;
+    for (u32 i = 0; i < input->key_input_count; i++) {
+        KeyInput key_input = input->key_inputs[i]; 
+        if (key_input.key >= min_key && key_input.key < max_key) {
+            u8 c = (u8)key_input.key;
+            assert((int)c == key_input.key);
 
-        rg_push_textured_rect2(render_group, 
-                rect2_min_max((v2){q.x0, q.y0}, (v2){q.x1, q.y1}),
-                (v4){0, 1, 1, 1}, 
-                rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}));
+            for (int j = 0; j < (key_input.repeat ? key_input.repeat : 1); j++) {
+                assert(editor_state->string.size > editor_state->string.count);
+                editor_state->string.buf[editor_state->string.count++] = c;
+            }
+        }
     }
+
+    rg_push_set_shader(render_group, ShaderType_Color);
+    rg_push_rect2(render_group, editor_state->text_window, (v4){0.2, 0.2, 0.2, 1});
+
+
+    // rg_push_set_shader(render_group, ShaderType_Color);
+    // render_s8_in_rect2(
+    //         render_group,
+    //         editor_state,
+    //         editor_state->string,
+    //         editor_state->text_window,
+    //         (v4){0.5, 0.5, 0.5, 1});
+
+    rg_push_set_shader(render_group, ShaderType_Text);
+    render_s8_in_rect2(
+            render_group,
+            editor_state,
+            editor_state->string,
+            editor_state->text_window,
+            (v4){0.8, 0.8, 0.8, 1});
 }
