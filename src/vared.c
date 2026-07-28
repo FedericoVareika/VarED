@@ -259,51 +259,6 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
         } break; 
         }
     }
-#if 0
-    for (u32 i = 0; i < input->text_input_count; i++) {
-        TextInput text_input = input->text_inputs[i];
-        for (u32 j = 0; j < text_input.text_len; j++) {
-            S8 *line = &state->text.lines[state->cursor_line];
-            insert_char(line, &state->cursor_char, text_input.text[j]);
-        }
-    }
-
-    for (u32 i = 0; i < input->move_input_count; i++) {
-        KeyboardInputType move_type = input->move_inputs[i];
-        switch (move_type) {
-        case KeyboardInputType_Left: 
-            if (state->cursor_char > 0) 
-                state->cursor_char--;
-            break;
-        case KeyboardInputType_Right: 
-            if (state->cursor_char < 
-                    state->text.lines[state->cursor_line].count) 
-                state->cursor_char++;
-            break;
-        case KeyboardInputType_Up: 
-            if (state->cursor_line > 0) {
-                state->cursor_line--;
-                state->cursor_char = 0;
-            }
-            break;
-        case KeyboardInputType_Down: 
-            if (state->cursor_line + 1 < 
-                    state->text.count) {
-                state->cursor_line++;
-                state->cursor_char = 0;
-            }
-            break;
-
-        case KeyboardInputType_Return: 
-            new_line(&state->arena, &state->text, state->cursor_line + 1);
-            state->cursor_line++;
-            state->cursor_char = 0;
-            break;
-        default:
-            break;
-        }
-    }
-#endif 
 
     rg_push_set_shader(frame_arena, render_group, ShaderType_Color);
     rg_push_rect2(frame_arena, render_group, state->text_window, (v4){0.2, 0.2, 0.2, 1});
