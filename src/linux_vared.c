@@ -4,13 +4,15 @@
 #define GL_GLEXT_PROTOTYPES
 #include <SDL2/SDL_opengl.h>
 
-#include "vared.h"
+#include "base/base_inc.h"
+#include "base/base_inc.c"
+
+#include "vared_platform.h"
+#include "linux_vared.h"
+
+#include "vared_renderer_opengl.c"
 #include "vared_renderer.c"
 
-#include "linux_vared.h"
-#include "vared_renderer_opengl.c"
-
-#include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
 #include <dlfcn.h>
@@ -306,48 +308,216 @@ internal void linux_unload_editorlib(EditorLib *editor) {
     }
 }
 
-internal KeymodFlag sdl_keymod_to_keymodflag(SDL_Keymod mod) {
-    switch (mod) {
-    case KMOD_NONE:
-        return KeymodFlag_none;
-    case KMOD_LSHIFT:
-        return KeymodFlag_lshift;
-    case KMOD_RSHIFT:
-        return KeymodFlag_rshift;
-    case KMOD_LCTRL:
-        return KeymodFlag_lctrl;
-    case KMOD_RCTRL:
-        return KeymodFlag_rctrl;
-    case KMOD_LALT:
-        return KeymodFlag_lalt;
-    case KMOD_RALT:
-        return KeymodFlag_ralt;
-    case KMOD_LGUI:
-        return KeymodFlag_lgui;
-    case KMOD_RGUI:
-        return KeymodFlag_rgui;
-    case KMOD_NUM:
-        return KeymodFlag_num;
-    case KMOD_CAPS:
-        return KeymodFlag_caps;
-    case KMOD_MODE:
-        return KeymodFlag_mode;
-    case KMOD_SCROLL:
-        return KeymodFlag_scroll;
+internal WMEvent *wm_event_list_add(Arena *arena, WMEventList *event_list) {
+    
+}
 
-    case KMOD_CTRL:
-        return KeymodFlag_ctrl;
-    case KMOD_SHIFT:
-        return KeymodFlag_shift;
-    case KMOD_ALT:
-        return KeymodFlag_alt;
-    case KMOD_GUI:
-        return KeymodFlag_gui;
+internal WMKey sdl_get_wm_key(SDL_KeyCode key_code) {
+    switch (key_code) {
+    case SDLK_UNKNOWN: 
+        return WMKey_NONE;
 
-    // NOTE(fede): Same as scroll
-    // case KMOD_RESERVED:
-    //     return KeymodFlag_reserved;
+    case SDLK_RETURN: 
+        return WMKey_RETURN;
+    case SDLK_ESCAPE: 
+        return WMKey_ESCAPE;
+    case SDLK_BACKSPACE: 
+        return WMKey_BACKSPACE;
+    case SDLK_TAB: 
+        return WMKey_TAB;
+    case SDLK_SPACE: 
+        return WMKey_SPACE;
+    case SDLK_EXCLAIM: 
+        return WMKey_EXCLAIM;
+    case SDLK_QUOTEDBL: 
+        return WMKey_QUOTEDBL;
+    case SDLK_HASH: 
+        return WMKey_HASH;
+    case SDLK_PERCENT: 
+        return WMKey_PERCENT;
+    case SDLK_DOLLAR: 
+        return WMKey_DOLLAR;
+    case SDLK_AMPERSAND: 
+        return WMKey_AMPERSAND;
+    case SDLK_QUOTE: 
+        return WMKey_QUOTE;
+    case SDLK_LEFTPAREN: 
+        return WMKey_LEFTPAREN;
+    case SDLK_RIGHTPAREN: 
+        return WMKey_RIGHTPAREN;
+    case SDLK_ASTERISK: 
+        return WMKey_ASTERISK;
+    case SDLK_PLUS: 
+        return WMKey_PLUS;
+    case SDLK_COMMA: 
+        return WMKey_COMMA;
+    case SDLK_MINUS: 
+        return WMKey_MINUS;
+    case SDLK_PERIOD: 
+        return WMKey_PERIOD;
+    case SDLK_SLASH: 
+        return WMKey_SLASH;
+    case SDLK_0: 
+        return WMKey_0;
+    case SDLK_1: 
+        return WMKey_1;
+    case SDLK_2: 
+        return WMKey_2;
+    case SDLK_3: 
+        return WMKey_3;
+    case SDLK_4: 
+        return WMKey_4;
+    case SDLK_5: 
+        return WMKey_5;
+    case SDLK_6: 
+        return WMKey_6;
+    case SDLK_7: 
+        return WMKey_7;
+    case SDLK_8: 
+        return WMKey_8;
+    case SDLK_9: 
+        return WMKey_9;
+    case SDLK_COLON: 
+        return WMKey_COLON;
+    case SDLK_SEMICOLON: 
+        return WMKey_SEMICOLON;
+    case SDLK_LESS: 
+        return WMKey_LESS;
+    case SDLK_EQUALS: 
+        return WMKey_EQUALS;
+    case SDLK_GREATER: 
+        return WMKey_GREATER;
+    case SDLK_QUESTION: 
+        return WMKey_QUESTION;
+    case SDLK_AT: 
+        return WMKey_AT;
+
+    case SDLK_LEFTBRACKET: 
+        return WMKey_LEFTBRACKET;
+    case SDLK_BACKSLASH: 
+        return WMKey_BACKSLASH;
+    case SDLK_RIGHTBRACKET: 
+        return WMKey_RIGHTBRACKET;
+    case SDLK_CARET: 
+        return WMKey_CARET;
+    case SDLK_UNDERSCORE: 
+        return WMKey_UNDERSCORE;
+    case SDLK_BACKQUOTE: 
+        return WMKey_BACKQUOTE;
+    case SDLK_a: 
+        return WMKey_a;
+    case SDLK_b: 
+        return WMKey_b;
+    case SDLK_c: 
+        return WMKey_c;
+    case SDLK_d: 
+        return WMKey_d;
+    case SDLK_e: 
+        return WMKey_e;
+    case SDLK_f: 
+        return WMKey_f;
+    case SDLK_g: 
+        return WMKey_g;
+    case SDLK_h: 
+        return WMKey_h;
+    case SDLK_i: 
+        return WMKey_i;
+    case SDLK_j: 
+        return WMKey_j;
+    case SDLK_k: 
+        return WMKey_k;
+    case SDLK_l: 
+        return WMKey_l;
+    case SDLK_m: 
+        return WMKey_m;
+    case SDLK_n: 
+        return WMKey_n;
+    case SDLK_o: 
+        return WMKey_o;
+    case SDLK_p: 
+        return WMKey_p;
+    case SDLK_q: 
+        return WMKey_q;
+    case SDLK_r: 
+        return WMKey_r;
+    case SDLK_s: 
+        return WMKey_s;
+    case SDLK_t: 
+        return WMKey_t;
+    case SDLK_u: 
+        return WMKey_u;
+    case SDLK_v: 
+        return WMKey_v;
+    case SDLK_w: 
+        return WMKey_w;
+    case SDLK_x: 
+        return WMKey_x;
+    case SDLK_y: 
+        return WMKey_y;
+    case SDLK_z: 
+        return WMKey_z;
+
+    case SDLK_CAPSLOCK: 
+        return WMKey_CAPSLOCK;
+
+    case SDLK_F1: 
+        return WMKey_F1;
+    case SDLK_F2: 
+        return WMKey_F2;
+    case SDLK_F3: 
+        return WMKey_F3;
+    case SDLK_F4: 
+        return WMKey_F4;
+    case SDLK_F5: 
+        return WMKey_F5;
+    case SDLK_F6: 
+        return WMKey_F6;
+    case SDLK_F7: 
+        return WMKey_F7;
+    case SDLK_F8: 
+        return WMKey_F8;
+    case SDLK_F9: 
+        return WMKey_F9;
+    case SDLK_F10: 
+        return WMKey_F10;
+    case SDLK_F11: 
+        return WMKey_F11;
+    case SDLK_F12: 
+        return WMKey_F12;
+
+    case SDLK_RIGHT: 
+        return WMKey_RIGHT;
+    case SDLK_LEFT: 
+        return WMKey_LEFT;
+    case SDLK_DOWN: 
+        return WMKey_DOWN;
+    case SDLK_UP: 
+        return WMKey_UP;
+
+    default:
+        return 0;
     }
+} 
+
+internal WMModifiers sdl_get_wm_modifiers(SDL_Keymod mod) {
+    if( mod == KMOD_NONE )
+    return 0;
+
+    WMModifiers result = 0;
+
+    if( mod & KMOD_NUM )    result |= 0;
+    if( mod & KMOD_CAPS )   result |= WMModifier_caps;
+    if( mod & KMOD_LCTRL )  result |= 0;
+    if( mod & KMOD_RCTRL )  result |= 0;
+    if( mod & KMOD_RSHIFT ) result |= 0;
+    if( mod & KMOD_LSHIFT ) result |= 0;
+    if( mod & KMOD_RALT )   result |= 0;
+    if( mod & KMOD_LALT )   result |= 0;
+    if( mod & KMOD_CTRL )   result |= WMModifier_ctrl;
+    if( mod & KMOD_SHIFT )  result |= WMModifier_shift;
+    if( mod & KMOD_ALT )    result |= WMModifier_alt;
+
+    return result;
 } 
 
 /* Print modifier info */
@@ -355,7 +525,7 @@ void PrintModifiers( SDL_Keymod mod ){
     printf( "Modifers: " );
 
     /* If there are none then say so and return */
-    if( mod == KMOD_NONE ){
+    if ( mod == KMOD_NONE ){
         printf( "None\n" );
         return;
     }
@@ -393,17 +563,17 @@ void PrintKeyInfo( SDL_KeyboardEvent *key ){
     /* sure its a press event first (remember, release events */
     /* don't have unicode info                                */
     if( key->type == SDL_KEYDOWN ){
-        /* If the Unicode value is less than 0x80 then the    */
-        /* unicode value can be used to get a printable       */
-        /* representation of the key, using (char)unicode.    */
-        // printf(", Unicode: " );
-        // if( key->keysym.unicode < 0x80 && key->keysym.unicode > 0 ){
-        //     printf( "%c (0x%04X)", (char)key->keysym.unicode,
-        //             key->keysym.unicode );
-        // }
-        // else{
-        //     printf( "? (0x%04X)", key->keysym.unicode );
-        // }
+    /* If the Unicode value is less than 0x80 then the    */
+    /* unicode value can be used to get a printable       */
+    /* representation of the key, using (char)unicode.    */
+    // printf(", Unicode: " );
+    // if( key->keysym.unicode < 0x80 && key->keysym.unicode > 0 ){
+    //     printf( "%c (0x%04X)", (char)key->keysym.unicode,
+    //             key->keysym.unicode );
+    // }
+    // else{
+    //     printf( "? (0x%04X)", key->keysym.unicode );
+    // }
     }
     printf( "\n" );
     /* Print modifier info */
@@ -417,7 +587,7 @@ int main(void) {
     char editor_dll_filename[LINUX_FILEPATH_MAX_COUNT];
 
     linux_build_global_filename_at_exe_location(&state, editor_dll_filename,
-                                                "vared.so");
+                                            "vared.so");
     
 #if VARED_INTERNAL
     void *base_address = (void *)terabytes((u64)2);
@@ -425,35 +595,48 @@ int main(void) {
     void *base_address = 0;
 #endif
 
+    void *memory = 0;
+    EditorParams editor_params = {0};
+    editor_params.memory = &memory;
+
+#if 0
     EditorMemory editor_memory = {0};
     editor_memory.permanent_storage_size = megabytes(64);
     editor_memory.transient_storage_size = gigabytes((u64)1);
     {
-        state.editor_memory_size = editor_memory.permanent_storage_size +
-                                 editor_memory.transient_storage_size;
-        state.editor_memory_block =
-            mmap(base_address, state.editor_memory_size, PROT_READ | PROT_WRITE,
-                 MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+    state.editor_memory_size = editor_memory.permanent_storage_size +
+                             editor_memory.transient_storage_size;
+    state.editor_memory_block =
+        mmap(base_address, state.editor_memory_size, PROT_READ | PROT_WRITE,
+             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
 
-        editor_memory.permanent_storage = state.editor_memory_block;
-        editor_memory.transient_storage =
-            (u8 *)state.editor_memory_block + editor_memory.permanent_storage_size;
+    editor_memory.permanent_storage = state.editor_memory_block;
+    editor_memory.transient_storage =
+        (u8 *)state.editor_memory_block + editor_memory.permanent_storage_size;
+    }
+#endif
 
-        editor_memory.debug_platform_read_entire_file =
+    PlatformApi platform = {0};
+    {
+        platform.debug_platform_read_entire_file =
             &debug_platform_read_entire_file;
-        editor_memory.debug_platform_free_file_memory =
+        platform.debug_platform_free_file_memory =
             &debug_platform_free_file_memory;
-        editor_memory.debug_platform_write_entire_file =
+        platform.debug_platform_write_entire_file =
             &debug_platform_write_entire_file;
     }
+    editor_params.platform = platform;
+
+    Arena *event_arena = arena_alloc();
+    Arena *renderer_arena = arena_alloc();
 
     // NOTE(fede): init sdl
     scc(SDL_Init(SDL_INIT_VIDEO));
     SDL_Window *window = scp(SDL_CreateWindow(
-                "VarED", 
-                0, 0,
-                WINDOW_WIDTH, WINDOW_HEIGHT,
-                SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL));
+            "VarED", 
+            0, 0,
+            WINDOW_WIDTH, WINDOW_HEIGHT,
+            SDL_WINDOW_RESIZABLE | SDL_WINDOW_OPENGL));
 
     // NOTE(fede): get highest display refresh rate
     int display_index = SDL_GetWindowDisplayIndex(window);
@@ -465,12 +648,12 @@ int main(void) {
     performance_frequency = SDL_GetPerformanceFrequency();
 
     /*
-     * STUDY(fede): This is 144hz for my machine and probably a lot more.
-     *              However, we are doing software rendering, so ~30hz is
-     *              probably the goal.
-     *
-     *              ** Investigate ways to chose FPS reliably. **
-     */
+    * STUDY(fede): This is 144hz for my machine and probably a lot more.
+    *              However, we are doing software rendering, so ~30hz is
+    *              probably the goal.
+    *
+    *              ** Investigate ways to chose FPS reliably. **
+    */
 
     int refresh_rate = mode.refresh_rate;
 
@@ -524,19 +707,13 @@ int main(void) {
         u32 vertex_count = max_quads * 4;
         u32 index_count = max_quads * 6;
 
-        u32 vertex_buffer_size = vertex_count * sizeof(Vertex);
-        u32 index_buffer_size = index_count * sizeof(i16);
-
-        // TODO(fede): Check if this should use the base address as before 
-        //          or include in previous mmap
-        u8 *buffer_memory = mmap(0, vertex_buffer_size + index_buffer_size,
-                PROT_READ | PROT_WRITE,
-                MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
+        Vertex *vertex_buffer = push_array(renderer_arena, Vertex, vertex_count); 
+        u16 *index_buffer = push_array(renderer_arena, u16, index_count); 
 
         renderer = (RendererOpengl){
-            .vertex_buffer = (Vertex *)buffer_memory,
+            .vertex_buffer = vertex_buffer,
             .vertex_count = vertex_count,
-            .index_buffer = (u16 *)(buffer_memory + vertex_buffer_size),
+            .index_buffer = index_buffer,
             .index_count = index_count,
         };
 
@@ -547,104 +724,106 @@ int main(void) {
     render_group.width = WINDOW_WIDTH;
     render_group.height = WINDOW_HEIGHT;
 
-    rg_init_vertex_index_buffers(&render_group, 
-            renderer.vertex_buffer, 
-            renderer.vertex_count, 
-            renderer.index_buffer, 
-            renderer.index_count);
-
+    SDL_StartTextInput();
 
     u64 last_counter = SDL_GetPerformanceCounter();
 
     while (global_editor_running) {
-        if (linux_editor_has_changed(&editor, editor_dll_filename)) {
-            linux_reload_editorlib(&editor, editor_dll_filename);
-            if (!editor.is_valid) {
-                printf("Editor is not valid: %s\n", dlerror());
-            }
+    if (linux_editor_has_changed(&editor, editor_dll_filename)) {
+        linux_reload_editorlib(&editor, editor_dll_filename);
+        if (!editor.is_valid) {
+            printf("Editor is not valid: %s\n", dlerror());
         }
+    }
 
-        EditorInput input = {0};
-        SDL_Event event = {0};
+    WMEventList *event_list = push_struct(event_arena, WMEventList);
+    SDL_Event event = {0};
 
-        while (SDL_PollEvent(&event)) {
-            switch (event.type) {
-            case SDL_QUIT: {
-                global_editor_running = false;
-            } break;
-            case SDL_WINDOWEVENT: {
-                SDL_WindowEvent window_event = event.window;
-                switch (window_event.event) {
-                case SDL_WINDOWEVENT_SIZE_CHANGED:
-                case SDL_WINDOWEVENT_RESIZED: {
-                    int render_width, render_height;
-                    SDL_GL_GetDrawableSize(window, &render_width, &render_height);
+    while (SDL_PollEvent(&event)) {
+        switch (event.type) {
+        case SDL_QUIT: {
+            global_editor_running = false;
+        } break;
+        case SDL_WINDOWEVENT: {
+            SDL_WindowEvent window_event = event.window;
+            switch (window_event.event) {
+            case SDL_WINDOWEVENT_SIZE_CHANGED:
+            case SDL_WINDOWEVENT_RESIZED: {
+                int render_width, render_height;
+                SDL_GL_GetDrawableSize(window, &render_width, &render_height);
 
-                    glViewport(0, 0, render_width, render_height);
+                glViewport(0, 0, render_width, render_height);
 
-                    render_group.width = render_width;
-                    render_group.height = render_height;
-                } break;
-                }
-            } break;
-            // case SDL_KEYUP:
-            case SDL_KEYDOWN: {
-                SDL_KeyboardEvent key_event = event.key;
-                // PrintKeyInfo(&key_event);
-
-                input.key_inputs[input.key_input_count++] = (KeyInput){
-                    .key = key_event.keysym.sym,
-                    .repeat =  key_event.repeat,
-                    .mod = sdl_keymod_to_keymodflag((SDL_Keymod)key_event.keysym.mod),
-                };
-
-                // TODO(fede): Handle key repeat
-                if (key_event.repeat)
-                    break;
-
-                // TODO(fede): handle cursor
-                switch (key_event.keysym.sym) {
-                case SDLK_UP:
-                case SDLK_LEFT:
-                case SDLK_DOWN:
-                case SDLK_RIGHT:
-                    {} break;
-                }
+                render_group.width = render_width;
+                render_group.height = render_height;
             } break;
             }
+        } break;
+        // case SDL_KEYUP:
+        case SDL_KEYDOWN: {
+            SDL_KeyboardEvent key_event = event.key;
+            PrintKeyInfo(&key_event);
+            SDL_Keymod mod = key_event.keysym.mod;
+
+            // TODO(fede): push-back macro
+            WMEventNode *event_n = push_struct(event_arena, WMEventNode);
+            QueuePush(event_list->first, event_list->last, event_n);
+            event_list->count++;
+
+            WMEvent *event = &event_n->v;
+
+            // TODO(fede): handle cursor
+            
+            event->key = sdl_get_wm_key(key_event.keysym.sym);
+            event->modifiers = sdl_get_wm_modifiers(mod);
+            event->repeat = key_event.repeat;
+            
+            // TODO(fede): Do UTF8 parsing
+            event->character = key_event.keysym.sym;
+        } break;
+        case SDL_TEXTINPUT: {
+            const char *text = event.text.text;
+            for (int i = 0; text[i]; i++) {
+            }
+        } break;
         }
+    }
 
-        // TODO(fede): editor input
-        editor.update_and_render(&editor_memory, &input, &render_group);
+    editor_params.events = event_list;
 
-        glClearColor(0x0, 0x0, 0x0, 0xFF);
-        glClear(GL_COLOR_BUFFER_BIT);
+    // TODO(fede): editor input
+    editor.update_and_render(&editor_params, &render_group);
 
-        renderer_sync(&renderer);
-        renderer_draw(&renderer, render_group);
+    glClearColor(0x0, 0x0, 0x0, 0xFF);
+    glClear(GL_COLOR_BUFFER_BIT);
 
-        SDL_GL_SwapWindow(window);
+    // renderer_sync(&renderer);
+    renderer_draw(&renderer, &render_group);
 
-        {
-            u64 end_counter = SDL_GetPerformanceCounter();
+    SDL_GL_SwapWindow(window);
 
-            f64 work_seconds_elapsed =
-                sdl_get_seconds_elapsed(last_counter, end_counter);
+    {
+        u64 end_counter = SDL_GetPerformanceCounter();
 
-            linux_sleep_to_target(last_counter, target_seconds_per_frame);
+        f64 work_seconds_elapsed =
+            sdl_get_seconds_elapsed(last_counter, end_counter);
 
-            f64 seconds_elapsed_for_frame =
-                sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+        linux_sleep_to_target(last_counter, target_seconds_per_frame);
 
-            last_counter = SDL_GetPerformanceCounter();
+        f64 seconds_elapsed_for_frame =
+            sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+
+        last_counter = SDL_GetPerformanceCounter();
 
 #if 0
-            f64 ms_per_frame = seconds_elapsed_for_frame * 1000;
-            f64 fps = 1000.0f / ms_per_frame;
+        f64 ms_per_frame = seconds_elapsed_for_frame * 1000;
+        f64 fps = 1000.0f / ms_per_frame;
 
-            printf("%.02fms/f, %.02ffps \n", ms_per_frame, fps);
+        printf("%.02fms/f, %.02ffps \n", ms_per_frame, fps);
 #endif
-        }
+    }
+
+    arena_clear(event_arena);
     }
 
     SDL_DestroyWindow(window);

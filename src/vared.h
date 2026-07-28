@@ -16,48 +16,11 @@
 
 #include "vared_platform.h"
 
-#if VARED_SLOW
-
-#define assert(expression)                                                     \
-    if (!(expression)) {                                                       \
-        *(int *)0 = 0;                                                         \
-    }
-
-#else
-
-#define assert(expression)
-
-#endif
-
-#define PI 3.14159265359f
-
-#define kilobytes(value) ((value) * 1024)
-#define megabytes(value) (kilobytes(value) * 1024)
-#define gigabytes(value) (megabytes(value) * 1024)
-#define terabytes(value) (gigabytes(value) * 1024)
-
-#include <stdlib.h>
-#if 0
-#define max(a, b) ((a) > (b) ? (a) : (b))
-#define min(a, b) ((a) < (b) ? (a) : (b))
-#define abs(a) ((a) < 0 ? -(a) : (a))
-
-// TODO(fede): does not work
-#define STBTT_fabs(abs); 
-#define STBTT_max(abs); 
-#define STBTT_min(min); 
-#endif 
-
-
-#define array_count(a) (sizeof((a)) / sizeof((a)[0]))
-
-#include "vared_arena.c"
-
 #define STB_RECT_PACK_IMPLEMENTATION
-#include "stb_rect_pack.h"
+#include "stb/stb_rect_pack.h"
 
 #define STB_TRUETYPE_IMPLEMENTATION
-#include "stb_truetype.h"
+#include "stb/stb_truetype.h"
 
 typedef struct {
     stbtt_fontinfo font_info;
@@ -84,12 +47,21 @@ typedef struct {
 } S8;
 
 typedef struct {
-    Arena arena;
+    S8 *lines; 
+    u32 count;
+    u32 size;
+} LineBuffer;
+
+typedef struct {
+    Arena *arena;
+    Arena *frame_arena;
 
     Font font;
 
     Rect2 text_window;
-    S8 string;
+    LineBuffer text;
+    u32 cursor_line;
+    u32 cursor_char;
 } EditorState;
 
 #endif // VARED_H

@@ -145,21 +145,78 @@ internal void renderer_sync(RendererOpengl *renderer) {
                     renderer->index_buffer);
 }
 
-internal void set_shader(RendererOpengl *renderer, RenderGroup rg, ShaderType shader) {
+internal void set_shader(RendererOpengl *renderer, RenderGroup *rg, ShaderType shader) {
     renderer->current_shader = shader;
     glUseProgram(renderer->programs[renderer->current_shader]);
 
     // TODO(fede): change when we have multiple uniforms.
     GLuint location = glGetUniformLocation(
             renderer->programs[renderer->current_shader], "screen_resolution");
-    glUniform2f(location, rg.width, rg.height);
+    glUniform2f(location, rg->width, rg->height);
 }
 
 #define consume_render_entry(type, var, buffer, idx) do { \
     var = (type *)(buffer + idx); \
     idx += sizeof(type); } while(0)
 
+internal void renderer_draw(RendererOpengl *renderer, RenderGroup *rg) {
+    RenderEntryList *entries = &rg->entries;
+    RenderEntryNode *entry_n = entries->first;
+    for  (u32 i = 0;
+            i < entries->count;
+            i++, QueuePop(entries->first, entries->last)) {
 
+        RenderEntry entry = entries->first->v;
+        switch (entry.type) {
+        case RenderEntryType_TextureLoad: {
+            RenderEntryTextureLoad texture_load = entry.texture_load;
+
+            // TODO(fede): Consume this into something else so that it is used 
+            //      apart from fonts.
+            glGenTextures(1, &renderer->font_texture);
+            glBindTexture(GL_TEXTURE_2D, renderer->font_texture);
+            glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+            glTexImage2D(
+                    GL_TEXTURE_2D, 0, GL_RED,
+                    texture_load.width, texture_load.height,
+                    0, GL_RED, GL_UNSIGNED_BYTE, texture_load.data);
+
+            // NOTE(fede): Do not know what this does. (linear filtering ?)
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+            glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+            
+            glBindTexture(GL_TEXTURE_2D, renderer->font_texture);
+        } break;
+        case RenderEntryType_Quad: {
+            RenderEntryQuad quad = entry.quad;
+
+            glBufferSubData(GL_ARRAY_BUFFER,
+                    0,
+                    4 * sizeof(Vertex),
+                    quad.vertices);
+            glBufferSubData(GL_ELEMENT_ARRAY_BUFFER,
+                    0,
+                    6 * sizeof(u16),
+                    quad.indices);
+
+            // glDrawRangeElementsBaseVertex(
+            glDrawRangeElements(GL_TRIANGLES, 0, 6, 6, GL_UNSIGNED_SHORT, NULL);
+        } break;
+        case RenderEntryType_ShaderSet: {
+            RenderEntryShaderSet shader_set = entry.shader_set;
+            set_shader(renderer, rg, shader_set.shader);
+        } break;
+        case RenderEntryType_Count:
+        case RenderEntryType_None:
+            assert(false);
+        }
+    }
+
+    assert(entries->first == 0);
+    *entries = (RenderEntryList){0};
+}
+
+#if 0
 internal void renderer_draw(RendererOpengl *renderer, RenderGroup rg) {
     u8 *push_buffer = rg.push_buffer_arena.base;
 
@@ -217,3 +274,4 @@ internal void renderer_draw(RendererOpengl *renderer, RenderGroup rg) {
         }
     }
 }
+#endif

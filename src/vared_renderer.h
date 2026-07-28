@@ -2,8 +2,6 @@
 #define VARED_RENDERER_H
 
 #include "vared_platform.h"
-#include "vared_math.h"
-#include "vared_arena.h"
 
 #define MAX_VERTICES 3
 
@@ -39,8 +37,8 @@ typedef struct {
 
 // TODO(fede): Change to batch rendering. ** IMPORTANT **
 typedef struct {
-    u32 vertex_offset;
-    u32 index_offset;
+    Vertex vertices[4];
+    u16 indices[6];
 } RenderEntryQuad;
 
 typedef struct {
@@ -53,10 +51,28 @@ typedef struct {
 } RenderEntryShaderSet;
 
 typedef struct {
-    Arena push_buffer_arena;    // NOTE(fede): Base allocated on permanent storage 
-    Arena vertex_buffer_arena;  // NOTE(fede): Shares base with Renderer vertex_buffer
-    Arena index_buffer_arena;   // NOTE(fede): Shares base with Renderer index_buffer
+    RenderEntryType type;
+    union {
+        RenderEntryQuad quad;
+        RenderEntryTextureLoad texture_load;
+        RenderEntryShaderSet shader_set;
+    };
+} RenderEntry;
 
+typedef struct RenderEntryNode RenderEntryNode;
+struct RenderEntryNode {
+    RenderEntryNode *next;
+    RenderEntry v;
+};
+
+typedef struct {
+    RenderEntryNode *first;
+    RenderEntryNode *last;
+    u32 count;
+} RenderEntryList;
+
+typedef struct {
+    RenderEntryList entries;
     u32 width;
     u32 height;
 } RenderGroup;
