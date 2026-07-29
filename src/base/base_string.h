@@ -13,7 +13,8 @@ internal String8 str8(u8 *str, u64 size);
 
 internal String8 str8_skip(String8 str, u64 n);
 
-internal u64 cstr_len(u8 *cstr);
+internal u64 cstr_len(char *cstr);
+internal char *cstr_from_str8(Arena *arena, String8 str);
 
 ////////////////////////////////////////////////////////////////////////////////
 // NOTE(fede): UTF-8

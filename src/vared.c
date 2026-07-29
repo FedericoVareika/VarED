@@ -35,7 +35,7 @@ internal void insert_char(Line *line, u32 *cursor, char c) {
     *cursor = *cursor + 1;
 }
 
-internal void new_line(Arena *arena, LineBuffer *text, u32 at) {
+internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {
     assert(text->count < text->size);
     for (u32 i = text->count; i > at; i--) {
         text->lines[i] = text->lines[i - 1];
@@ -43,6 +43,83 @@ internal void new_line(Arena *arena, LineBuffer *text, u32 at) {
 
     text->lines[at] = line_alloc(arena, kilobytes(1));
     text->count++;
+
+    return &text->lines[at];
+}
+
+internal Vec2 render_unicode_line_in_text_window(
+        Arena *arena,
+        Font *font,
+        RenderGroup *render_group,
+        Line *line,
+        Rect2 text_window,
+        v2 text_offset) {
+
+    FontCache *fc = font->cache; 
+    FontProvider *fp = font->provider; 
+
+    // NOTE(fede): Assume text_offset sets the baseline
+    v2 text_origin = v2_add(text_window.min, text_offset);
+
+    v2 text_pos  = {0};
+
+    String8 line_str = str8(line->buf, line->count);
+    while (line_str.size) {
+        UnicodeCodepoint codepoint = utf8_decode(line_str.str, line_str.size);
+        assert(codepoint.byte_size <= 4);
+
+        // TODO(fede): 
+        //      - Add support for multiple textures.
+        //      - Render an entire line at once (Font Run)? 
+        FontGlyph *glyph = fc_get_codepoint_glyph(fc, fp, codepoint);
+        
+        {
+            v2 pos = v2_add(text_origin, text_pos);
+            pos = v2_add(pos, (v2){
+                glyph->bearing_x,
+                -glyph->bearing_y, // check if neg or pos
+            });
+            v2 dim = {
+                glyph->width,
+                glyph->height,
+            };
+
+            Rect2 glyph_pos = rect2_min_dim(pos, dim);
+
+            rg_push_textured_rect2(arena, render_group,
+                    glyph_pos, (v4){1, 1, 1, 1}, glyph->uvs);
+        }
+
+        text_pos.x = glyph->advance; 
+
+        // if (!glyph) {
+        //     Temp scratch = begin_temp();
+        //
+        //     Bitmap2d fp_bitmap = fp_raster_codepoint_glyph(scratch.arena, fp, codepoint);
+        //
+        //     Bitmap2d atlas_dst = fc_
+        //
+        //     for (u64 row_pos = 0;
+        //             row_pos < glyph_bitmap.size;
+        //             row_pos += glyph_bitmap.stride) {
+        //         u8 *row = (u8 *)glyph_bitmap.buf + row_pos;
+        //         for (u64 col = 0; col < glyph_bitmap.width; col++) {
+        //
+        //         }
+        //     }
+        //
+        //     glyph = fc_add_glyph(font->fc, glyph_info);
+        //
+        //
+        //     // STUDY(fede): return something like "Buffer" type instead of 
+        //     //      String8 which is confusing.
+        //     String8 bitmap = fp_raster_glyph(scratch.arena, font->face, glyph_info);
+        //
+        //     fc_set_glyph_bitmap(font->fc, glyph, bitmap.str, bitmap.size);
+        //
+        //     end_temp(scratch);
+        // }
+    }
 }
 
 internal void render_line_in_rect2(
@@ -90,7 +167,7 @@ internal void render_line_in_rect2(
         if (current_x + scale * advance_width > window_rect->max.x) {
             current_x = window_rect->min.x + scale * left_side_bearing;
             current_y += scale * (f32)(font->y_increment);
-            window_rect->min.y += scale;
+            window_rect->min.y += scale * (f32)(font->y_increment);
         }
 
         stbtt_GetPackedQuad(
@@ -164,7 +241,9 @@ internal void editor_init(EditorParams *params, RenderGroup *render_group) {
         stbtt_fontinfo *font_info = &font->font_info;
 
         DebugReadFileResult font_file = platform.debug_platform_read_entire_file(
-                0, "fonts/Roboto/static/Roboto-Medium.ttf");
+                0, "fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
+        
+        // 0, "fonts/Roboto/static/Roboto-Medium.ttf");
         // 0, "fonts/IosevkaTermNerdFontMono-Light.ttf");
         // 0, "fonts/IosevkaTermNerdFont-Light.ttf");
 
@@ -214,6 +293,8 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
         clear_frame_arena = false;
     }
 
+    PlatformApi platform = params->platform;
+
     EditorState *state = (EditorState *)*params->memory;
     Arena *frame_arena = state->frame_arena;
 
@@ -222,7 +303,8 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
 
     state->text_window = rect2_center_dim(
             (v2){render_group->width / 2, render_group->height / 2},
-            (v2){500, 6 * state->font.font_height});
+            (v2){render_group->width - 20, render_group->height - 20});
+            // (v2){render_group->width, 40 * state->font.font_height});
 
     Font font = state->font;
     int min_key = font.first_char;
@@ -239,6 +321,8 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
             state->cursor_char = 0;
         } break;
 
+        // TODO(fede): UTF8 movement, for now this just moves per-byte instead
+        //      of per-codepoint.
         case WMKey_BACKSPACE: {
             Line *line = &state->text.lines[state->cursor_line];
             u32 n = event.repeat == 0 ? 1 : event.repeat;
@@ -267,6 +351,43 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
                     state->text.count) {
                 state->cursor_line++;
                 state->cursor_char = 0;
+            }
+        } break;
+
+        case WMKey_o: {
+            if ((event.modifiers & WMModifier_ctrl) && 
+                !(event.modifiers & WMModifier_shift) &&
+                !(event.modifiers & WMModifier_alt)) {
+                Line line = state->text.lines[state->cursor_line];
+                String8 path = str8(line.buf, line.count);
+
+                // TODO(fede): Use scratch arena and implement pop
+                char *path_cstr = cstr_from_str8(frame_arena, path);
+                DebugReadFileResult file = platform.debug_platform_read_entire_file(0, path_cstr);
+
+                if (!file.memory) {
+                    printf("Could not open file: %s\n", path_cstr);
+                    break;
+                }
+
+                Line *new = new_line(state->arena, &state->text, state->cursor_line + 1);
+                state->cursor_line++;
+                state->cursor_char = 0;
+
+                u32 bytes_to_copy = min(file.size, new->size);
+                mem_copy(new->buf, file.memory, bytes_to_copy);
+                new->count = bytes_to_copy;
+            }
+        } break;
+
+        case WMKey_l: {
+            if ((event.modifiers & WMModifier_ctrl) && 
+                !(event.modifiers & WMModifier_shift) &&
+                !(event.modifiers & WMModifier_alt)) {
+                Line line = state->text.lines[state->cursor_line];
+                String8 line_str = str8(line.buf, line.count);
+                char *line_cstr = cstr_from_str8(frame_arena, line_str);
+                printf("%s\n", line_cstr);
             }
         } break;
 

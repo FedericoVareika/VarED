@@ -13,12 +13,19 @@ internal String8 str8_skip(String8 str, u64 n) {
     return str;
 }
 
-internal u64 cstr_len(u8 *cstr) {
+internal u64 cstr_len(char *cstr) {
     u64 result = 0;
     while (*cstr++) {
         result++;
     }
 
+    return result;
+}
+
+internal char *cstr_from_str8(Arena *arena, String8 str) {
+    char *result = push_size(arena, str.size + 1);
+    mem_copy(result, str.str, str.size);
+    result[str.size] = 0;
     return result;
 }
 

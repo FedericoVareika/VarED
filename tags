@@ -16086,7 +16086,7 @@ UIViewController	/usr/local/include/SDL2/SDL_syswm.h	/^typedef struct _UIViewCon
 UIWindow	/usr/local/include/SDL2/SDL_syswm.h	/^typedef struct _UIWindow UIWindow;$/;"	t	typeref:struct:_UIWindow
 UNICODE_BOM_NATIVE	/usr/local/include/SDL2/SDL_ttf.h	146;"	d
 UNICODE_BOM_SWAPPED	/usr/local/include/SDL2/SDL_ttf.h	147;"	d
-UTF8_REPLACEMENT_CHARACTER	src/base/base_string.c	28;"	d	file:
+UTF8_REPLACEMENT_CHARACTER	src/base/base_string.c	35;"	d	file:
 Uint16	/usr/local/include/SDL2/SDL_stdinc.h	/^typedef uint16_t Uint16;$/;"	t
 Uint32	/usr/local/include/SDL2/SDL_stdinc.h	/^typedef uint32_t Uint32;$/;"	t
 Uint64	/usr/local/include/SDL2/SDL_stdinc.h	/^typedef uint64_t Uint64;$/;"	t
@@ -16465,8 +16465,10 @@ count	src/vared_renderer.h	/^    u32 count;$/;"	m	struct:__anon28
 country	/usr/local/include/SDL2/SDL_locale.h	/^    const char *country;  \/**< A country, like "US" for America. Can be NULL. *\/$/;"	m	struct:SDL_Locale
 crc32_table	/usr/local/include/SDL2/SDL_test_crc32.h	/^    CrcUint32    crc32_table[256]; \/* CRC table *\/$/;"	m	struct:__anon77
 csensor	/usr/local/include/SDL2/SDL_events.h	/^    SDL_ControllerSensorEvent csensor;      \/**< Game Controller sensor event data *\/$/;"	m	union:SDL_Event
-cstr_len	src/base/base_string.c	/^internal u64 cstr_len(u8 *cstr) {$/;"	f
-cstr_len	src/base/base_string.h	/^internal u64 cstr_len(u8 *cstr);$/;"	p
+cstr_from_str8	src/base/base_string.c	/^internal char *cstr_from_str8(Arena *arena, String8 str) {$/;"	f
+cstr_from_str8	src/base/base_string.h	/^internal char *cstr_from_str8(Arena *arena, String8 str);$/;"	p
+cstr_len	src/base/base_string.c	/^internal u64 cstr_len(char *cstr) {$/;"	f
+cstr_len	src/base/base_string.h	/^internal u64 cstr_len(char *cstr);$/;"	p
 ctouchpad	/usr/local/include/SDL2/SDL_events.h	/^    SDL_ControllerTouchpadEvent ctouchpad;  \/**< Game Controller touchpad event data *\/$/;"	m	union:SDL_Event
 current	/usr/local/include/SDL2/SDL_test_font.h	/^    int current;$/;"	m	struct:SDLTest_TextWindow
 current_shader	src/vared_renderer_opengl.h	/^    ShaderType current_shader;$/;"	m	struct:__anon18
@@ -20653,6 +20655,7 @@ interval	/usr/local/include/SDL2/SDL_haptic.h	/^    Uint16 interval;        \/**
 interval	/usr/local/include/SDL2/SDL_haptic.h	/^    Uint16 interval;        \/**< How soon it can be triggered again after button. *\/$/;"	m	struct:SDL_HapticRamp
 interval	/usr/local/include/SDL2/SDL_haptic.h	/^    Uint16 interval;    \/**< How soon it can be triggered again after button. *\/$/;"	m	struct:SDL_HapticPeriodic
 invert	src/stb/stb_truetype.h	/^   int invert;$/;"	m	struct:stbtt__edge
+is_opening_file	src/vared.h	/^    bool is_opening_file;$/;"	m	struct:__anon43
 is_valid	src/linux_vared.h	/^    bool is_valid; $/;"	m	struct:__anon30
 iscapture	/usr/local/include/SDL2/SDL_events.h	/^    Uint8 iscapture;    \/**< zero if an output device, non-zero if a capture device. *\/$/;"	m	struct:SDL_AudioDeviceEvent
 jaxis	/usr/local/include/SDL2/SDL_events.h	/^    SDL_JoyAxisEvent jaxis;                 \/**< Joystick axis event data *\/$/;"	m	union:SDL_Event
@@ -20876,7 +20879,7 @@ naxes	/usr/local/include/SDL2/SDL_joystick.h	/^    Uint16 naxes;       \/**< the
 nbuttons	/usr/local/include/SDL2/SDL_joystick.h	/^    Uint16 nbuttons;    \/**< the number of buttons on this joystick *\/$/;"	m	struct:SDL_VirtualJoystickDesc
 ncolors	/usr/local/include/SDL2/SDL_pixels.h	/^    int ncolors;$/;"	m	struct:SDL_Palette
 needed	/usr/local/include/SDL2/SDL_audio.h	/^    int needed;                 \/**< Set to 1 if conversion possible *\/$/;"	m	struct:SDL_AudioCVT
-new_line	src/vared.c	/^internal void new_line(Arena *arena, LineBuffer *text, u32 at) {$/;"	f
+new_line	src/vared.c	/^internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {$/;"	f
 next	/usr/local/include/SDL2/SDL_assert.h	/^    const struct SDL_AssertData *next;$/;"	m	struct:SDL_AssertData	typeref:struct:SDL_AssertData::SDL_AssertData
 next	/usr/local/include/SDL2/SDL_hidapi.h	/^    struct SDL_hid_device_info *next;$/;"	m	struct:SDL_hid_device_info	typeref:struct:SDL_hid_device_info::SDL_hid_device_info
 next	/usr/local/include/SDL2/SDL_pixels.h	/^    struct SDL_PixelFormat *next;$/;"	m	struct:SDL_PixelFormat	typeref:struct:SDL_PixelFormat::SDL_PixelFormat
@@ -21489,7 +21492,7 @@ userdata	/usr/local/include/SDL2/SDL_audio.h	/^    void *userdata;             \
 userdata	/usr/local/include/SDL2/SDL_joystick.h	/^    void *userdata;     \/**< User data pointer passed to callbacks *\/$/;"	m	struct:SDL_VirtualJoystickDesc
 userdata	/usr/local/include/SDL2/SDL_surface.h	/^    void *userdata;             \/**< Read-write *\/$/;"	m	struct:SDL_Surface
 userdata	src/stb/stb_truetype.h	/^   void           * userdata;$/;"	m	struct:stbtt_fontinfo
-utf8_byte_class	src/base/base_string.c	61;"	d	file:
+utf8_byte_class	src/base/base_string.c	68;"	d	file:
 utf8_byte_class_data_mask	src/base/base_string.c	/^internal u32 utf8_byte_class_data_mask[5] = {$/;"	v
 utf8_byte_class_map	src/base/base_string.c	/^internal int utf8_byte_class_map[32] = {$/;"	v
 utf8_byte_class_mask	src/base/base_string.c	/^internal u32 utf8_byte_class_mask[5] = {$/;"	v

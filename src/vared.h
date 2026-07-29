@@ -16,6 +16,7 @@
 
 #include "vared_platform.h"
 
+// TODO(fede): Wrap in font provider
 #define STB_RECT_PACK_IMPLEMENTATION
 #include "stb/stb_rect_pack.h"
 
@@ -62,6 +63,8 @@ typedef struct {
     LineBuffer text;
     u32 cursor_line;
     u32 cursor_char;
+
+    bool is_opening_file;
 } EditorState;
 
 #endif // VARED_H
