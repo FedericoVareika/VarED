@@ -10,12 +10,15 @@ linker_flags="-lm -ldl"
 
 glew_libdir="$(pkg-config --variable=libdir glew)"
 
+sdl2_include="$(pkg-config --variable=includedir sdl2)/SDL2"
+
 ctags --recurse=yes \
     --exclude=.git \
     --exclude=build \
     --exclude=data \
     --exclude=vendored \
-    --c++-kinds=+p
+    --c++-kinds=+p \
+    . $sdl2_include
 
 mkdir -p build
 

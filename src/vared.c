@@ -8,30 +8,30 @@
 
 #include <stdio.h>
 
-internal S8 s8_alloc(Arena *arena, u32 size) {
-    S8 string = {0};
-    string.buf = push_array(arena, u8, size);
-    string.count = 0;
-    string.size = size;
-    return string;
+internal Line line_alloc(Arena *arena, u32 size) {
+    Line line = {0};
+    line.buf = push_array(arena, u8, size);
+    line.count = 0;
+    line.size = size;
+    return line;
 }
 
-internal void shift_at_cursor(S8 *text, u32 cursor, int n) {
-    assert(text->size >= text->count + n);
-    assert(cursor <= text->count);
-    assert(cursor + n < text->size);
-    assert((i64)cursor + n > 0);
+internal void shift_at_cursor(Line *line, u32 cursor, int n) {
+    assert(line->size >= line->count + n);
+    assert(cursor <= line->count);
+    assert(cursor + n < line->size);
+    assert((i64)cursor + n >= 0);
 
-    u8 *src = text->buf + cursor;
+    u8 *src = line->buf + cursor;
     u8 *dst = src + n;
-    u64 count = text->count - cursor; 
+    u64 count = line->count - cursor; 
     mem_move(dst, src, count);
-    text->count += n;
+    line->count += n;
 }
 
-internal void insert_char(S8 *string, u32 *cursor, char c) {
-    shift_at_cursor(string, *cursor, 1);
-    string->buf[*cursor] = c;
+internal void insert_char(Line *line, u32 *cursor, char c) {
+    shift_at_cursor(line, *cursor, 1);
+    line->buf[*cursor] = c;
     *cursor = *cursor + 1;
 }
 
@@ -41,14 +41,14 @@ internal void new_line(Arena *arena, LineBuffer *text, u32 at) {
         text->lines[i] = text->lines[i - 1];
     }
 
-    text->lines[at] = s8_alloc(arena, kilobytes(1));
+    text->lines[at] = line_alloc(arena, kilobytes(1));
     text->count++;
 }
 
-internal void render_s8_in_rect2(
+internal void render_line_in_rect2(
         EditorState *state,
         RenderGroup *render_group,
-        S8 string,
+        Line line,
         u32 *cursor,
         Rect2 *window_rect,
         v4 color) {
@@ -66,14 +66,24 @@ internal void render_s8_in_rect2(
 
     v2 cursor_pos = { current_x, current_y };
 
-    char *c = (char *)string.buf;
-    for (u32 string_idx = 0;
-            string_idx < string.count; 
-            string_idx++, c++) {
-        int advance_width, left_side_bearing; 
-        stbtt_GetCodepointHMetrics(&font->font_info, *c, &advance_width, &left_side_bearing);
+    u32 codepoint_idx = 0;
+    String8 line_str = str8(line.buf, line.count);
+    while (line_str.size) {
+        UnicodeCodepoint codepoint = utf8_decode(line_str.str, line_str.size); 
+        line_str = str8_skip(line_str, codepoint.byte_size);
 
-        if (string_idx == 0) {
+        // TODO(fede): Use font cache to dynamically make/cache the bitmaps.
+
+        u8 ascii = (u8)codepoint.character;
+        if (codepoint.byte_size != 1 || codepoint.character < ' ' || codepoint.character > 127) {
+            // fprintf(stderr, "Could not render non-ascii character: 0x%X\n", codepoint.character);
+            continue;
+        }
+
+        int advance_width, left_side_bearing; 
+        stbtt_GetCodepointHMetrics(&font->font_info, ascii, &advance_width, &left_side_bearing);
+
+        if (codepoint_idx == 0) {
             current_x += scale * left_side_bearing;
         }
 
@@ -86,7 +96,7 @@ internal void render_s8_in_rect2(
         stbtt_GetPackedQuad(
                 font->char_data_for_range,
                 font->pixels_width, font->pixels_height,
-                *c - font->first_char, 
+                ascii - font->first_char, 
                 &current_x, &current_y, &q,
                 true);
 
@@ -100,15 +110,17 @@ internal void render_s8_in_rect2(
                 color,
                 rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}));
 
-        if (string_idx < string.count) {
-            current_x += scale * (f32)stbtt_GetCodepointKernAdvance(
-                    &font->font_info, *c, *(c + 1));
-        }
+        // TODO(fede): Codepoint kerning with stbtt_GetKerningTable
+        // if (line_idx < line.count) {
+        //     current_x += scale * (f32)stbtt_GetCodepointKernAdvance(
+        //             &font->font_info, *ascii, *(c + 1));
+        // }
         
-        if (cursor && string_idx + 1 == *cursor) {
+        if (cursor && codepoint_idx + 1 == *cursor) {
             cursor_pos = (v2){ current_x, current_y };
         }
 
+        codepoint_idx++;
     }
 
     window_rect->min.y += scale * (f32)(font->y_increment);
@@ -190,7 +202,7 @@ internal void editor_init(EditorParams *params, RenderGroup *render_group) {
 
     // TODO(fede): Actual text data strutcture
     state->text.size = 1000;
-    state->text.lines = push_array(state->arena, S8, state->text.size);
+    state->text.lines = push_array(state->arena, Line, state->text.size);
     state->text.count = 0;
     new_line(state->arena, &state->text, 0);
 }
@@ -220,14 +232,21 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
     for (; events->first; QueuePop(events->first, events->last)) {
         WMEvent event = events->first->v;
         switch (event.key) {
-        case WMKey_NONE: 
-            break;
 
         case WMKey_RETURN: {
             new_line(state->arena, &state->text, state->cursor_line + 1);
             state->cursor_line++;
             state->cursor_char = 0;
         } break;
+
+        case WMKey_BACKSPACE: {
+            Line *line = &state->text.lines[state->cursor_line];
+            u32 n = event.repeat == 0 ? 1 : event.repeat;
+            n = min(state->cursor_char, n);
+            shift_at_cursor(line, state->cursor_char, -(int)n);
+            state->cursor_char -= n;
+        } break;
+
         case WMKey_LEFT: {
             if (state->cursor_char > 0) 
                 state->cursor_char--;
@@ -252,10 +271,16 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
         } break;
 
         default: {
-            S8 *line = &state->text.lines[state->cursor_line];
-            u8 c = (u8)event.character;
-            assert((u32)c == event.character); // NOTE(fede): Only ASCII
-            insert_char(line, &state->cursor_char, c);
+            if (event.character) {
+                Line *line = &state->text.lines[state->cursor_line];
+                u8 insert_chars[4] = {0};
+                u32 codepoint_byte_size = utf8_encode(event.character, (u8 *)insert_chars);
+                for (u32 byte_idx = 0;
+                        byte_idx < codepoint_byte_size;
+                        byte_idx++) {
+                    insert_char(line, &state->cursor_char, insert_chars[byte_idx]);
+                }
+            }
         } break; 
         }
     }
@@ -266,7 +291,7 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
     Rect2 line_window = state->text_window;
     for (u32 line_idx = 0; line_idx < state->text.count; line_idx++) {
         u32 *cursor_char = state->cursor_line == line_idx ? &state->cursor_char : 0;
-        render_s8_in_rect2(
+        render_line_in_rect2(
                 state, 
                 render_group,
                 state->text.lines[line_idx],

@@ -41,13 +41,13 @@ typedef struct {
 } Font;
 
 typedef struct {
+    u64 count;
+    u64 size;
     u8 *buf;
-    u32 count;
-    u32 size;
-} S8;
+} Line;
 
 typedef struct {
-    S8 *lines; 
+    Line *lines; 
     u32 count;
     u32 size;
 } LineBuffer;

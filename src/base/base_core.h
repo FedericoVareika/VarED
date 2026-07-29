@@ -71,12 +71,13 @@ typedef struct {
 #define gigabytes(value) (megabytes(value) * 1024)
 #define terabytes(value) (gigabytes(value) * 1024)
 
-#include <stdlib.h>
-#if 0
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
+
+#if 0 
 #define abs(a) ((a) < 0 ? -(a) : (a))
 
+#include <stdlib.h>
 // TODO(fede): does not work
 #define STBTT_fabs(abs);
 #define STBTT_max(abs);

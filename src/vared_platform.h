@@ -169,6 +169,12 @@ typedef struct {
 } WMEventList;
 
 typedef struct {
+    WMEventList *events;
+    String8 *clipboard;
+
+} Input;
+
+typedef struct {
 #if VARED_INTERNAL
     DEBUGPlatformReadEntireFile *debug_platform_read_entire_file;
     DEBUGPlatformFreeEntireFileMemory *debug_platform_free_file_memory;

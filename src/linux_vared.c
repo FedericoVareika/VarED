@@ -599,23 +599,6 @@ int main(void) {
     EditorParams editor_params = {0};
     editor_params.memory = &memory;
 
-#if 0
-    EditorMemory editor_memory = {0};
-    editor_memory.permanent_storage_size = megabytes(64);
-    editor_memory.transient_storage_size = gigabytes((u64)1);
-    {
-    state.editor_memory_size = editor_memory.permanent_storage_size +
-                             editor_memory.transient_storage_size;
-    state.editor_memory_block =
-        mmap(base_address, state.editor_memory_size, PROT_READ | PROT_WRITE,
-             MAP_PRIVATE | MAP_ANONYMOUS, -1, 0);
-
-    editor_memory.permanent_storage = state.editor_memory_block;
-    editor_memory.transient_storage =
-        (u8 *)state.editor_memory_block + editor_memory.permanent_storage_size;
-    }
-#endif
-
     PlatformApi platform = {0};
     {
         platform.debug_platform_read_entire_file =
@@ -777,14 +760,30 @@ int main(void) {
             event->key = sdl_get_wm_key(key_event.keysym.sym);
             event->modifiers = sdl_get_wm_modifiers(mod);
             event->repeat = key_event.repeat;
-            
-            // TODO(fede): Do UTF8 parsing
-            event->character = key_event.keysym.sym;
         } break;
         case SDL_TEXTINPUT: {
-            const char *text = event.text.text;
-            for (int i = 0; text[i]; i++) {
+            u8 *text = (u8 *)event.text.text;
+            u64 max_size = SDL_TEXTINPUTEVENT_TEXT_SIZE;
+            // String8 text_str = S("ñ");
+            // u8 *text = text_str.str;
+            // u64 max_size = text_str.size;
+
+            while (*text) {
+                UnicodeCodepoint codepoint = utf8_decode(
+                        text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
+                text += codepoint.byte_size;
+
+                if (!codepoint.character)
+                    break;
+
+                WMEventNode *event_n = push_struct(event_arena, WMEventNode);
+                QueuePush(event_list->first, event_list->last, event_n);
+                event_list->count++;
+
+                WMEvent *event = &event_n->v;
+                event->character = codepoint.character;
             }
+            
         } break;
         }
     }
