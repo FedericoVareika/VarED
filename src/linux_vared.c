@@ -4,14 +4,12 @@
 #define GL_GLEXT_PROTOTYPES
 #include <SDL2/SDL_opengl.h>
 
-#include "base/base_inc.h"
-#include "base/base_inc.c"
+#include "vared.h"
+#include "vared.c"
 
-#include "vared_platform.h"
 #include "linux_vared.h"
 
-#include "vared_renderer_opengl.c"
-#include "vared_renderer.c"
+// #include "vared_renderer_opengl.c"
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -68,7 +66,9 @@ internal void linux_sleep_to_target(u64 last_counter, f64 target_seconds) {
 
 #if VARED_INTERNAL
 
-internal DEBUG_PLATFORM_READ_ENTIRE_FILE(debug_platform_read_entire_file) {
+// TODO(fede): Add arenas to this
+internal DebugReadFileResult debug_platform_read_entire_file(ThreadContext *thread,
+        char *filename) {
     DebugReadFileResult result = {0};
 
     int fd = open(filename, O_RDONLY);
@@ -101,13 +101,15 @@ internal DEBUG_PLATFORM_READ_ENTIRE_FILE(debug_platform_read_entire_file) {
     return result;
 }
 
-internal DEBUG_PLATFORM_FREE_FILE_MEMORY(debug_platform_free_file_memory) {
+internal void debug_platform_free_file_memory(ThreadContext *thread,
+        DebugReadFileResult file_result) {
     if (file_result.memory) {
         munmap(file_result.memory, file_result.size);
     }
 }
 
-internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file) {
+internal bool debug_platform_write_entire_file(ThreadContext *thread,
+        char *filename, u64 size, void *memory) {
     /*
      * NOTE(fede): When O_CREAT flag is set, a *mode* flag must be set as well.
      *
@@ -137,179 +139,11 @@ internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file) {
 
 #endif
 
-internal const char *callback_type_as_cstr(GLenum type) {
-    switch (type) {
-    case GL_DEBUG_TYPE_ERROR:
-        return "ERROR";
-    case GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR:
-        return "DEPRECATED_BEHAVIOR";
-    case GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR:
-        return "UNDEFINED_BEHAVIOR";
-    case GL_DEBUG_TYPE_PORTABILITY:
-        return "PORTABILITY";
-    case GL_DEBUG_TYPE_PERFORMANCE:
-        return "PERFORMANCE";
-    case GL_DEBUG_TYPE_OTHER:
-        return "OTHER";
-    }
-}
-
-internal const char *callback_severity_as_cstr(GLenum severity) {
-    switch (severity){
-    case GL_DEBUG_SEVERITY_LOW:
-        return "LOW";
-    case GL_DEBUG_SEVERITY_MEDIUM:
-        return "MEDIUM";
-    case GL_DEBUG_SEVERITY_HIGH:
-        return "HIGH";
-    case GL_DEBUG_SEVERITY_NOTIFICATION: 
-        return "NOTIFICATION";
-    }
-}
-
-internal void MessageCallback(GLenum source,
-        GLenum type,
-        GLuint id,
-        GLenum severity,
-        GLsizei length,
-        const GLchar* message,
-        const void* userParam)
-{
-    (void) source;
-    (void) id;
-    (void) length;
-    (void) userParam;
-
-    fprintf(stderr, "GL CALLBACK: type = ** %s **, severity = ** %s **, message = %s\n",
-            callback_type_as_cstr(type),
-            callback_severity_as_cstr(severity),
-            message);
-}
-
-void scc(int code) {
-    if (code < 0) {
-        fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
-        assert(false);
-    }
-}
-
-void *scp(void *ptr) {
-    if (ptr == NULL) {
-        fprintf(stderr, "SDL ERROR: %s\n", SDL_GetError());
-        assert(false);
-    }
-    return ptr;
-}
-
 internal int string_len(char *str) {
     int result = 0;
     while (*str++)
         result++;
     return result;
-}
-
-internal void cat_strings(int source_a_count, char *source_a,
-                          int source_b_count, char *source_b, int dest_count,
-                          char *dest) {
-    for (int i = 0; i < source_a_count; i++) {
-        *dest++ = *source_a++;
-    }
-
-    for (int i = 0; i < source_b_count; i++) {
-        *dest++ = *source_b++;
-    }
-
-    *dest++ = 0;
-}
-
-internal void linux_get_exe_path(LinuxState *state) {
-    int filename_len = readlink("/proc/self/exe", state->exe_filename,
-                                array_count(state->exe_filename));
-
-    state->one_past_last_slash = state->exe_filename + filename_len;
-    for (char *scan = state->exe_filename; *scan; scan++) {
-        if (*scan == '/') {
-            state->one_past_last_slash = scan + 1;
-        }
-    }
-}
-
-internal void linux_build_global_filename_at_exe_location(LinuxState *state,
-                                                          char *dest,
-                                                          char *filename) {
-    cat_strings(state->one_past_last_slash - state->exe_filename,
-                state->exe_filename, string_len(filename), filename,
-                LINUX_FILEPATH_MAX_COUNT, dest);
-}
-
-EDITOR_UPDATE_AND_RENDER(editor_update_and_render_stub) {}
-
-internal bool linux_editor_has_changed(EditorLib *editor, char *filename) {
-    bool result = false;
-
-    struct stat stat_;
-    if (stat(filename, &stat_) == -1) {
-        // TODO(fede): logging
-        assert(!"File does not exist.");
-    };
-
-    if (stat_.st_size == 0) {
-        return false;
-    }
-
-    if ((editor->last_modified.tv_sec != stat_.st_mtim.tv_sec) ||
-        (editor->last_modified.tv_nsec != stat_.st_mtim.tv_nsec)) {
-        result = true;
-        editor->last_modified = stat_.st_mtim;
-    }
-
-    return result;
-}
-
-internal EditorLib linux_load_editorlib(char *filename) {
-    EditorLib result = {0};
-
-    result.handle = dlopen(filename, RTLD_NOW);
-
-    if (result.handle) {
-        result.is_valid = true;
-        // NOTE(fede): iso c bullshit
-        *(void**)(&result.update_and_render) = dlsym(result.handle, "editor_update_and_render");
-    } else {
-        result.is_valid = false;
-        result.update_and_render = editor_update_and_render_stub;
-    }
-
-    return result;
-}
-
-internal void linux_reload_editorlib(EditorLib *editor, char *filename) {
-    if (editor->is_valid)
-        dlclose(editor->handle);
-    editor->handle = dlopen(filename, RTLD_NOW);
-
-    if (editor->handle) {
-        editor->is_valid = true;
-        // NOTE(fede): iso c bullshit
-        *(void**)(&editor->update_and_render) = dlsym(editor->handle, "editor_update_and_render");
-    } else {
-        editor->is_valid = false;
-        editor->update_and_render = editor_update_and_render_stub;
-    }
-}
-
-internal void linux_unload_editorlib(EditorLib *editor) {
-    if (editor->is_valid) {
-        dlclose(editor->handle);
-        editor->update_and_render = editor_update_and_render_stub;
-        editor->is_valid = false;
-    } else {
-        assert(!editor->handle);
-    }
-}
-
-internal WMEvent *wm_event_list_add(Arena *arena, WMEventList *event_list) {
-    
 }
 
 internal WMKey sdl_get_wm_key(SDL_KeyCode key_code) {
@@ -583,12 +417,6 @@ void PrintKeyInfo( SDL_KeyboardEvent *key ){
 int main(void) {
     LinuxState state = {0};
 
-    linux_get_exe_path(&state);
-    char editor_dll_filename[LINUX_FILEPATH_MAX_COUNT];
-
-    linux_build_global_filename_at_exe_location(&state, editor_dll_filename,
-                                            "vared.so");
-    
 #if VARED_INTERNAL
     void *base_address = (void *)terabytes((u64)2);
 #else
@@ -598,17 +426,6 @@ int main(void) {
     void *memory = 0;
     EditorParams editor_params = {0};
     editor_params.memory = &memory;
-
-    PlatformApi platform = {0};
-    {
-        platform.debug_platform_read_entire_file =
-            &debug_platform_read_entire_file;
-        platform.debug_platform_free_file_memory =
-            &debug_platform_free_file_memory;
-        platform.debug_platform_write_entire_file =
-            &debug_platform_write_entire_file;
-    }
-    editor_params.platform = platform;
 
     Arena *event_arena = arena_alloc();
     Arena *renderer_arena = arena_alloc();
@@ -644,185 +461,135 @@ int main(void) {
     f32 target_seconds_per_frame = 1.0f / (f32)game_update_rate;
     printf("refresh_rate: %d\n", refresh_rate);
 
-    // NOTE(fede): init opengl
+    // NOTE(fede): Render init
     {
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
-        SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
+        // TODO(fede): Do not know what to do with the window, should probably 
+        //      move away from SDL_GL in the future.
+        {
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, 3);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, 3);
+            SDL_GL_SetAttribute(SDL_GL_CONTEXT_PROFILE_MASK, SDL_GL_CONTEXT_PROFILE_CORE);
 
-        int major;
-        int minor;
-        SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
-        SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
-        printf("GL version %d.%d\n", major, minor);
+            int major;
+            int minor;
+            SDL_GL_GetAttribute(SDL_GL_CONTEXT_MAJOR_VERSION, &major);
+            SDL_GL_GetAttribute(SDL_GL_CONTEXT_MINOR_VERSION, &minor);
+            printf("GL version %d.%d\n", major, minor);
+
+            SDL_GLContext gl_context = scp(SDL_GL_CreateContext(window)); 
+        }
+
+        r_init(WINDOW_WIDTH, WINDOW_HEIGHT);
+        r_platform_init();
     }
-
-    SDL_GLContext gl_context = scp(SDL_GL_CreateContext(window));
-    GLenum glewErr = glewInit();
-    if (glewErr != GLEW_OK) {
-        fprintf(stderr, "ERROR: Could not initialize GLEW: %s\n", glewGetErrorString(glewErr));
-        return 1;
-    }
-
-    glEnable(GL_BLEND);
-    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-
-    if (GLEW_ARB_debug_output) {
-        glEnable(GL_DEBUG_OUTPUT);
-        glDebugMessageCallback(MessageCallback, 0);
-    } else {
-        fprintf(stderr, "WARNING: GLEW_ARB_debug_output is not available");
-    }
-
-    scc(SDL_GL_SetSwapInterval(0));
-
-    EditorLib editor = {0};
-
-    editor = linux_load_editorlib(editor_dll_filename);
-    if (!editor.is_valid) {
-        printf("Editor is not valid: %s\n", dlerror());
-        printf("dll filename: %s\n", editor_dll_filename);
-    }
-
-    RendererOpengl renderer;
-    {
-        u32 max_quads = 100 * 1000; // 100_000
-        u32 vertex_count = max_quads * 4;
-        u32 index_count = max_quads * 6;
-
-        Vertex *vertex_buffer = push_array(renderer_arena, Vertex, vertex_count); 
-        u16 *index_buffer = push_array(renderer_arena, u16, index_count); 
-
-        renderer = (RendererOpengl){
-            .vertex_buffer = vertex_buffer,
-            .vertex_count = vertex_count,
-            .index_buffer = index_buffer,
-            .index_count = index_count,
-        };
-
-        renderer_init(&renderer);
-    }
-
-    RenderGroup render_group = {0};
-    render_group.width = WINDOW_WIDTH;
-    render_group.height = WINDOW_HEIGHT;
 
     SDL_StartTextInput();
 
     u64 last_counter = SDL_GetPerformanceCounter();
 
     while (global_editor_running) {
-    if (linux_editor_has_changed(&editor, editor_dll_filename)) {
-        linux_reload_editorlib(&editor, editor_dll_filename);
-        if (!editor.is_valid) {
-            printf("Editor is not valid: %s\n", dlerror());
-        }
-    }
 
-    WMEventList *event_list = push_struct(event_arena, WMEventList);
-    SDL_Event event = {0};
+        WMEventList *event_list = push_struct(event_arena, WMEventList);
+        SDL_Event event = {0};
 
-    while (SDL_PollEvent(&event)) {
-        switch (event.type) {
-        case SDL_QUIT: {
-            global_editor_running = false;
-        } break;
-        case SDL_WINDOWEVENT: {
-            SDL_WindowEvent window_event = event.window;
-            switch (window_event.event) {
-            case SDL_WINDOWEVENT_SIZE_CHANGED:
-            case SDL_WINDOWEVENT_RESIZED: {
-                int render_width, render_height;
-                SDL_GL_GetDrawableSize(window, &render_width, &render_height);
-
-                glViewport(0, 0, render_width, render_height);
-
-                render_group.width = render_width;
-                render_group.height = render_height;
+        while (SDL_PollEvent(&event)) {
+            switch (event.type) {
+            case SDL_QUIT: {
+                global_editor_running = false;
             } break;
-            }
-        } break;
-        // case SDL_KEYUP:
-        case SDL_KEYDOWN: {
-            SDL_KeyboardEvent key_event = event.key;
-            PrintKeyInfo(&key_event);
-            SDL_Keymod mod = key_event.keysym.mod;
+            case SDL_WINDOWEVENT: {
+                SDL_WindowEvent window_event = event.window;
+                switch (window_event.event) {
+                case SDL_WINDOWEVENT_SIZE_CHANGED:
+                case SDL_WINDOWEVENT_RESIZED: {
+                    int render_width, render_height;
 
-            // TODO(fede): push-back macro
-            WMEventNode *event_n = push_struct(event_arena, WMEventNode);
-            QueuePush(event_list->first, event_list->last, event_n);
-            event_list->count++;
+                    // TODO(fede): Change to render call
+                    SDL_GL_GetDrawableSize(window, &render_width, &render_height); 
+                    glViewport(0, 0, render_width, render_height);
 
-            WMEvent *event = &event_n->v;
+                    r_state->window_width = render_width;
+                    r_state->window_height = render_height;
+                } break;
+                }
+            } break;
+            // case SDL_KEYUP:
+            case SDL_KEYDOWN: {
+                SDL_KeyboardEvent key_event = event.key;
+                PrintKeyInfo(&key_event);
+                SDL_Keymod mod = key_event.keysym.mod;
 
-            // TODO(fede): handle cursor
-            
-            event->key = sdl_get_wm_key(key_event.keysym.sym);
-            event->modifiers = sdl_get_wm_modifiers(mod);
-            event->repeat = key_event.repeat;
-        } break;
-        case SDL_TEXTINPUT: {
-            u8 *text = (u8 *)event.text.text;
-            u64 max_size = SDL_TEXTINPUTEVENT_TEXT_SIZE;
-            // String8 text_str = S("ñ");
-            // u8 *text = text_str.str;
-            // u64 max_size = text_str.size;
-
-            while (*text) {
-                UnicodeCodepoint codepoint = utf8_decode(
-                        text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
-                text += codepoint.byte_size;
-
-                if (!codepoint.character)
-                    break;
-
+                // TODO(fede): push-back macro
                 WMEventNode *event_n = push_struct(event_arena, WMEventNode);
                 QueuePush(event_list->first, event_list->last, event_n);
                 event_list->count++;
 
                 WMEvent *event = &event_n->v;
-                event->character = codepoint.character;
-            }
+
+                // TODO(fede): handle cursor
+
+                event->key = sdl_get_wm_key(key_event.keysym.sym);
+                event->modifiers = sdl_get_wm_modifiers(mod);
+                event->repeat = key_event.repeat;
+            } break;
+            case SDL_TEXTINPUT: {
+               u8 *text = (u8 *)event.text.text;
+               u64 max_size = SDL_TEXTINPUTEVENT_TEXT_SIZE;
+               // String8 text_str = S("ñ");
+               // u8 *text = text_str.str;
+               // u64 max_size = text_str.size;
             
-        } break;
+               while (*text) {
+                   UnicodeCodepoint codepoint = utf8_decode(
+                           text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
+                   text += codepoint.byte_size;
+            
+                   if (!codepoint.character)
+                       break;
+            
+                   WMEventNode *event_n = push_struct(event_arena, WMEventNode);
+                   QueuePush(event_list->first, event_list->last, event_n);
+                   event_list->count++;
+            
+                   WMEvent *event = &event_n->v;
+                   event->character = codepoint.character;
+               }
+            
+            } break;
+            }
         }
-    }
 
-    editor_params.events = event_list;
+        editor_params.events = event_list;
 
-    // TODO(fede): editor input
-    editor.update_and_render(&editor_params, &render_group);
+        // TODO(fede): editor input
+        editor_update_and_render(&editor_params);
 
-    glClearColor(0x0, 0x0, 0x0, 0xFF);
-    glClear(GL_COLOR_BUFFER_BIT);
+        r_consume_all();
 
-    // renderer_sync(&renderer);
-    renderer_draw(&renderer, &render_group);
+        SDL_GL_SwapWindow(window);
 
-    SDL_GL_SwapWindow(window);
+        {
+            u64 end_counter = SDL_GetPerformanceCounter();
 
-    {
-        u64 end_counter = SDL_GetPerformanceCounter();
+            f64 work_seconds_elapsed =
+                sdl_get_seconds_elapsed(last_counter, end_counter);
 
-        f64 work_seconds_elapsed =
-            sdl_get_seconds_elapsed(last_counter, end_counter);
+            linux_sleep_to_target(last_counter, target_seconds_per_frame);
 
-        linux_sleep_to_target(last_counter, target_seconds_per_frame);
+            f64 seconds_elapsed_for_frame =
+                sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
 
-        f64 seconds_elapsed_for_frame =
-            sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
-
-        last_counter = SDL_GetPerformanceCounter();
+            last_counter = SDL_GetPerformanceCounter();
 
 #if 0
-        f64 ms_per_frame = seconds_elapsed_for_frame * 1000;
-        f64 fps = 1000.0f / ms_per_frame;
+            f64 ms_per_frame = seconds_elapsed_for_frame * 1000;
+            f64 fps = 1000.0f / ms_per_frame;
 
-        printf("%.02fms/f, %.02ffps \n", ms_per_frame, fps);
+            printf("%.02fms/f, %.02ffps \n", ms_per_frame, fps);
 #endif
-    }
+        }
 
-    arena_clear(event_arena);
+        arena_clear(event_arena);
     }
 
     SDL_DestroyWindow(window);

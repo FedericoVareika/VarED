@@ -14,6 +14,10 @@
  *
  * */
 
+#include "base/base_inc.h"
+#include "render/render_inc.h"
+#include "font_provider/font_provider_inc.h"
+
 #include "vared_platform.h"
 
 // TODO(fede): Wrap in font provider
@@ -58,6 +62,7 @@ typedef struct {
     Arena *frame_arena;
 
     Font font;
+    R_Handle font_atlas;
 
     Rect2 text_window;
     LineBuffer text;

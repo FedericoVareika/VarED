@@ -1,10 +1,16 @@
 #include "base/base_inc.h"
 #include "base/base_inc.c"
 
-#include "vared.h"
+#include "render/render_inc.h"
+#include "render/render_inc.c"
 
-#include "vared_renderer.h"
-#include "vared_renderer.c"
+#include "font_provider/font_provider_inc.h"
+#include "font_provider/font_provider_inc.c"
+
+// #include "font_cache/font_cache_inc.h"
+// #include "font_cache/font_cache_inc.c"
+
+#include "vared.h"
 
 #include <stdio.h>
 
@@ -47,6 +53,7 @@ internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {
     return &text->lines[at];
 }
 
+#if 0
 internal Vec2 render_unicode_line_in_text_window(
         Arena *arena,
         Font *font,
@@ -121,17 +128,16 @@ internal Vec2 render_unicode_line_in_text_window(
         // }
     }
 }
+#endif
 
+#if 1
 internal void render_line_in_rect2(
         EditorState *state,
-        RenderGroup *render_group,
         Line line,
         u32 *cursor,
         Rect2 *window_rect,
         v4 color) {
     Font *font = &state->font;
-
-    rg_push_set_shader(state->frame_arena, render_group, ShaderType_Text);
 
     f32 scale = font->font_height / (font->ascent - font->descent);
 
@@ -180,12 +186,17 @@ internal void render_line_in_rect2(
         if (current_y - scale * font->descent > window_rect->max.y)
             break;
 
-        rg_push_textured_rect2(
-                state->frame_arena,
-                render_group, 
+        r_push_rect2(state->font_atlas, 
                 rect2_min_max((v2){q.x0, q.y0}, (v2){q.x1, q.y1}),
-                color,
-                rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}));
+                rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}),
+                color);
+
+        // rg_push_textured_rect2(
+        //         state->frame_arena,
+        //         render_group, 
+        //         rect2_min_max((v2){q.x0, q.y0}, (v2){q.x1, q.y1}),
+        //         color,
+        //         rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}));
 
         // TODO(fede): Codepoint kerning with stbtt_GetKerningTable
         // if (line_idx < line.count) {
@@ -203,22 +214,17 @@ internal void render_line_in_rect2(
     window_rect->min.y += scale * (f32)(font->y_increment);
 
     if (cursor) {
-        rg_push_set_shader(
-                state->frame_arena,
-                render_group, ShaderType_Color);
-
         f32 cursor_width = 2;
         v2 cursor_upper_left = v2_sub(cursor_pos, (v2){cursor_width / 2, scale * font->ascent});
 
-        rg_push_rect2(
-                state->frame_arena,
-                render_group, 
+        r_push_rect2(nil_texture,
                 rect2_min_dim(cursor_upper_left, (v2){cursor_width, font->font_height}),
-                color);
+                (Rect2){0}, color);
     }
 }
+#endif
 
-internal void editor_init(EditorParams *params, RenderGroup *render_group) {
+internal void editor_init(EditorParams *params) {
     // TODO(fede): change to *params->memory = arena_bootstrap_struct(EditorState, arena)
     // STUDY(fede): change commit/reserve sizes for this
     Arena *arena = arena_alloc();
@@ -229,8 +235,6 @@ internal void editor_init(EditorParams *params, RenderGroup *render_group) {
     // STUDY(fede): change commit/reserve sizes for this
     state->frame_arena = arena_alloc();
 
-    PlatformApi platform = params->platform;
-
     Font *font = &state->font;
     {
         font->pixels_width = 512;
@@ -240,7 +244,7 @@ internal void editor_init(EditorParams *params, RenderGroup *render_group) {
         font->font_height = 32; // NOTE(fede): pixels i think
         stbtt_fontinfo *font_info = &font->font_info;
 
-        DebugReadFileResult font_file = platform.debug_platform_read_entire_file(
+        DebugReadFileResult font_file = debug_platform_read_entire_file(
                 0, "fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
         
         // 0, "fonts/Roboto/static/Roboto-Medium.ttf");
@@ -273,10 +277,12 @@ internal void editor_init(EditorParams *params, RenderGroup *render_group) {
                 &font->ascent, &font->descent, &font->line_gap);
         font->y_increment = font->ascent - font->descent + font->line_gap;
 
-        rg_push_texture_load(
-                state->frame_arena,
-                render_group, pixels,
-                font->pixels_width, font->pixels_height);
+        state->font_atlas = r_alloc_tex2d(
+                R_TextureFormat_R, 
+                pixels,
+                font->pixels_width,
+                font->pixels_height,
+                R_TextureFormat_R);
     }
 
     // TODO(fede): Actual text data strutcture
@@ -286,14 +292,12 @@ internal void editor_init(EditorParams *params, RenderGroup *render_group) {
     new_line(state->arena, &state->text, 0);
 }
 
-extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
+void editor_update_and_render(EditorParams *params) {
     bool clear_frame_arena = true;
     if (!*params->memory) {
-        editor_init(params, render_group);
+        editor_init(params);
         clear_frame_arena = false;
     }
-
-    PlatformApi platform = params->platform;
 
     EditorState *state = (EditorState *)*params->memory;
     Arena *frame_arena = state->frame_arena;
@@ -302,9 +306,8 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
         arena_clear(frame_arena);
 
     state->text_window = rect2_center_dim(
-            (v2){render_group->width / 2, render_group->height / 2},
-            (v2){render_group->width - 20, render_group->height - 20});
-            // (v2){render_group->width, 40 * state->font.font_height});
+            (v2){r_state->window_width / 2,  r_state->window_height / 2},
+            (v2){r_state->window_width - 20, r_state->window_height - 20});
 
     Font font = state->font;
     int min_key = font.first_char;
@@ -363,7 +366,7 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
 
                 // TODO(fede): Use scratch arena and implement pop
                 char *path_cstr = cstr_from_str8(frame_arena, path);
-                DebugReadFileResult file = platform.debug_platform_read_entire_file(0, path_cstr);
+                DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
 
                 if (!file.memory) {
                     printf("Could not open file: %s\n", path_cstr);
@@ -406,15 +409,13 @@ extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render) {
         }
     }
 
-    rg_push_set_shader(frame_arena, render_group, ShaderType_Color);
-    rg_push_rect2(frame_arena, render_group, state->text_window, (v4){0.2, 0.2, 0.2, 1});
+    r_push_rect2(nil_texture, state->text_window, (Rect2){0}, (v4){0.2, 0.2, 0.2, 1});
 
     Rect2 line_window = state->text_window;
     for (u32 line_idx = 0; line_idx < state->text.count; line_idx++) {
         u32 *cursor_char = state->cursor_line == line_idx ? &state->cursor_char : 0;
         render_line_in_rect2(
                 state, 
-                render_group,
                 state->text.lines[line_idx],
                 cursor_char,
                 &line_window,

@@ -85,13 +85,30 @@ typedef struct {
         struct {
             f32 r, g, b, a;
         };
+        struct {
+            v2 xy, zw;
+        };
         f32 e[4];
     };
 } v4;
 
 typedef struct {
-    v2 min, max;
+    union {
+        struct {
+            v2 min, max;
+        };
+        struct {
+            v4 V4;
+        };
+    };
 } Rect2;
+
+internal inline v2 rect2_dim(Rect2 rect) {
+    return (v2){
+        rect.max.x - rect.min.x,
+        rect.max.y - rect.min.y,
+    };
+}
 
 internal inline Rect2 rect2_min_max(v2 min, v2 max) {
     return (Rect2){

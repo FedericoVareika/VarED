@@ -8,28 +8,15 @@
 
 #if VARED_INTERNAL
 
+// TODO(fede): Move to another file, separate platform 
 typedef struct {
     u64 size;
     void *memory;
 } DebugReadFileResult;
 
-#define DEBUG_PLATFORM_READ_ENTIRE_FILE(name)                                  \
-    DebugReadFileResult name(ThreadContext *thread, char *filename)
-typedef DEBUG_PLATFORM_READ_ENTIRE_FILE(DEBUGPlatformReadEntireFile);
-
-internal DEBUG_PLATFORM_READ_ENTIRE_FILE(debug_platform_read_entire_file);
-
-#define DEBUG_PLATFORM_FREE_FILE_MEMORY(name)                                  \
-    void name(ThreadContext *thread, DebugReadFileResult file_result)
-typedef DEBUG_PLATFORM_FREE_FILE_MEMORY(DEBUGPlatformFreeEntireFileMemory);
-
-internal DEBUG_PLATFORM_FREE_FILE_MEMORY(debug_platform_free_file_memory);
-
-#define DEBUG_PLATFORM_WRITE_ENTIRE_FILE(name)                                 \
-    bool name(ThreadContext *thread, char *filename, u64 size, void *memory)
-typedef DEBUG_PLATFORM_WRITE_ENTIRE_FILE(DEBUGPlatformWriteEntireFile);
-
-internal DEBUG_PLATFORM_WRITE_ENTIRE_FILE(debug_platform_write_entire_file);
+internal DebugReadFileResult debug_platform_read_entire_file(ThreadContext *thread, char *filename);
+internal void debug_platform_free_file_memory(ThreadContext *thread, DebugReadFileResult file_result);
+internal bool debug_platform_write_entire_file(ThreadContext *thread, char *filename, u64 size, void *memory);
 
 #endif // VARED_INTERNAL
 
@@ -175,27 +162,11 @@ typedef struct {
 } Input;
 
 typedef struct {
-#if VARED_INTERNAL
-    DEBUGPlatformReadEntireFile *debug_platform_read_entire_file;
-    DEBUGPlatformFreeEntireFileMemory *debug_platform_free_file_memory;
-    DEBUGPlatformWriteEntireFile *debug_platform_write_entire_file;
-#endif
-} PlatformApi;
-
-typedef struct {
     void **memory;
     WMEventList *events;
-
-    PlatformApi platform;
 } EditorParams;
 
-#include "vared_renderer.h"
-    
-#define EDITOR_UPDATE_AND_RENDER(name) \
-    void name(EditorParams *params, RenderGroup *render_group)
-typedef EDITOR_UPDATE_AND_RENDER(EditorUpdateAndRender);
-
-extern EDITOR_UPDATE_AND_RENDER(editor_update_and_render);
+void editor_update_and_render(EditorParams *params);
 
 #endif // VARED_PLATFORM_H
 

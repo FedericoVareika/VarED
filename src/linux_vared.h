@@ -3,15 +3,6 @@
 
 #include <sys/stat.h>
 
-typedef struct {
-    bool is_valid; 
-    char *filename;
-    struct timespec last_modified;
-    void *handle;
-
-    EditorUpdateAndRender *update_and_render;
-} EditorLib;
-
 #include <limits.h>
 #define LINUX_FILEPATH_MAX_COUNT PATH_MAX
 
