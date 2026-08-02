@@ -15,14 +15,15 @@ internal void fc_tick(void) {
     arena_clear(fc_state->frame_arena);
 }
 
-internal FC_Glyph *fc_get_codepoint_glyph(u32 codepoint, f32 font_size) {
+internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32 font_size) {
 
     FC_GlyphList *glyphs = &fc_state->glyphs;
     FC_GlyphNode *glyph_n = glyphs->first;
     for (u32 glyph_idx = 0; 
             glyph_idx < glyphs->count; 
             glyph_idx++, glyph_n = glyph_n->next) {
-        if (glyph_n->v.codepoint == codepoint) {
+        if (glyph_n->v.codepoint == codepoint &&
+                glyph_n->v.font_size == font_size) {
             break;
         }
     }
@@ -33,7 +34,8 @@ internal FC_Glyph *fc_get_codepoint_glyph(u32 codepoint, f32 font_size) {
         glyphs->count++;
 
         glyph_n->v.codepoint = codepoint;
-        glyph_n->v.metrics = fp_get_character_metrics(codepoint, font_size);
+        glyph_n->v.font_size = font_size;
+        glyph_n->v.metrics = fp_get_character_metrics(font, codepoint, font_size);
 
         u32 pixel_width = ceil_f32_to_int(glyph_n->v.metrics.width);
         u32 pixel_height = ceil_f32_to_int(glyph_n->v.metrics.height);
@@ -74,11 +76,12 @@ internal FC_Glyph *fc_get_codepoint_glyph(u32 codepoint, f32 font_size) {
 
         Rect2 atlas_dst = rect2_min_dim(first_free_f, (v2){ pixel_width, pixel_height });
 
-        atlas->first_free.x += pixel_width;
-        atlas->next_y = max(atlas->next_y, atlas->first_free.y + pixel_height);
+        atlas->first_free.x += pixel_width + 1;
+        atlas->next_y = max(atlas->next_y, atlas->first_free.y + pixel_height + 1);
         
         Bitmap2d raster = fp_raster_character(
                 fc_state->frame_arena,
+                font,
                 codepoint,
                 font_size);
 

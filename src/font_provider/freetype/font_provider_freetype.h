@@ -11,7 +11,6 @@ struct FT_State {
     Arena *arena;
 
     FT_Library ft_lib;
-    FT_Face face;
 }; 
 
 #endif // FREETYPE_FONT_PROVIDER_H

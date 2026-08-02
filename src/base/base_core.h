@@ -73,16 +73,7 @@ typedef struct {
 
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define min(a, b) ((a) < (b) ? (a) : (b))
-
-#if 0 
 #define abs(a) ((a) < 0 ? -(a) : (a))
-
-#include <stdlib.h>
-// TODO(fede): does not work
-#define STBTT_fabs(abs);
-#define STBTT_max(abs);
-#define STBTT_min(min);
-#endif
 
 #define array_count(a) (sizeof((a)) / sizeof((a)[0]))
 
@@ -98,6 +89,5 @@ typedef struct {
 
 #define QueuePush(f, l, n) QueuePush_N(f, l, n, next)
 #define QueuePop(f, l) QueuePop_N(f, l, next)
-
 
 #endif // BASE_CORE_H

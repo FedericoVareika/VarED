@@ -30,7 +30,6 @@ internal void *push_size(Arena *arena, u64 size) {
     assert(new_pos <= arena->reserve_size);
 
     if (arena->commited < new_pos) {
-        // TODO(fede): Zero the memory commited
         u64 new_commit_size = new_pos - arena->commited;
         u64 n_commits = (new_commit_size + arena->commit_size - 1) 
             / arena->commit_size;

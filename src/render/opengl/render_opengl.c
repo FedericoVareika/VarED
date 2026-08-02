@@ -351,7 +351,6 @@ internal void r_consume_all(void) {
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Other Hooks 
 
-// TODO(fede): Parametize the texture format.
 internal R_Handle r_alloc_tex2d(R_TextureFormat texture_format, u8 *buf, u32 width, u32 height, R_TextureFormat pixel_format) {
     R_OpenGL_Tex2D *tex2d = push_struct(r_ogl_state->arena, R_OpenGL_Tex2D);
     tex2d->width = width;

@@ -7,7 +7,9 @@ struct FC_Glyph {
 
     R_Handle tex;
     Rect2 uvs;
+
     u32 codepoint;
+    f32 font_size;
 };
 
 typedef struct FC_GlyphNode FC_GlyphNode;
@@ -64,6 +66,6 @@ struct FC_State {
 internal void fc_init(void);
 internal void fc_tick(void);
 
-internal FC_Glyph *fc_get_codepoint_glyph(u32 codepoint, f32 font_size);
+internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32 font_size);
 
 #endif // FONT_CACHE_H

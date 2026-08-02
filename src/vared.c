@@ -12,8 +12,6 @@
 
 #include "vared.h"
 
-#include <stdio.h>
-
 internal Line line_alloc(Arena *arena, u32 size) {
     Line line = {0};
     line.buf = push_array(arena, u8, size);
@@ -56,15 +54,19 @@ internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {
 // TODO(fede): 
 //      - Get font metrics, and do the vertical alignment with it.
 //      - Render cursor.
-//      - Handle emojis
 //      - Handle newlines and such
 internal v2 render_unicode_line_in_text_window(
+        FP_FontHandle font,
+        f32 font_size,
         Line *line,
         Rect2 text_window,
         v2 text_offset) {
 
-    // NOTE(fede): Assume text_offset sets the baseline
+    FP_FontMetrics metrics = fp_get_font_metrics(font, font_size);
+
     v2 text_origin = v2_add(text_window.min, text_offset);
+
+    text_origin.y += metrics.ascender;
 
     v2 text_pos  = {0};
 
@@ -76,9 +78,8 @@ internal v2 render_unicode_line_in_text_window(
         line_str = str8_skip(line_str, codepoint.byte_size);
 
         // TODO(fede): 
-        //      - Add support for multiple textures.
         //      - Render an entire line at once (Font Run)? 
-        FC_Glyph *glyph = fc_get_codepoint_glyph(codepoint.character, 40);
+        FC_Glyph *glyph = fc_get_codepoint_glyph(font, codepoint.character, font_size);
         
         {
             v2 pos = v2_add(text_origin, text_pos);
@@ -99,13 +100,13 @@ internal v2 render_unicode_line_in_text_window(
         text_pos.x += glyph->metrics.advance; 
     }
 
-    text_offset.y += 50;
+    text_offset.y += metrics.height;
 
     return text_offset;
 }
 
 internal void editor_init(EditorParams *params) {
-    // TODO(fede): change to *params->memory = arena_bootstrap_struct(EditorState, arena)
+    // STUDY(fede): change to *params->memory = arena_bootstrap_struct(EditorState, arena)
     // STUDY(fede): change commit/reserve sizes for this
     Arena *arena = arena_alloc();
     EditorState *state = push_struct(arena, EditorState);
@@ -117,7 +118,8 @@ internal void editor_init(EditorParams *params) {
 
     fc_init();
     fp_init();
-    fp_open_font("fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
+    state->font = fp_open_font("fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
+    state->font_size = 40;
 
     // TODO(fede): Actual text data strutcture
     state->text.size = 1000;
@@ -220,6 +222,27 @@ void editor_update_and_render(EditorParams *params) {
             }
         } break;
 
+        // TODO(fede): Fix this input, this never comes through, instead it 
+        //      comes as (=, SHIFT). I do not know how to fix this yet. 
+        case WMKey_PLUS: {
+            if ((event.modifiers & WMModifier_ctrl) && 
+                !(event.modifiers & WMModifier_shift) && 
+                !(event.modifiers & WMModifier_alt)) {
+                state->font_size += 1;
+            }
+        } break;
+
+        case WMKey_MINUS: {
+            if ((event.modifiers & WMModifier_ctrl) && 
+                !(event.modifiers & WMModifier_alt)) {
+                if (event.modifiers & WMModifier_shift) {
+                    state->font_size += 1;
+                } else {
+                    state->font_size = max(1, state->font_size - 1);
+                }
+            }
+        } break;
+
         case WMKey_l: {
             if ((event.modifiers & WMModifier_ctrl) && 
                 !(event.modifiers & WMModifier_shift) &&
@@ -248,12 +271,38 @@ void editor_update_and_render(EditorParams *params) {
 
     r_push_rect2(nil_texture, state->text_window, (Rect2){0}, (v4){0.2, 0.2, 0.2, 1});
 
-    v2 text_offset = {0, 50};
-    for (u32 line_idx = 0; line_idx < state->text.count; line_idx++) {
-        u32 *cursor_char = state->cursor_line == line_idx ? &state->cursor_char : 0;
-        text_offset = render_unicode_line_in_text_window(
-                &state->text.lines[line_idx],
-                state->text_window,
-                text_offset);
+#if 0
+    {
+        FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
+
+        f32 height = state->text_window.min.y;
+        while (height < state->text_window.max.y) {
+            r_push_rect2(nil_texture, 
+                    rect2_min_max( 
+                        (v2){ state->text_window.min.x, height - 5 },
+                        (v2){ state->text_window.max.x, height + 5 }),
+                    (Rect2){0}, (v4){0.8, 0.8, 0.8, 1});
+
+            r_push_rect2(nil_texture, 
+                    rect2_min_max( 
+                        (v2){ state->text_window.min.x, height + metrics.ascender - 2 },
+                        (v2){ state->text_window.max.x, height + metrics.ascender + 2 }),
+                    (Rect2){0}, (v4){0.8, 0.0, 0.0, 1});
+            height += metrics.height;
+        }
+    }
+#endif
+
+    {
+        v2 text_offset = {0};
+        for (u32 line_idx = 0; line_idx < state->text.count; line_idx++) {
+            u32 *cursor_char = state->cursor_line == line_idx ? &state->cursor_char : 0;
+            text_offset = render_unicode_line_in_text_window(
+                    state->font,
+                    state->font_size,
+                    &state->text.lines[line_idx],
+                    state->text_window,
+                    text_offset);
+        }
     }
 }

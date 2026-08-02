@@ -535,9 +535,6 @@ int main(void) {
             case SDL_TEXTINPUT: {
                u8 *text = (u8 *)event.text.text;
                u64 max_size = SDL_TEXTINPUTEVENT_TEXT_SIZE;
-               // String8 text_str = S("ñ");
-               // u8 *text = text_str.str;
-               // u64 max_size = text_str.size;
             
                while (*text) {
                    UnicodeCodepoint codepoint = utf8_decode(
@@ -561,7 +558,6 @@ int main(void) {
 
         editor_params.events = event_list;
 
-        // TODO(fede): editor input
         editor_update_and_render(&editor_params);
 
         r_consume_all();

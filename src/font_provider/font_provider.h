@@ -12,10 +12,27 @@ struct FP_GlyphMetrics {
     f32 advance;
 };
 
-internal void fp_init(void);
-internal void fp_open_font(char *filepath);
+typedef struct FP_FontHandle FP_FontHandle; 
+struct FP_FontHandle {
+    u64 v;
+};
 
-internal FP_GlyphMetrics fp_get_character_metrics(u32 codepoint, f32 size);
-internal Bitmap2d fp_raster_character(Arena *arena, u32 codepoint, f32 size);
+typedef struct FP_FontMetrics FP_FontMetrics;
+struct FP_FontMetrics {
+    f32 ascender;
+    f32 descender;
+    f32 height;
+};
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Platform dependent hooks
+
+internal void fp_init(void);
+internal FP_FontHandle fp_open_font(char *filepath);
+
+internal FP_FontMetrics fp_get_font_metrics(FP_FontHandle font, f32 size);
+
+internal FP_GlyphMetrics fp_get_character_metrics(FP_FontHandle font, u32 codepoint, f32 size);
+internal Bitmap2d fp_raster_character(Arena *arena, FP_FontHandle font, u32 codepoint, f32 size);
 
 #endif // FONT_PROVIDER_H
