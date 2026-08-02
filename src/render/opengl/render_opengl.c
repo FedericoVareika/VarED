@@ -376,11 +376,13 @@ internal R_Handle r_alloc_tex2d(R_TextureFormat texture_format, u8 *buf, u32 wid
 internal void r_update_tex2d(R_Handle tex, Rect2 dst, u8 *src, R_TextureFormat format) {
     R_OpenGL_Tex2D *tex2d = r_ogl_tex2d_from_handle(tex);
 
+    GLint ogl_format = r_ogl_texture_format[format];
+
     glBindTexture(GL_TEXTURE_2D, tex2d->id);
     glTexSubImage2D(GL_TEXTURE_2D, 0,
             dst.min.x, dst.min.y,
             dst.max.x - dst.min.x, dst.max.y - dst.min.y,
-            format, GL_UNSIGNED_BYTE, src);
+            ogl_format, GL_UNSIGNED_BYTE, src);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

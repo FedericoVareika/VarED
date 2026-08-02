@@ -20,31 +20,6 @@
 
 #include "vared_platform.h"
 
-// TODO(fede): Wrap in font provider
-#define STB_RECT_PACK_IMPLEMENTATION
-#include "stb/stb_rect_pack.h"
-
-#define STB_TRUETYPE_IMPLEMENTATION
-#include "stb/stb_truetype.h"
-
-typedef struct {
-    stbtt_fontinfo font_info;
-    stbtt_packedchar *char_data_for_range;
-
-    u32 pixels_width;
-    u32 pixels_height;
-    u32 first_char;
-    u32 num_chars;
-    f32 font_height;
-
-    f32 scale;
-    int ascent;
-    int descent;
-    int line_gap;
-
-    int y_increment;
-} Font;
-
 typedef struct {
     u64 count;
     u64 size;
@@ -60,9 +35,6 @@ typedef struct {
 typedef struct {
     Arena *arena;
     Arena *frame_arena;
-
-    Font font;
-    R_Handle font_atlas;
 
     Rect2 text_window;
     LineBuffer text;

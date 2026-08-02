@@ -7,8 +7,8 @@
 #include "font_provider/font_provider_inc.h"
 #include "font_provider/font_provider_inc.c"
 
-// #include "font_cache/font_cache_inc.h"
-// #include "font_cache/font_cache_inc.c"
+#include "font_cache/font_cache.h"
+#include "font_cache/font_cache.c"
 
 #include "vared.h"
 
@@ -53,17 +53,15 @@ internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {
     return &text->lines[at];
 }
 
-#if 0
-internal Vec2 render_unicode_line_in_text_window(
-        Arena *arena,
-        Font *font,
-        RenderGroup *render_group,
+// TODO(fede): 
+//      - Get font metrics, and do the vertical alignment with it.
+//      - Render cursor.
+//      - Handle emojis
+//      - Handle newlines and such
+internal v2 render_unicode_line_in_text_window(
         Line *line,
         Rect2 text_window,
         v2 text_offset) {
-
-    FontCache *fc = font->cache; 
-    FontProvider *fp = font->provider; 
 
     // NOTE(fede): Assume text_offset sets the baseline
     v2 text_origin = v2_add(text_window.min, text_offset);
@@ -75,154 +73,36 @@ internal Vec2 render_unicode_line_in_text_window(
         UnicodeCodepoint codepoint = utf8_decode(line_str.str, line_str.size);
         assert(codepoint.byte_size <= 4);
 
+        line_str = str8_skip(line_str, codepoint.byte_size);
+
         // TODO(fede): 
         //      - Add support for multiple textures.
         //      - Render an entire line at once (Font Run)? 
-        FontGlyph *glyph = fc_get_codepoint_glyph(fc, fp, codepoint);
+        FC_Glyph *glyph = fc_get_codepoint_glyph(codepoint.character, 40);
         
         {
             v2 pos = v2_add(text_origin, text_pos);
             pos = v2_add(pos, (v2){
-                glyph->bearing_x,
-                -glyph->bearing_y, // check if neg or pos
+                glyph->metrics.bearing_x,
+                - glyph->metrics.bearing_y, // check if neg or pos
             });
             v2 dim = {
-                glyph->width,
-                glyph->height,
+                glyph->metrics.width,
+                glyph->metrics.height,
             };
 
             Rect2 glyph_pos = rect2_min_dim(pos, dim);
 
-            rg_push_textured_rect2(arena, render_group,
-                    glyph_pos, (v4){1, 1, 1, 1}, glyph->uvs);
+            r_push_rect2(glyph->tex, glyph_pos, glyph->uvs, (v4){1, 1, 1, 1});
         }
 
-        text_pos.x = glyph->advance; 
-
-        // if (!glyph) {
-        //     Temp scratch = begin_temp();
-        //
-        //     Bitmap2d fp_bitmap = fp_raster_codepoint_glyph(scratch.arena, fp, codepoint);
-        //
-        //     Bitmap2d atlas_dst = fc_
-        //
-        //     for (u64 row_pos = 0;
-        //             row_pos < glyph_bitmap.size;
-        //             row_pos += glyph_bitmap.stride) {
-        //         u8 *row = (u8 *)glyph_bitmap.buf + row_pos;
-        //         for (u64 col = 0; col < glyph_bitmap.width; col++) {
-        //
-        //         }
-        //     }
-        //
-        //     glyph = fc_add_glyph(font->fc, glyph_info);
-        //
-        //
-        //     // STUDY(fede): return something like "Buffer" type instead of 
-        //     //      String8 which is confusing.
-        //     String8 bitmap = fp_raster_glyph(scratch.arena, font->face, glyph_info);
-        //
-        //     fc_set_glyph_bitmap(font->fc, glyph, bitmap.str, bitmap.size);
-        //
-        //     end_temp(scratch);
-        // }
+        text_pos.x += glyph->metrics.advance; 
     }
+
+    text_offset.y += 50;
+
+    return text_offset;
 }
-#endif
-
-#if 1
-internal void render_line_in_rect2(
-        EditorState *state,
-        Line line,
-        u32 *cursor,
-        Rect2 *window_rect,
-        v4 color) {
-    Font *font = &state->font;
-
-    f32 scale = font->font_height / (font->ascent - font->descent);
-
-    stbtt_aligned_quad q;
-
-    f32 current_x = window_rect->min.x;
-    f32 current_y = window_rect->min.y; 
-    current_y += scale * (f32)font->ascent;
-
-    v2 cursor_pos = { current_x, current_y };
-
-    u32 codepoint_idx = 0;
-    String8 line_str = str8(line.buf, line.count);
-    while (line_str.size) {
-        UnicodeCodepoint codepoint = utf8_decode(line_str.str, line_str.size); 
-        line_str = str8_skip(line_str, codepoint.byte_size);
-
-        // TODO(fede): Use font cache to dynamically make/cache the bitmaps.
-
-        u8 ascii = (u8)codepoint.character;
-        if (codepoint.byte_size != 1 || codepoint.character < ' ' || codepoint.character > 127) {
-            // fprintf(stderr, "Could not render non-ascii character: 0x%X\n", codepoint.character);
-            continue;
-        }
-
-        int advance_width, left_side_bearing; 
-        stbtt_GetCodepointHMetrics(&font->font_info, ascii, &advance_width, &left_side_bearing);
-
-        if (codepoint_idx == 0) {
-            current_x += scale * left_side_bearing;
-        }
-
-        if (current_x + scale * advance_width > window_rect->max.x) {
-            current_x = window_rect->min.x + scale * left_side_bearing;
-            current_y += scale * (f32)(font->y_increment);
-            window_rect->min.y += scale * (f32)(font->y_increment);
-        }
-
-        stbtt_GetPackedQuad(
-                font->char_data_for_range,
-                font->pixels_width, font->pixels_height,
-                ascii - font->first_char, 
-                &current_x, &current_y, &q,
-                true);
-
-        if (current_y - scale * font->descent > window_rect->max.y)
-            break;
-
-        r_push_rect2(state->font_atlas, 
-                rect2_min_max((v2){q.x0, q.y0}, (v2){q.x1, q.y1}),
-                rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}),
-                color);
-
-        // rg_push_textured_rect2(
-        //         state->frame_arena,
-        //         render_group, 
-        //         rect2_min_max((v2){q.x0, q.y0}, (v2){q.x1, q.y1}),
-        //         color,
-        //         rect2_min_max((v2){q.s0, q.t0}, (v2){q.s1, q.t1}));
-
-        // TODO(fede): Codepoint kerning with stbtt_GetKerningTable
-        // if (line_idx < line.count) {
-        //     current_x += scale * (f32)stbtt_GetCodepointKernAdvance(
-        //             &font->font_info, *ascii, *(c + 1));
-        // }
-        
-        if (cursor && codepoint_idx + 1 == *cursor) {
-            cursor_pos = (v2){ current_x, current_y };
-        }
-
-        codepoint_idx++;
-    }
-
-    window_rect->min.y += scale * (f32)(font->y_increment);
-
-    if (cursor) {
-        f32 cursor_width = 2;
-        v2 cursor_upper_left = v2_sub(cursor_pos, (v2){cursor_width / 2, scale * font->ascent});
-
-        r_push_rect2(nil_texture,
-                rect2_min_dim(cursor_upper_left, (v2){cursor_width, font->font_height}),
-                (Rect2){0}, color);
-    }
-}
-#endif
 
 internal void editor_init(EditorParams *params) {
     // TODO(fede): change to *params->memory = arena_bootstrap_struct(EditorState, arena)
@@ -235,61 +115,20 @@ internal void editor_init(EditorParams *params) {
     // STUDY(fede): change commit/reserve sizes for this
     state->frame_arena = arena_alloc();
 
-    Font *font = &state->font;
-    {
-        font->pixels_width = 512;
-        font->pixels_height = 512;
-        font->first_char = 32;
-        font->num_chars = 96;
-        font->font_height = 32; // NOTE(fede): pixels i think
-        stbtt_fontinfo *font_info = &font->font_info;
-
-        DebugReadFileResult font_file = debug_platform_read_entire_file(
-                0, "fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
-        
-        // 0, "fonts/Roboto/static/Roboto-Medium.ttf");
-        // 0, "fonts/IosevkaTermNerdFontMono-Light.ttf");
-        // 0, "fonts/IosevkaTermNerdFont-Light.ttf");
-
-        assert(stbtt_InitFont(font_info, font_file.memory, 0));
-
-        u8 *pixels = push_array(state->frame_arena, u8, 
-                font->pixels_width * font->pixels_height);
-
-        stbtt_pack_context spc;
-        assert(stbtt_PackBegin(&spc,
-                    pixels,
-                    font->pixels_width, font->pixels_height,
-                    0, 1,
-                    0));
-
-        font->char_data_for_range = push_array(
-                state->arena, stbtt_packedchar, font->num_chars);
-        assert(stbtt_PackFontRange(&spc,
-                    font_file.memory,
-                    0, font->font_height, 
-                    font->first_char, font->num_chars,
-                    font->char_data_for_range));
-
-        stbtt_PackEnd(&spc);
-
-        stbtt_GetFontVMetrics(&font->font_info,
-                &font->ascent, &font->descent, &font->line_gap);
-        font->y_increment = font->ascent - font->descent + font->line_gap;
-
-        state->font_atlas = r_alloc_tex2d(
-                R_TextureFormat_R, 
-                pixels,
-                font->pixels_width,
-                font->pixels_height,
-                R_TextureFormat_R);
-    }
+    fc_init();
+    fp_init();
+    fp_open_font("fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
 
     // TODO(fede): Actual text data strutcture
     state->text.size = 1000;
     state->text.lines = push_array(state->arena, Line, state->text.size);
     state->text.count = 0;
     new_line(state->arena, &state->text, 0);
+
+    {
+        Line *line = &state->text.lines[state->cursor_line];
+        insert_char(line, &state->cursor_char, 'h');
+    }
 }
 
 void editor_update_and_render(EditorParams *params) {
@@ -298,6 +137,8 @@ void editor_update_and_render(EditorParams *params) {
         editor_init(params);
         clear_frame_arena = false;
     }
+
+    fc_tick();
 
     EditorState *state = (EditorState *)*params->memory;
     Arena *frame_arena = state->frame_arena;
@@ -308,10 +149,6 @@ void editor_update_and_render(EditorParams *params) {
     state->text_window = rect2_center_dim(
             (v2){r_state->window_width / 2,  r_state->window_height / 2},
             (v2){r_state->window_width - 20, r_state->window_height - 20});
-
-    Font font = state->font;
-    int min_key = font.first_char;
-    int max_key = font.first_char + font.num_chars;
 
     WMEventList *events = params->events;
     for (; events->first; QueuePop(events->first, events->last)) {
@@ -411,14 +248,12 @@ void editor_update_and_render(EditorParams *params) {
 
     r_push_rect2(nil_texture, state->text_window, (Rect2){0}, (v4){0.2, 0.2, 0.2, 1});
 
-    Rect2 line_window = state->text_window;
+    v2 text_offset = {0, 50};
     for (u32 line_idx = 0; line_idx < state->text.count; line_idx++) {
         u32 *cursor_char = state->cursor_line == line_idx ? &state->cursor_char : 0;
-        render_line_in_rect2(
-                state, 
-                state->text.lines[line_idx],
-                cursor_char,
-                &line_window,
-                (v4){0.8, 0.8, 0.8, 1});
+        text_offset = render_unicode_line_in_text_window(
+                &state->text.lines[line_idx],
+                state->text_window,
+                text_offset);
     }
 }

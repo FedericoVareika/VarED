@@ -12,7 +12,7 @@ typedef struct {
     u64 size;
 
     u64 stride;
-    void *buf;
+    u8 *buf;
 } Bitmap2d;
 
 #endif // BASE_BITMAP_H

@@ -1,2 +1,4 @@
 build
 fonts
+*.test
+captures

@@ -144,4 +144,55 @@ internal inline bool inside_rect2(Rect2 rect, v2 test) {
         rect.max.y > test.y;
 }
 
+typedef struct {
+    union {
+        struct {
+            u32 x, y;
+        };
+        u32 e[2];
+    };
+} v2u;
+
+internal inline v2u v2u_add(v2u a, v2u b) {
+    return (v2u){
+        a.x + b.x,
+        a.y + b.y,
+    };
+}
+
+internal inline v2u v2u_sub(v2u a, v2u b) {
+    return (v2u){
+        a.x - b.x,
+        a.y - b.y,
+    };
+}
+
+internal inline v2u v2u_smul(v2u a, u32 m) {
+    return (v2u){
+        a.x * m,
+        a.y * m,
+    };
+}
+
+internal inline v2u v2u_sdiv(v2u a, u32 m) {
+    return (v2u){
+        a.x / m,
+        a.y / m,
+    };
+}
+
+internal inline v2u v2u_vmul(v2u a, v2u b) {
+    return (v2u){
+        a.x * b.x,
+        a.y * b.y,
+    };
+}
+
+internal inline v2u v2u_neg(v2u a) {
+    return (v2u){
+        -a.x,
+        -a.y,
+    };
+}
+
 #endif // VARED_MATH_H

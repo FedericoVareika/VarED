@@ -100,7 +100,8 @@ internal UnicodeCodepoint utf8_decode(u8 *base, u64 max_size) {
 
         // TODO(fede): Detect overlong characters correctly, need to STUDY.
         u32 byte_data = ((~class_mask) & decoding_byte);
-        if (byte_data == 0) 
+        // STUDY(fede): I think continuation characters can have empty data
+        if (byte_class != 0 && byte_class != 4 && byte_data == 0) 
             is_error = true;
 
         result.character <<= 6;
