@@ -63,6 +63,9 @@ internal void MessageCallback(GLenum source,
     (void) length;
     (void) userParam;
 
+    if (type == GL_DEBUG_TYPE_OTHER) 
+        return;
+
     fprintf(stderr, "GL CALLBACK: type = ** %s **, severity = ** %s **, message = %s\n",
             callback_type_as_cstr(type),
             callback_severity_as_cstr(severity),
@@ -86,7 +89,7 @@ char *r_vert_shader_filepaths[R_ShaderType_Count] = {
 // TODO(fede): static assert that the amount of shader types has not changed
 char *r_frag_shader_filepaths[R_ShaderType_Count] = {
     [R_ShaderType_None] = 0,
-    [R_ShaderType_UI] = "shaders/simple_text.frag",
+    [R_ShaderType_UI] = "shaders/simple.frag",
 };
 
 GLint r_ogl_texture_format[R_TextureFormat_Count] = {
@@ -134,6 +137,7 @@ void r_platform_init(void) {
     Arena *arena = arena_alloc();
     r_ogl_state = push_struct(arena, R_OpenGL_State);
     r_ogl_state->arena = arena;
+    r_ogl_state->buffer_arena = arena_alloc();
 
     {
         GLenum glewErr = glewInit();
@@ -208,7 +212,12 @@ void r_platform_init(void) {
 #define X_VERTEX_UI_ATTRIBUTES \
     X(0, pos_rect, 4, FLOAT) \
     X(1, uv_rect, 4, FLOAT) \
-    X(2, color, 4, FLOAT)
+    X(2, color0, 4, FLOAT) \
+    X(3, color1, 4, FLOAT) \
+    X(4, color2, 4, FLOAT) \
+    X(5, color3, 4, FLOAT) \
+    X(6, corner_radius, 1, FLOAT) \
+    X(7, edge_softness, 1, FLOAT)
 
 #define X(_, __, ___, ____) +1
         u32 n_vertex_attributes = 0 
@@ -270,10 +279,21 @@ internal void r_consume_pass(R_Pass *pass) {
 
         R_BatchList *batches = &batch_group->batches;
 
-        // TODO(fede): Maybe we should allocate a new buffer if the default one 
-        //      does not fit the batch, or separate the batch in multiple calls.
-        assert(batches->byte_count < kilobytes(64));
-        glBindBuffer(GL_ARRAY_BUFFER, r_ogl_state->vbo);
+        if (batches->byte_count > kilobytes(64)) {
+            u64 buffer_bytes = (batches->byte_count + megabytes(1) - 1) / megabytes(1);
+            buffer_bytes *= megabytes(1);
+
+            GLuint buffer;
+            glGenBuffers(1, &buffer);
+            glBindBuffer(GL_ARRAY_BUFFER, buffer);
+            glBufferData(GL_ARRAY_BUFFER, buffer_bytes, 0, GL_DYNAMIC_DRAW);
+
+            R_OpenGL_BufferNode *buffer_n = push_struct(r_ogl_state->buffer_arena, R_OpenGL_BufferNode);
+            buffer_n->buffer = buffer;
+            QueuePush(r_ogl_state->buffers.first, r_ogl_state->buffers.last, buffer_n);
+        } else {
+            glBindBuffer(GL_ARRAY_BUFFER, r_ogl_state->vbo);
+        }
 
         GLintptr offset = 0;
         R_BatchNode *batch_n = batches->first;
@@ -287,6 +307,22 @@ internal void r_consume_pass(R_Pass *pass) {
             offset += batch->byte_count; 
         }
         assert(!batch_n);
+
+        R_ShaderType program = r_shader_from_pass_type[pass->type];
+        GLuint ogl_program = r_ogl_state->programs[program];
+        R_OpenGL_AttribArray program_attrib = r_ogl_state->program_attributes[program];
+
+        for (u32 attrib_idx = 0; 
+                attrib_idx < program_attrib.count; 
+                attrib_idx++){
+
+            R_OpenGL_Attrib attrib = program_attrib.attributes[attrib_idx];
+            glEnableVertexAttribArray(attrib.index);
+            glVertexAttribPointer( 
+                    attrib.index, attrib.size, attrib.type,
+                    GL_FALSE, attrib.stride, (GLvoid *)attrib.offset);
+            glVertexAttribDivisor(attrib.index, 1);
+        }
 
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, 
                 batches->byte_count / batches->bytes_per_inst);
@@ -310,20 +346,6 @@ internal void r_consume_passes(R_PassList *passes) {
             GLuint location = glGetUniformLocation(ogl_program, "screen_resolution");
             glUniform2f(location, r_state->window_width, r_state->window_height);
 
-            R_OpenGL_AttribArray program_attrib = r_ogl_state->program_attributes[program];
-
-            for (u32 attrib_idx = 0; 
-                    attrib_idx < program_attrib.count; 
-                    attrib_idx++){
-
-                R_OpenGL_Attrib attrib = program_attrib.attributes[attrib_idx];
-                glEnableVertexAttribArray(attrib.index);
-                glVertexAttribPointer( 
-                        attrib.index, attrib.size, attrib.type,
-                        GL_FALSE, attrib.stride, (GLvoid *)attrib.offset);
-                glVertexAttribDivisor(attrib.index, 1);
-            }
-
             r_consume_pass(pass);
         } break;
 
@@ -346,6 +368,16 @@ internal void r_consume_all(void) {
 
     r_state->passes = (R_PassList){0};
     arena_clear(r_state->frame_arena);
+}
+
+internal void r_end_frame(void) {
+    for (R_OpenGL_BufferNode *buffer_n = r_ogl_state->buffers.first;
+            buffer_n;
+            buffer_n = buffer_n->next) {
+        glDeleteBuffers(1, &buffer_n->buffer);
+    }
+
+    arena_clear(r_ogl_state->buffer_arena);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

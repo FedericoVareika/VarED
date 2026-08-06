@@ -487,6 +487,8 @@ int main(void) {
 
     u64 last_counter = SDL_GetPerformanceCounter();
 
+    editor_init(&editor_params);
+
     while (global_editor_running) {
 
         WMEventList *event_list = push_struct(event_arena, WMEventList);
@@ -521,37 +523,67 @@ int main(void) {
 
                 // TODO(fede): push-back macro
                 WMEventNode *event_n = push_struct(event_arena, WMEventNode);
-                QueuePush(event_list->first, event_list->last, event_n);
+                SLL_PushBack(event_list->first, event_list->last, event_n);
                 event_list->count++;
 
                 WMEvent *event = &event_n->v;
 
-                // TODO(fede): handle cursor
-
+                event->kind = WMEventKind_Press;
                 event->key = sdl_get_wm_key(key_event.keysym.sym);
                 event->modifiers = sdl_get_wm_modifiers(mod);
                 event->repeat = key_event.repeat;
             } break;
             case SDL_TEXTINPUT: {
-               u8 *text = (u8 *)event.text.text;
-               u64 max_size = SDL_TEXTINPUTEVENT_TEXT_SIZE;
+                u8 *text = (u8 *)event.text.text;
+                u64 max_size = SDL_TEXTINPUTEVENT_TEXT_SIZE;
             
-               while (*text) {
-                   UnicodeCodepoint codepoint = utf8_decode(
-                           text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
-                   text += codepoint.byte_size;
-            
-                   if (!codepoint.character)
-                       break;
-            
-                   WMEventNode *event_n = push_struct(event_arena, WMEventNode);
-                   QueuePush(event_list->first, event_list->last, event_n);
-                   event_list->count++;
-            
-                   WMEvent *event = &event_n->v;
-                   event->character = codepoint.character;
-               }
-            
+                while (*text) {
+                    UnicodeCodepoint codepoint = utf8_decode(
+                            text, SDL_TEXTINPUTEVENT_TEXT_SIZE);
+                    text += codepoint.byte_size;
+                
+                    if (!codepoint.character)
+                        break;
+                
+                    WMEventNode *event_n = push_struct(event_arena, WMEventNode);
+                    QueuePush(event_list->first, event_list->last, event_n);
+                    event_list->count++;
+                
+                    WMEvent *event = &event_n->v;
+                    event->kind = WMEventKind_Press;
+                    event->character = codepoint.character;
+                }
+            } break;
+
+            case SDL_MOUSEMOTION: {
+                SDL_MouseMotionEvent motion = event.motion;
+                
+                WMEventNode *event_n = push_struct(event_arena, WMEventNode);
+                QueuePush(event_list->first, event_list->last, event_n);
+                event_list->count++;
+
+                WMEvent *event = &event_n->v;
+                event->kind = WMEventKind_MouseMove;
+                event->pos = (v2) {
+                    motion.x,
+                    motion.y,
+                };
+            } break;
+
+            case SDL_MOUSEBUTTONDOWN:
+            case SDL_MOUSEBUTTONUP: {
+                SDL_MouseButtonEvent button = event.button;   
+                
+                WMEventNode *event_n = push_struct(event_arena, WMEventNode);
+                QueuePush(event_list->first, event_list->last, event_n);
+                event_list->count++;
+
+                WMEvent *event = &event_n->v;
+                event->kind = button.state == SDL_RELEASED ? 
+                    WMEventKind_Release : WMEventKind_Press;
+
+                // NOTE(fede): Assuming button is the index 0-6.
+                event->key = WMKey_MOUSE0 + button.button; 
             } break;
             }
         }
@@ -563,6 +595,8 @@ int main(void) {
         r_consume_all();
 
         SDL_GL_SwapWindow(window);
+
+        r_end_frame();
 
         {
             u64 end_counter = SDL_GetPerformanceCounter();

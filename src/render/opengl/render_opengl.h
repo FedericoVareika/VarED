@@ -38,6 +38,18 @@ struct R_OpenGL_AttribArray {
     u32 count;
 };
 
+typedef struct R_OpenGL_BufferNode R_OpenGL_BufferNode;
+struct R_OpenGL_BufferNode {
+    R_OpenGL_BufferNode *next;
+    GLuint buffer;
+};
+
+typedef struct R_OpenGL_BufferList R_OpenGL_BufferList;
+struct R_OpenGL_BufferList {
+    R_OpenGL_BufferNode *first;
+    R_OpenGL_BufferNode *last;
+};
+
 typedef struct R_OpenGL_State R_OpenGL_State;
 struct R_OpenGL_State {
     Arena *arena;
@@ -49,6 +61,9 @@ struct R_OpenGL_State {
 
     GLuint white_texture;
     R_OpenGL_Tex2DList textures;
+
+    Arena *buffer_arena;
+    R_OpenGL_BufferList buffers;
 };
 
 ////////////////////////////////////////////////////////////////////////////////

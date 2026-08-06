@@ -1,6 +1,4 @@
 
-global const R_Handle nil_texture = {0};
-
 global R_State *r_state = 0;
 
 internal void r_init(u32 window_width, u32 window_height) {
@@ -62,20 +60,24 @@ internal void r_push_batch_inst(R_BatchList *batches, void *v, u64 inst_bytes) {
     batches->byte_count += inst_bytes;
 }
 
-internal void r_push_rect2(R_Handle tex, Rect2 pos, Rect2 uv, v4 color) {
+internal void r_push_rect2_(R_Rect2Params params) {
     R_PassNode *pass_n = r_get_pass_n(R_PassType_UI); 
     R_Pass *pass = &pass_n->v;
 
-    R_BatchGroupNode *batch_group_n = r_get_batch_group_n(pass, tex, sizeof(R_Rect2DInst));
+    R_BatchGroupNode *batch_group_n = r_get_batch_group_n(
+            pass, params.tex, sizeof(R_Rect2DInst));
     R_BatchList *batches = &batch_group_n->v.batches;
     assert(batches->bytes_per_inst == sizeof(R_Rect2DInst));
 
-    v2 pos_dim = rect2_dim(pos);
-    
     R_Rect2DInst *rect_inst = push_struct(r_state->frame_arena, R_Rect2DInst);
-    rect_inst->pos_rect = (v4){ .xy = pos.min, .zw = pos_dim };
-    rect_inst->uv_rect = uv.V4,
-    rect_inst->color = color;
+    rect_inst->pos_rect = params.pos.V4;
+    rect_inst->uv_rect = params.uv.V4,
+    rect_inst->color0 = params.color0;
+    rect_inst->color1 = params.color1;
+    rect_inst->color2 = params.color2;
+    rect_inst->color3 = params.color3;
+    rect_inst->corner_radius = params.corner_radius;
+    rect_inst->edge_softness = params.edge_softness;
 
     void *v = (void *)rect_inst;
     u64 byte_count = sizeof(R_Rect2DInst);

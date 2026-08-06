@@ -136,7 +136,7 @@ internal inline Rect2 rect2_center_dim(v2 center, v2 dim) {
     return rect2_center_halfdim(center, halfdim);
 }
 
-internal inline bool inside_rect2(Rect2 rect, v2 test) {
+internal inline bool rect2_test_inside(Rect2 rect, v2 test) {
     return 
         rect.min.x <= test.x && 
         rect.min.y <= test.y && 

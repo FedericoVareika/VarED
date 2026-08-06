@@ -77,17 +77,66 @@ typedef struct {
 
 #define array_count(a) (sizeof((a)) / sizeof((a)[0]))
 
-////////////////////////////////
-// Queue
+#define IsNil(x, nil) (x) == 0 || (x) == (nil)
 
-#define QueuePush_N(f, l, n, next) ((f) == 0) ? \
-    ((f) = (l) = (n), (n)->next = 0) : \
-    ((l)->next = (n), (l) = (n), (n)->next = 0)
-#define QueuePop_N(f, l, next) ((f) == (l)) ? \
-    ((f) = (l) = 0) : \
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Queue
+
+#define QueuePush_N_nil(f, l, n, next, nil) IsNil(f, nil) ? \
+    ((f) = (l) = (n), (n)->next = (nil)) : \
+    ((l)->next = (n), (l) = (n), (n)->next = (nil))
+
+#define QueuePop_N_nil(f, l, next, nil) ((f) == (l)) ? \
+    ((f) = (l) = (nil)) : \
     ((f) = (f)->next)
 
+#define QueuePush_N(f, l, n, next) QueuePush_N_nil(f, l, n, next, 0)
+#define QueuePop_N(f, l, next) QueuePop_N_nil(f, l, next, 0)
 #define QueuePush(f, l, n) QueuePush_N(f, l, n, next)
 #define QueuePop(f, l) QueuePop_N(f, l, next)
+#define QueuePush_nil(f, l, n, nil) QueuePush_N_nil(f, l, n, next, nil)
+#define QueuePop_nil(f, l, nil) QueuePop_N_nil(f, l, next, nil)
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): DLL (Doubly-Linked-List)
+
+#define DLL_Insert_NP_nil(f, l, p, n, next, prev, nil) IsNil(f, nil) ? \
+    ((f) = (l) = (n), (n)->next = (nil), (n)->prev = (nil)) : \
+    (IsNil(p, nil) ? \
+      ((n)->next = (f), (n)->prev = (nil), (f) = (n)) : \
+      ((p) == (l) ? (0) : ((p)->next->prev = (n)), (n)->prev = (p), (n)->next = (p)->next, (p)->next = (n)))
+
+#define DLL_PushBack_NP_nil(f, l, n, next, prev, nil) DLL_Insert_NP_nil(f, l, l, n, next, prev, nil)
+#define DLL_PushBack_nil(f, l, n, nil) DLL_PushBack_NP_nil(f, l, n, next, prev, nil)
+#define DLL_PushBack(f, l, n) DLL_PushBack_NP_nil(f, l, n, next, prev, 0)
+
+#define DLL_PushFront_NP_nil(f, l, n, next, prev, nil) DLL_Insert_NP_nil(l, f, f, n, prev, next, nil)
+#define DLL_PushFront_nil(f, l, n, nil) DLL_PushFront_NP_nil(f, l, n, next, prev, nil)
+#define DLL_PushFront(f, l, n) DLL_PushFront_NP_nil(f, l, n, next, prev, 0)
+
+#define DLL_Remove_NP_nil(f, l, n, next, prev, nil) ((f) == (l)) ? \
+    ((f) = (l) = (nil)) : \
+    ((n) == (f) ? \
+     ((f) = (f)->next, (f)->prev = (nil)) : \
+     ((n) == (l) ? \
+      ((l) = (l)->prev, (l)->next = (nil)) : \
+      ((n)->prev->next = (n)->next)))
+
+#define DLL_Remove_nil(f, l, n, nil) DLL_Remove_NP_nil(f, l, n, next, prev, nil)
+#define DLL_Remove(f, l, n) DLL_Remove_nil(f, l, n, nil)
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): SLL (Singly-Linked-List)
+
+#define SLL_Insert_N_nil(f, l, p, n, next, nil) IsNil(f, nil) ? \
+    ((f) = (l) = (n), (n)->next = (nil)) : \
+    (IsNil(p, nil) ? \
+     ((n)->next = (f), (f) = (n)) : \
+     ((n)->next = (p)->next, (p)->next = (n), (p) == (l) ? \
+      ((l) = (n)) : (0)))
+
+#define SLL_PushBack_N_nil(f, l, n, next, nil) SLL_Insert_N_nil(f, l, l, n, next, nil)
+#define SLL_PushBack_nil(f, l, n, nil) SLL_PushBack_N_nil(f, l, n, next, nil)
+#define SLL_PushBack(f, l, n) SLL_PushBack_nil(f, l, n, 0)
 
 #endif // BASE_CORE_H

@@ -77,7 +77,9 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32
         Rect2 atlas_dst = rect2_min_dim(first_free_f, (v2){ pixel_width, pixel_height });
 
         atlas->first_free.x += pixel_width + 1;
+        atlas->first_free.x = min(atlas->first_free.x, atlas->dim.x);
         atlas->next_y = max(atlas->next_y, atlas->first_free.y + pixel_height + 1);
+        atlas->next_y = min(atlas->next_y, atlas->dim.y);
         
         Bitmap2d raster = fp_raster_character(
                 fc_state->frame_arena,

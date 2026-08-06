@@ -9,10 +9,20 @@ typedef enum {
     R_ShaderType_Count,
 } R_ShaderType;
 
-typedef struct {    //       xy | zw
-    v4 pos_rect;    // fmt: min | dim 
+// TODO(fede): 
+//      - Border
+//      - White texture override (so that we dont have to change batch group
+//          when drawing both rectangles and text and such).
+typedef struct {
+    v4 pos_rect;    // fmt: min | max 
     v4 uv_rect;     // fmt: min | max
-    v4 color;   
+    v4 color0;   
+    v4 color1;   
+    v4 color2;   
+    v4 color3;   
+
+    f32 corner_radius;
+    f32 edge_softness;
 } R_Rect2DInst;
 
 typedef enum {
@@ -29,7 +39,7 @@ typedef struct {
 } R_Handle;
 
 // TODO(fede): static assert size of VertexUI and such is smaller than this
-#define BATCH_SIZE kilobytes(1)
+#define BATCH_SIZE kilobytes(32)
 
 typedef struct R_Batch R_Batch;
 struct R_Batch {
@@ -105,7 +115,22 @@ struct R_PassList {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
-/// NOTE(fede): Enums and stuff
+/// NOTE(fede): Enums, Params and stuff
+
+typedef struct R_Rect2Params R_Rect2Params;
+struct R_Rect2Params {
+    R_Handle tex;
+    Rect2 pos;
+    Rect2 uv;
+    v4 color0;
+    v4 color1;
+    v4 color2;
+    v4 color3;
+    float corner_radius;
+    float edge_softness;
+};
+
+global const R_Handle nil_texture = {0};
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Render state
@@ -122,14 +147,19 @@ struct R_State {
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Hooks
 
+#define WHITE_V4 (v4){1, 1, 1, 1}
+#define BLACK_V4 (v4){1, 1, 1, 1}
+
 internal void r_init(u32 window_width, u32 window_height);
-internal void r_push_rect2(R_Handle tex, Rect2 pos, Rect2 uv, v4 color);
+internal void r_push_rect2_(R_Rect2Params params);
+#define r_push_rect2(...) r_push_rect2_((R_Rect2Params){.tex = nil_texture, .color0 = WHITE_V4, .color1 = WHITE_V4, .color2 = WHITE_V4, .color3 = WHITE_V4, __VA_ARGS__})
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Platform dependent hooks
 
 internal void r_platform_init(void);
 internal void r_consume_all(void);
+internal void r_end_frame(void);
 
 internal R_Handle r_alloc_tex2d(R_TextureFormat texture_format, u8 *buf, u32 width, u32 height, R_TextureFormat pixel_format);
 internal void r_update_tex2d(R_Handle tex, Rect2 dst, u8 *src, R_TextureFormat format);

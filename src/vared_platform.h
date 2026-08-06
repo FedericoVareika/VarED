@@ -48,7 +48,11 @@ enum {
     WMKey_LEFTPAREN = '(',
     WMKey_RIGHTPAREN = ')',
     WMKey_ASTERISK = '*',
+
+    // TODO(fede): Remove, i think this never happens. 
+    //      Check if the same occurs on others.
     WMKey_PLUS = '+',
+
     WMKey_COMMA = ',',
     WMKey_MINUS = '-',
     WMKey_PERIOD = '.',
@@ -133,14 +137,39 @@ enum {
     WMKey_DOWN,
     WMKey_UP,
 
+    WMKey_MOUSE0,
+    WMKey_MOUSE1,
+    WMKey_MOUSE2,
+    WMKey_MOUSE3,
+    WMKey_MOUSE4,
+    WMKey_MOUSE5,
+    WMKey_MOUSE6,
+
+    WMKey_MOUSELEFT = WMKey_MOUSE0,
+    WMKey_MOUSERIGHT = WMKey_MOUSE1,
+    WMKey_MOUSEMIDDLE = WMKey_MOUSE2,
+
     WMKey_COUNT,
 };
 
+typedef enum {
+    WMEventKind_Press, 
+    WMEventKind_Release,
+    WMEventKind_Text,
+    WMEventKind_MouseMove,
+} WMEventKind;
+
 typedef struct {
-    WMKey key;
+    WMEventKind kind;
     WMModifiers modifiers;
+
+    WMKey key;
+
     u32 character;
     u32 repeat;
+
+    // TODO(fede): half_transition_count?
+    v2 pos;
 } WMEvent;
 
 typedef struct WMEventNode WMEventNode;
@@ -166,6 +195,7 @@ typedef struct {
     WMEventList *events;
 } EditorParams;
 
+void editor_init(EditorParams *params);
 void editor_update_and_render(EditorParams *params);
 
 #endif // VARED_PLATFORM_H

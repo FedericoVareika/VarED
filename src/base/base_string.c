@@ -29,13 +29,22 @@ internal char *cstr_from_str8(Arena *arena, String8 str) {
     return result;
 }
 
+internal String8 str8_from_cstr(char *cstr) {
+    u64 len = cstr_len(cstr);
+    return str8((u8 *)cstr, len);
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // NOTE(fede): UTF-8 / Unicode
 
 #define UTF8_REPLACEMENT_CHARACTER 0xFFD
 
-internal bool utf8_byte_is_continuation(u8 byte) {
-    return (byte & 0x80) == 0x80;
+internal inline bool utf8_byte_is_header(u8 byte) {
+    return !utf8_byte_is_continuation(byte);
+}
+
+internal inline bool utf8_byte_is_continuation(u8 byte) {
+    return (byte & 0xC0) == 0x80;
 }
 
 internal int utf8_byte_class_map[32] = {
@@ -162,4 +171,17 @@ internal u32 utf8_encode(u32 character, u8 *dst) {
 #endif // VARED_SLOW
        
     return bytes_to_write;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Hashing
+
+// djb2 from http://www.cse.yorku.ca/~oz/hash.html
+internal u64 str8_hash_u64(String8 str) {
+    u64 result = 5381;
+    for (u32 i = 0; i < str.size; i++) {
+        result = (result << 5) + result + str.str[i];
+    }
+
+    return result;
 }
