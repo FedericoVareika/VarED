@@ -23,6 +23,7 @@ typedef struct {
 
     f32 corner_radius;
     f32 edge_softness;
+    f32 border_thickness;
 } R_Rect2DInst;
 
 typedef enum {
@@ -126,8 +127,9 @@ struct R_Rect2Params {
     v4 color1;
     v4 color2;
     v4 color3;
-    float corner_radius;
-    float edge_softness;
+    f32 corner_radius;
+    f32 edge_softness;
+    f32 border_thickness;
 };
 
 global const R_Handle nil_texture = {0};
@@ -151,7 +153,7 @@ struct R_State {
 #define BLACK_V4 (v4){1, 1, 1, 1}
 
 internal void r_init(u32 window_width, u32 window_height);
-internal void r_push_rect2_(R_Rect2Params params);
+internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params);
 #define r_push_rect2(...) r_push_rect2_((R_Rect2Params){.tex = nil_texture, .color0 = WHITE_V4, .color1 = WHITE_V4, .color2 = WHITE_V4, .color3 = WHITE_V4, __VA_ARGS__})
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -163,5 +165,10 @@ internal void r_end_frame(void);
 
 internal R_Handle r_alloc_tex2d(R_TextureFormat texture_format, u8 *buf, u32 width, u32 height, R_TextureFormat pixel_format);
 internal void r_update_tex2d(R_Handle tex, Rect2 dst, u8 *src, R_TextureFormat format);
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Helper Macros
+
+#define R_Color4(c) .color0 = (c), .color1 = (c), .color2 = (c), .color3 = (c)
 
 #endif // RENDER_H

@@ -177,11 +177,17 @@ internal u32 utf8_encode(u32 character, u8 *dst) {
 /// NOTE(fede): Hashing
 
 // djb2 from http://www.cse.yorku.ca/~oz/hash.html
-internal u64 str8_hash_u64(String8 str) {
-    u64 result = 5381;
+internal u64 str8_hash_u64_seed(String8 str, u64 seed) {
+    u64 result = seed;
     for (u32 i = 0; i < str.size; i++) {
         result = (result << 5) + result + str.str[i];
     }
 
     return result;
 }
+
+internal u64 str8_hash_u64(String8 str) {
+    u64 seed = 5381;
+    return str8_hash_u64_seed(str, seed);
+}
+

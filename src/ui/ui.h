@@ -15,10 +15,11 @@ struct UI_Key {
 typedef enum {
     UI_SizeKind_Null,
 
-    UI_SizeKind_Pixels,             // Any order
-    UI_SizeKind_TextContent,        // Any order
-    UI_SizeKind_PercentOfParent,    // Pre order  (root, left, right)
-    UI_SizeKind_ChildrenSum,        // Post order (left, right, root)
+    UI_SizeKind_Pixels,             
+    UI_SizeKind_TextContent,        
+    UI_SizeKind_EM,
+    UI_SizeKind_PercentOfParent,    
+    UI_SizeKind_ChildrenSum,        
 
     UI_SizeKind_Count,
 } UI_SizeKind;
@@ -55,10 +56,20 @@ struct UI_Box {
     UI_BoxFlags flags;
     String8 string;
 
+    String8 display_string;
+    FC_GlyphRun *display_run;
+
+    // NOTE(fede): Style stacks
     UI_Size semantic_size[UI_Axis2_Count];
     UI_Axis2 child_layout_axis;
     v4 background_color;
+    v4 text_color;
     v4 border_color;
+    f32 corner_radius;
+    f32 border_thickness;
+
+    FP_FontHandle font_handle;
+    f32 font_size;
 
     // NOTE(fede): Computed at layout
     f32 computed_position[UI_Axis2_Count];
@@ -137,12 +148,14 @@ global UI_Box ui_nil_box = {
 internal UI_Key ui_key_null(void);
 internal UI_Key ui_key_from_string(String8 string);
 internal bool ui_key_match(UI_Key a, UI_Key b);
+internal bool ui_box_is_nil(UI_Box *box);
 
 internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string);
 internal UI_Box *ui_box_makef(UI_BoxFlags flags, char *fmt, ...);
 
 internal void ui_box_equip_string(UI_Box *box, String8 string);
-internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis);
+// TODO(fede): Move to style stack
+internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis); 
 
 internal UI_Box *ui_push_parent(UI_Box *box);
 internal UI_Box *ui_pop_parent(void);
@@ -158,12 +171,46 @@ internal void ui_render(void);
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Helpers
 
-internal UI_Size ui_pct(f32 val);
-internal UI_Size ui_px(f32 val);
+/// Size
+internal inline UI_Size ui_size(UI_SizeKind kind, f32 val, f32 strictness);
+#define ui_pct(v, s) ui_size(UI_SizeKind_PercentOfParent, (v), (s))
+#define ui_px(v, s)  ui_size(UI_SizeKind_Pixels         , (v), (s))
+#define ui_em(v, s)  ui_size(UI_SizeKind_EM             , (v), (s))
+#define ui_tc(v, s)  ui_size(UI_SizeKind_TextContent    , (v), (s))
+
+internal inline v4 ui_darken_color(v4 color, f32 t);
+internal inline v4 ui_lighten_color(v4 color, f32 t);
+
+// Font 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Common widgets
 
 internal UI_Comm ui_button(String8 str);
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Style stack DeferLoops
+
+#define UI_Parent(v) DeferLoop(ui_push_parent((v)), ui_pop_parent())
+#define UI_PrefWidth(v) DeferLoop(ui_push_pref_width((v)), ui_pop_pref_width())
+#define UI_PrefHeight(v) DeferLoop(ui_push_pref_height((v)), ui_pop_pref_height())
+#define UI_ChildLayoutAxis(v) DeferLoop(ui_push_child_layout_axis((v)), ui_pop_child_layout_axis())
+
+#define UI_TextColor(v) DeferLoop(ui_push_text_color((v)), ui_pop_text_color())
+#define UI_BackgroundColor(v) DeferLoop(ui_push_background_color((v)), ui_pop_background_color())
+#define UI_BorderColor(v) DeferLoop(ui_push_border_color((v)), ui_pop_border_color())
+
+#define UI_Font(v) DeferLoop(ui_push_font_handle(v), ui_pop_font_handle())
+#define UI_FontSize(v) DeferLoop(ui_push_font_size(v), ui_pop_font_size())
+
+#define UI_CornerRadius(v) DeferLoop(ui_push_corner_radius(v), ui_pop_corner_radius())
+#define UI_BorderThickness(v) DeferLoop(ui_push_border_thickness(v), ui_pop_border_thickness())
+
+// #define UI_x(v) DeferLoop(ui_push_x(v), ui_pop_x())
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Other Macros
+
+#define RGBA(r, g, b, a) ((v4){r, g, b, a})
 
 #endif // UI_H

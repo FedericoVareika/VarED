@@ -33,6 +33,7 @@ internal u32 utf8_encode(u32 character, u8 *dst);
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Hashing
 
+internal u64 str8_hash_u64_seed(String8 str, u64 seed);
 internal u64 str8_hash_u64(String8 str);
 
 #endif // BASE_STRING_H

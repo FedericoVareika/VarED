@@ -217,7 +217,8 @@ void r_platform_init(void) {
     X(4, color2, 4, FLOAT) \
     X(5, color3, 4, FLOAT) \
     X(6, corner_radius, 1, FLOAT) \
-    X(7, edge_softness, 1, FLOAT)
+    X(7, edge_softness, 1, FLOAT) \
+    X(8, border_thickness, 1, FLOAT)
 
 #define X(_, __, ___, ____) +1
         u32 n_vertex_attributes = 0 
@@ -276,6 +277,8 @@ internal void r_consume_pass(R_Pass *pass) {
             R_OpenGL_Tex2D *tex2d = r_ogl_tex2d_from_handle(batch_group->texture_handle);
             glBindTexture(GL_TEXTURE_2D, tex2d->id);
         }
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         R_BatchList *batches = &batch_group->batches;
 

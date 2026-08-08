@@ -16,8 +16,12 @@
         ui_state->name = ui_state->name->next; \
     }
 
+#define DEFINE_STYLE_BODIES_TOP(struct_name, name, value_type, box_field, default) \
+    internal value_type ui_top_##name(void) { return ui_state->name->v; }
+
 STYLE_STACK_DEFS(DEFINE_STYLE_BODIES_PUSH)
 STYLE_STACK_DEFS(DEFINE_STYLE_BODIES_POP)
+STYLE_STACK_DEFS(DEFINE_STYLE_BODIES_TOP)
 
 ////////////////////////////////////////////////////////////////////////////////
 

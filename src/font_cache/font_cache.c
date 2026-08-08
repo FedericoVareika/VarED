@@ -9,29 +9,36 @@ internal void fc_init(void) {
 
     fc_state->scratch_raster_dst_size = kilobytes(2);
     fc_state->scratch_raster_dst = push_size(arena, fc_state->scratch_raster_dst_size);
+
+    fc_state->glyph_table_size = 100;
+    fc_state->glyph_table = push_array(arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
+
+    fc_state->run_hash_arena = arena_alloc();
+    fc_state->run_table_size = 100;
+    fc_state->run_table = push_array(arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
 }
 
 internal void fc_tick(void) {
     arena_clear(fc_state->frame_arena);
+
+    // TODO(fede): Add a last frame idx and free the necessary glyphs, runs, etc.
 }
 
 internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32 font_size) {
+    FC_GlyphHashSlot *slot = &fc_state->glyph_table[codepoint % fc_state->glyph_table_size];
+    FC_GlyphNode *glyph_n = slot->hash_first;
+    for (; glyph_n != 0; glyph_n = glyph_n->next) {
 
-    FC_GlyphList *glyphs = &fc_state->glyphs;
-    FC_GlyphNode *glyph_n = glyphs->first;
-    for (u32 glyph_idx = 0; 
-            glyph_idx < glyphs->count; 
-            glyph_idx++, glyph_n = glyph_n->next) {
+        // TODO(fede): Font handle too?
         if (glyph_n->v.codepoint == codepoint &&
                 glyph_n->v.font_size == font_size) {
-            break;
+            break; 
         }
     }
 
     if (!glyph_n) {
         glyph_n = push_struct(fc_state->arena, FC_GlyphNode);
-        QueuePush(glyphs->first, glyphs->last, glyph_n);
-        glyphs->count++;
+        SLL_PushBack(slot->hash_first, slot->hash_last, glyph_n);
 
         glyph_n->v.codepoint = codepoint;
         glyph_n->v.font_size = font_size;
@@ -103,4 +110,58 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32
     }
 
     return &glyph_n->v;
+}
+
+internal FC_GlyphRun *fc_get_string_glyph_run(
+        FP_FontHandle font,
+        String8 string,
+        f32 font_size) {
+
+    FC_RunKey key = fc_run_key_from_string_size(string, font_size);
+    FC_GlyphRunHashSlot *slot = &fc_state->run_table[key.v % fc_state->run_table_size];
+    FC_GlyphRunNode *run_n = slot->hash_first;
+
+    for (; run_n != 0; run_n = run_n->next) {
+        if (fc_run_key_match(key, run_n->v.key)) {
+            break;
+        }
+    }
+
+    if (!run_n) {
+        run_n = push_struct(fc_state->run_hash_arena, FC_GlyphRunNode);
+        DLL_PushBack(slot->hash_first, slot->hash_last, run_n);
+
+        FC_GlyphRun *run = &run_n->v;
+
+        run->key = key;
+        run->advance = 0;
+        run->count = 0;
+        for (u32 i = 0; i < string.size;) {
+            FC_GlyphNode *glyph_n = push_struct(fc_state->run_hash_arena, FC_GlyphNode);
+            SLL_PushBack(run->first, run->last, glyph_n);
+
+            String8 substring = str8_skip(string, i);
+            UnicodeCodepoint codepoint = utf8_decode(substring.str, substring.size);
+            i += codepoint.byte_size;
+
+            glyph_n->v = *fc_get_codepoint_glyph(font, codepoint.character, font_size);
+            run->advance += glyph_n->v.metrics.advance; 
+            run->count++;
+        }
+    }
+
+    return &run_n->v;
+}
+
+internal FC_RunKey fc_run_key_from_string_size(String8 string, f32 font_size) {
+    FC_RunKey result = {0};
+
+    u64 seed = (u64)(*(u32 *)(&font_size));
+    result.v = str8_hash_u64_seed(string, seed);
+
+    return result;
+}
+
+internal bool fc_run_key_match(FC_RunKey a, FC_RunKey b) {
+    return a.v == b.v;
 }

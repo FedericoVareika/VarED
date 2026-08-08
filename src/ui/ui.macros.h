@@ -2,12 +2,19 @@
 /// NOTE(fede): Styles
 
 #define STYLE_STACK_DEFS(M) /*
-*/ M(PrefWidth       , pref_width        , UI_Size  , semantic_size[UI_Axis2_X] , ui_pct(1)) /*
-*/ M(PrefHeight      , pref_height       , UI_Size  , semantic_size[UI_Axis2_Y] , ui_pct(1)) /*
+*/ M(PrefWidth       , pref_width        , UI_Size  , semantic_size[UI_Axis2_X] , ui_pct(1, 1)) /*
+*/ M(PrefHeight      , pref_height       , UI_Size  , semantic_size[UI_Axis2_Y] , ui_pct(1, 1)) /*
 */ M(ChildLayoutAxis , child_layout_axis , UI_Axis2 , child_layout_axis         , UI_Axis2_Y) /*
 
 */ M(BackgroundColor , background_color , v4 , background_color , ((v4){0.5 , 0.5 , 0.5 , 1})) /*
-*/ M(BorderColor     , border_color     , v4 , border_color     , ((v4){0.5 , 0.5 , 0.5 , 1})) /*
+*/ M(TextColor       , text_color       , v4 , text_color       , ((v4){1   , 1   , 1   , 1})) /*
+*/ M(BorderColor     , border_color     , v4 , border_color     , ((v4){1   , 1   , 1   , 1})) /*
+
+*/ M(FontHandle, font_handle, FP_FontHandle, font_handle, (FP_FontHandle){0}) /*
+*/ M(FontSize  , font_size  , f32          , font_size  , 16) /*
+
+*/ M(CornerRadius   , corner_radius   , f32, corner_radius   , 5) /*
+*/ M(BorderThickness, border_thickness, f32, border_thickness, 1) /*
 */
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -44,8 +51,12 @@ STYLE_STACK_DEFS(DEFINE_STYLE_STRUCT)
 #define DEFINE_STYLE_HEADERS_POP(struct_name, name, value_type, box_field, default) \
     internal void ui_pop_##name(void);
 
+#define DEFINE_STYLE_HEADERS_TOP(struct_name, name, value_type, box_field, default) \
+    internal value_type ui_top_##name(void);
+
 STYLE_STACK_DEFS(DEFINE_STYLE_HEADERS_PUSH)
 STYLE_STACK_DEFS(DEFINE_STYLE_HEADERS_POP)
+STYLE_STACK_DEFS(DEFINE_STYLE_HEADERS_TOP)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Decls

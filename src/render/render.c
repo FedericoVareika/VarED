@@ -42,7 +42,10 @@ internal R_BatchGroupNode *r_get_batch_group_n(
     return group_n;
 }
 
-internal void r_push_batch_inst(R_BatchList *batches, void *v, u64 inst_bytes) {
+#define r_push_batch_inst(batches, type) \
+    (type *)r_push_batch_inst_(batches, sizeof(type))
+
+internal void *r_push_batch_inst_(R_BatchList *batches, u64 inst_bytes) {
     R_BatchNode *batch_n = batches->last;
     if (!batch_n || batch_n->v.byte_size - batch_n->v.byte_count < inst_bytes) {
         batch_n = push_struct(r_state->frame_arena, R_BatchNode);
@@ -54,13 +57,13 @@ internal void r_push_batch_inst(R_BatchList *batches, void *v, u64 inst_bytes) {
     }
 
     void *dst = (u8 *)batch_n->v.v + batch_n->v.byte_count;
-    mem_copy(dst, v, inst_bytes);
 
     batch_n->v.byte_count += inst_bytes;
     batches->byte_count += inst_bytes;
+    return dst;
 }
 
-internal void r_push_rect2_(R_Rect2Params params) {
+internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params) {
     R_PassNode *pass_n = r_get_pass_n(R_PassType_UI); 
     R_Pass *pass = &pass_n->v;
 
@@ -69,7 +72,7 @@ internal void r_push_rect2_(R_Rect2Params params) {
     R_BatchList *batches = &batch_group_n->v.batches;
     assert(batches->bytes_per_inst == sizeof(R_Rect2DInst));
 
-    R_Rect2DInst *rect_inst = push_struct(r_state->frame_arena, R_Rect2DInst);
+    R_Rect2DInst *rect_inst = r_push_batch_inst(batches, R_Rect2DInst);
     rect_inst->pos_rect = params.pos.V4;
     rect_inst->uv_rect = params.uv.V4,
     rect_inst->color0 = params.color0;
@@ -78,9 +81,7 @@ internal void r_push_rect2_(R_Rect2Params params) {
     rect_inst->color3 = params.color3;
     rect_inst->corner_radius = params.corner_radius;
     rect_inst->edge_softness = params.edge_softness;
+    rect_inst->border_thickness = params.border_thickness;
 
-    void *v = (void *)rect_inst;
-    u64 byte_count = sizeof(R_Rect2DInst);
-
-    r_push_batch_inst(batches, v, byte_count);
+    return rect_inst;
 }

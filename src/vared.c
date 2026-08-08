@@ -57,7 +57,6 @@ internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {
 }
 
 // TODO(fede): 
-//      - Get font metrics, and do the vertical alignment with it.
 //      - Render cursor.
 //      - Handle newlines and such
 //      - Kerning
@@ -141,9 +140,9 @@ void editor_init(EditorParams *params) {
 
     fc_init();
     fp_init();
-    // state->font = fp_open_font("fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
-    state->font = fp_open_font("fonts/IosevkaTermNerdFontMono-Light.ttf");
-    state->font_size = 15;
+    state->font = fp_open_font("fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
+    // state->font = fp_open_font("fonts/IosevkaTermNerdFontMono-Light.ttf");
+    state->font_size = 14;
 
     ui_init();
 
@@ -185,8 +184,6 @@ void editor_update_and_render(EditorParams *params) {
                 state->cursor_char = 0;
             } break;
 
-            // TODO(fede): UTF8 movement, for now this just moves per-byte instead
-            //      of per-codepoint.
             case WMKey_BACKSPACE: {
                 Line *line = &state->text.lines[state->cursor_line];
                 u32 n = event.repeat == 0 ? 1 : event.repeat;
@@ -212,8 +209,6 @@ void editor_update_and_render(EditorParams *params) {
                         state->cursor_char--;
                     else break;
                 } while (!utf8_byte_is_header(line->buf[state->cursor_char]));
-                // if (state->cursor_char > 0) 
-                //     state->cursor_char--;
             } break;
             case WMKey_RIGHT: {
                 Line *line = &state->text.lines[state->cursor_line];
@@ -336,22 +331,55 @@ void editor_update_and_render(EditorParams *params) {
         }
     }
 
+#if 1
     v2 window_dim = {
         .x = r_state->window_width,
         .y = r_state->window_height,
     };
     ui_begin_build(window_dim, events);
+    UI_Font(state->font)
+    UI_FontSize(state->font_size)
+    UI_BackgroundColor(RGBA(0.11, 0.11, 0.11, 1))
+    UI_BorderColor(RGBA(0, 0, 0, 0))
     {
-        ui_push_pref_width(ui_pct(0.75));
-        ui_push_pref_height(ui_px(200));
+        UI_PrefWidth(ui_pct(1, 1)) UI_PrefHeight(ui_pct(0.5, 1))
+        {
+            {
+                UI_Box *container = ui_box_make(0, S8("Container 1"));
+                ui_box_equip_child_layout_axis(container, UI_Axis2_X);
 
-        if (ui_button(S8("Button 1")).clicked) 
-            printf("clicked 1!\n");
-        if (ui_button(S8("Button 2")).clicked)
-            printf("clicked 2!\n");
+                UI_Parent(container) 
+                    UI_PrefWidth(ui_tc(20, 1)) UI_PrefHeight(ui_em(2, 1))
+                    UI_CornerRadius(10)
+                    UI_BorderColor(RGBA(0.3, 0.5, 0.5, 1))
+                    UI_BorderThickness(3)
+                {
+                    if (ui_button(S8("Button 1aslkdjf")).clicked) 
+                        printf("clicked 1!\n");
+                    if (ui_button(S8("Button 2")).clicked)
+                        printf("clicked 2!\n");
+                }
 
-        ui_pop_pref_height();
-        ui_pop_pref_width();
+            }
+
+            {
+                UI_Box *container = ui_box_make(0, S8("Container 2"));
+                ui_box_equip_child_layout_axis(container, UI_Axis2_Y);
+
+                UI_Parent(container) 
+                    UI_PrefWidth(ui_pct(0.5, 1)) UI_PrefHeight(ui_em(2, 1))
+                    UI_CornerRadius(3)
+                    UI_BorderColor(RGBA(0.3, 0.5, 0.5, 1))
+                    UI_BorderThickness(2)
+                {
+                    if (ui_button(S8("Button 1")).clicked) 
+                        printf("clicked 12!\n");
+                    if (ui_button(S8("Button 2")).clicked)
+                        printf("clicked 22!\n");
+                }
+            }
+        }
+
     }
     ui_end_build();
 
@@ -360,46 +388,8 @@ void editor_update_and_render(EditorParams *params) {
 
     events->first = events->last = 0;
 
-#if 0
-    r_push_rect2(.pos = state->text_window, .color = (v4){0.2, 0.2, 0.2, 1});
-
-#if 0
-    {
-        FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
-
-        f32 height = state->text_window.min.y;
-        while (height < state->text_window.max.y) {
-            r_push_rect2(nil_texture, 
-                    rect2_min_max( 
-                        (v2){ state->text_window.min.x, height - 1 },
-                        (v2){ state->text_window.max.x, height + 1 }),
-                    (Rect2){0}, (v4){0.8, 0.8, 0.8, 1});
-
-            r_push_rect2( 
-                    .pos = rect2_min_max( 
-                        (v2){ state->text_window.min.x, height + metrics.ascender - 1 },
-                        (v2){ state->text_window.max.x, height + metrics.ascender + 1 }),
-                    .color = (v4){0.8, 0.0, 0.0, 1});
-            height += metrics.height;
-        }
-    }
-#endif
-
-#if 0
-    {
-        FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
-
-        f32 height = state->text_window.min.y;
-        while (height < state->text_window.max.y) {
-            r_push_rect2(nil_texture, 
-                    rect2_min_max( 
-                        (v2){ state->text_window.min.x, height },
-                        (v2){ state->text_window.max.x, height + metrics.height }),
-                    (Rect2){0}, (v4){1, 1, 1, 0.1});
-            height += metrics.height * 2;
-        }
-    }
-#endif
+#else
+    r_push_rect2(.pos = state->text_window, R_Color4(RGBA(0.2, 0.2, 0.2, 1)));
 
     {
         FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
@@ -424,12 +414,7 @@ void editor_update_and_render(EditorParams *params) {
 
         cursor_pos.y -= metrics.ascender;
         Rect2 cursor_rect = rect2_min_dim(cursor_pos, (v2){ metrics.height / 4, metrics.height });
-        r_push_rect2(.pos = cursor_rect, .color = (v4){1, 1, 1, 0.5});
+        r_push_rect2(.pos = cursor_rect, R_Color4(RGBA(1, 1, 1, 0.5)));
     }
-
-    r_push_rect2(
-            .pos = rect2_min_dim((v2){300, 300}, (v2){200, 200}),
-            .corner_radius = 60,
-            .edge_softness = 10);
 #endif
 }

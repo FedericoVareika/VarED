@@ -5,20 +5,18 @@ uniform vec2 screen_resolution;
 in vec4 i_pos_rect;
 in vec4 i_uv_rect;
 in vec4 i_colors[4];
-
-// NOTE(fede): In -- Rounded corners
 in float i_corner_radius;
 in float i_edge_softness;
+in float i_border_thickness;
 
 out vec4 out_color;
 out vec2 out_uv;
-
-// NOTE(fede): Out -- Rounded corners
 out vec2 out_pos;      
 out vec2 out_center;
 out vec2 out_half_size;
 out float out_corner_radius; 
 out float out_edge_softness;
+out float out_border_thickness;
 
 void main() {
     vec2 local_positions[] = vec2[](
@@ -49,4 +47,5 @@ void main() {
     out_half_size = dst_half_size;
     out_corner_radius = i_corner_radius;
     out_edge_softness = i_edge_softness;
+    out_border_thickness = i_border_thickness;
 }

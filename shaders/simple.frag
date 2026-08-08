@@ -11,8 +11,9 @@ in vec2 out_center;
 in vec2 out_half_size;
 in float out_corner_radius; 
 in float out_edge_softness;
+in float out_border_thickness;
 
-float rounded_corners_sdf(
+float rounded_rect_sdf(
         vec2 sample_pos,
         vec2 rect_center,
         vec2 rect_half_size,
@@ -28,12 +29,36 @@ void main() {
     vec2 softness_padding = vec2(max(0, softness*2-1),
                                      max(0, softness*2-1));
 
-    float dist = rounded_corners_sdf(out_pos,
-                            out_center,
-                            out_half_size - softness_padding,
-                            out_corner_radius);
+    float dist = rounded_rect_sdf(
+            out_pos,
+            out_center,
+            out_half_size - softness_padding,
+            out_corner_radius);
 
     float sdf_factor = 1.f - smoothstep(0, 2*softness, dist);
 
-    gl_FragColor = out_color * texture(image, out_uv) * sdf_factor;
+    float border_factor = 1.f;
+    if (out_border_thickness != 0) {
+        vec2 interior_half_size =
+            out_half_size - vec2(out_border_thickness);
+
+        float interior_radius_reduce_f = 
+            min(interior_half_size.x / out_half_size.x,
+                    interior_half_size.y / out_half_size.y);
+        float interior_corner_radius =
+            (out_corner_radius *
+             interior_radius_reduce_f *
+             interior_radius_reduce_f);
+
+        float inside_d = rounded_rect_sdf(
+                out_pos,
+                out_center,
+                interior_half_size - softness_padding,
+                interior_corner_radius);
+
+        float inside_f = smoothstep(0, 2*softness, inside_d);
+        border_factor = inside_f;
+    }
+
+    gl_FragColor = out_color * texture(image, out_uv) * sdf_factor * border_factor;
 }

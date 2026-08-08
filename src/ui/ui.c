@@ -25,12 +25,22 @@ internal String8 ui_hash_string(String8 string) {
     return string;
 }
 
+internal String8 ui_display_string(String8 string) {
+    // TODO(fede): Display until ##
+    return string;
+}
+
 internal UI_Key ui_nil_key(void) {
     return (UI_Key){0}; 
 }
 
 internal UI_Key ui_key_from_string(String8 string) {
     u64 v = str8_hash_u64(string);
+    return (UI_Key){v}; 
+}
+
+internal UI_Key ui_key_from_string_seed(String8 string, UI_Key seed_key) {
+    u64 v = str8_hash_u64_seed(string, seed_key.v);
     return (UI_Key){v}; 
 }
 
@@ -55,7 +65,15 @@ internal UI_Box *ui_box_from_key(UI_Key key) {
 
 internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string) {
     String8 hash_string = ui_hash_string(string);
-    UI_Key key = ui_key_from_string(hash_string);
+    UI_Key key;
+
+    // STUDY(fede): There probably is a better way to include the parent in the 
+    //      key.
+    if (!ui_box_is_nil(ui_state->parent)) {
+        key = ui_key_from_string_seed(hash_string, ui_state->parent->key);
+    } else {
+        key = ui_key_from_string(hash_string);
+    }
 
     UI_Box *result = ui_box_from_key(key);
 
@@ -93,6 +111,14 @@ internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string) {
     result->last_frame_touched_idx = ui_state->frame_idx;
 
     GENERATE_STYLE_INIT_BOX();
+
+    if (!!(flags & UI_BoxFlag_DrawText)) {
+        result->display_string = ui_display_string(string);
+        result->display_run = fc_get_string_glyph_run(
+                result->font_handle,
+                result->display_string,
+                result->font_size);
+    }
 
     return result;
 }
@@ -266,11 +292,18 @@ internal void ui_layout_independent(UI_Box *box, UI_Axis2 axis) {
     UI_Size size = box->semantic_size[axis];
     if (size.kind == UI_SizeKind_Pixels) {
         box->computed_size[axis] = size.value; 
+    } else if (size.kind == UI_SizeKind_EM) {
+        // STUDY(fede): Is this correct?
+        u32 one_em = (u32)((96.0f / 72.0f) * box->font_size);
+        box->computed_size[axis] = size.value * (f32)one_em;
+
     } else if (size.kind == UI_SizeKind_TextContent) {
-        /* TODO
-        f32 text_width = fc_get_string_width(box->string)?
-        box->computed_size[axis] = text_width;
-        */
+        assert(axis == UI_Axis2_X);
+        FC_GlyphRun *run = fc_get_string_glyph_run(
+                box->font_handle,
+                box->display_string,
+                box->font_size);
+        box->computed_size[axis] = box->display_run->advance + size.value * 2;
     }
 
     ui_layout_independent(box->next, axis);
@@ -337,7 +370,7 @@ internal void ui_layout_end_calc(UI_Box *box, UI_Axis2 axis, f32 layout_pos) {
         ui_layout_end_calc(child, axis, layout_pos);
 
         if (box->child_layout_axis == axis) {
-            layout_pos += child->computed_size[axis];
+            layout_pos += child->computed_size[axis] - 1;
         }
     }
 }
@@ -358,34 +391,73 @@ internal void ui_render_boxes(UI_Box *box) {
     if (ui_box_is_nil(box))
         return;
 
-    v4 white = box->background_color;
-    white.a = 1;
-    v4 black = box->background_color;
-    black.a = 0;
-    if (ui_key_match(ui_state->active, box->key)) 
-        r_push_rect2(
-                .pos = box->rect,
-                .color0 = black,
-                .color2 = black,
-                .color1 = white,
-                .color3 = white,
-                );
-    else if (ui_key_match(ui_state->hot, box->key))
-        r_push_rect2(
-                .pos = box->rect,
-                .color0 = white,
-                .color2 = white,
-                .color1 = black,
-                .color3 = black,
-                );
-    else 
-        r_push_rect2(
-                .pos = box->rect,
-                .color0 = white,
-                .color2 = white,
-                .color1 = white,
-                .color3 = white,
-                );
+    v4 background = box->background_color;
+    R_Rect2DInst *r_inst = r_push_rect2(
+            .pos = box->rect,
+            .corner_radius = box->corner_radius,
+            .edge_softness = 1,
+            .border_thickness = 0,
+            R_Color4(background));
+
+    r_push_rect2(
+            .pos = box->rect,
+            .corner_radius = box->corner_radius,
+            .edge_softness = 1,
+            .border_thickness = box->border_thickness,
+            R_Color4(box->border_color));
+
+    if (!!(box->flags & UI_BoxFlag_Clickable) &&
+            ui_key_match(ui_state->active, box->key)) {
+        r_inst->color0 = ui_darken_color(background, 0.3);
+        r_inst->color1 = ui_lighten_color(background, 0.3);
+        r_inst->color2 = ui_darken_color(background, 0.3);
+        r_inst->color3 = ui_lighten_color(background, 0.3);
+    } else if (!!(box->flags & UI_BoxFlag_Clickable) &&
+            ui_key_match(ui_state->hot, box->key)) {
+        r_inst->color0 = ui_lighten_color(background, 0.3);
+        r_inst->color1 = ui_darken_color(background, 0.3);
+        r_inst->color2 = ui_lighten_color(background, 0.3);
+        r_inst->color3 = ui_darken_color(background, 0.3);
+    }
+
+    if (!!(box->flags & UI_BoxFlag_DrawText)) {
+        // TODO(fede): Text alignment, for now, centered.
+
+        FP_FontMetrics metrics = fp_get_font_metrics(box->font_handle, box->font_size);
+        Rect2 text_rect = rect2_center_dim(
+                v2_smul(v2_add(box->rect.min, box->rect.max), 0.5),
+                (v2){ box->display_run->advance, metrics.height });
+        v2 text_pos = text_rect.min;
+        text_pos.y += metrics.ascender;
+
+        for (FC_GlyphNode *glyph_n = box->display_run->first;
+                glyph_n != 0;
+                glyph_n = glyph_n->next) {
+
+            FC_Glyph *glyph = &glyph_n->v;
+            
+            {
+                v2 pos = v2_add(text_pos, (v2){
+                    glyph->metrics.bearing_x,
+                    -glyph->metrics.bearing_y,
+                });
+
+                v2 dim = {
+                    glyph->metrics.width,
+                    glyph->metrics.height,
+                };
+
+                Rect2 glyph_pos = rect2_min_dim(pos, dim);
+                r_push_rect2(
+                        .tex = glyph->tex,
+                        .pos = glyph_pos,
+                        .uv = glyph->uvs,
+                        R_Color4(box->text_color));
+            }
+
+            text_pos.x += glyph->metrics.advance;
+        }
+    }
     
     ui_render_boxes(box->next);
     ui_render_boxes(box->first);
@@ -401,25 +473,30 @@ internal void ui_render(void) {
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Helpers
 
-internal UI_Size ui_pct(f32 val) {
+internal inline UI_Size ui_size(UI_SizeKind kind, f32 val, f32 strictness) {
     UI_Size result = {0}; 
-    result.kind = UI_SizeKind_PercentOfParent;
+    result.kind = kind;
     result.value = val;
+    result.strictness = strictness;
     return result;
 }
 
-internal UI_Size ui_px(f32 val) {
-    UI_Size result = {0}; 
-    result.kind = UI_SizeKind_Pixels;
-    result.value = val;
-    return result;
+internal inline v4 ui_darken_color(v4 color, f32 t) {
+    return v4_lerp(color, RGBA(0, 0, 0, 1), t);
+}
+
+internal inline v4 ui_lighten_color(v4 color, f32 t) {
+    return v4_lerp(color, RGBA(1, 1, 1, 1), t);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Common widgets
 
 internal UI_Comm ui_button(String8 str) {
-    UI_Box *box = ui_box_make(UI_BoxFlag_Clickable, str);
+    UI_Box *box = ui_box_make(
+            UI_BoxFlag_Clickable | 
+            UI_BoxFlag_DrawText,
+            str);
     return ui_comm_from_box(box);
 }
 

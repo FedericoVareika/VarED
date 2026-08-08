@@ -29,6 +29,15 @@
 #define global static
 #define local_persist static
 
+// #if COMPILER_MSVC
+// # define thread_static __declspec(thread)
+// #elif COMPILER_CLANG || COMPILER_GCC
+// # define thread_static __thread
+// #else
+// # error thread_static not defined for this compiler.
+// #endif
+
+
 typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
@@ -104,9 +113,10 @@ typedef struct {
     ((f) = (l) = (n), (n)->next = (nil), (n)->prev = (nil)) : \
     (IsNil(p, nil) ? \
       ((n)->next = (f), (n)->prev = (nil), (f) = (n)) : \
-      ((p) == (l) ? (0) : ((p)->next->prev = (n)), (n)->prev = (p), (n)->next = (p)->next, (p)->next = (n)))
+      ((n)->prev = (p), (n)->next = (p)->next, (p)->next = (n), (p) == (l) ? (l) = (n) : ((p)->next->prev = (n))))
 
 #define DLL_PushBack_NP_nil(f, l, n, next, prev, nil) DLL_Insert_NP_nil(f, l, l, n, next, prev, nil)
+#define DLL_PushBack_NP(f, l, n, next, prev) DLL_Insert_NP_nil(f, l, l, n, next, prev, 0)
 #define DLL_PushBack_nil(f, l, n, nil) DLL_PushBack_NP_nil(f, l, n, next, prev, nil)
 #define DLL_PushBack(f, l, n) DLL_PushBack_NP_nil(f, l, n, next, prev, 0)
 
@@ -138,5 +148,10 @@ typedef struct {
 #define SLL_PushBack_N_nil(f, l, n, next, nil) SLL_Insert_N_nil(f, l, l, n, next, nil)
 #define SLL_PushBack_nil(f, l, n, nil) SLL_PushBack_N_nil(f, l, n, next, nil)
 #define SLL_PushBack(f, l, n) SLL_PushBack_nil(f, l, n, 0)
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): DeferLoop
+
+#define DeferLoop(begin, end) for (int _i_ = ((begin), 0); !_i_; _i_++, (end))
 
 #endif // BASE_CORE_H
