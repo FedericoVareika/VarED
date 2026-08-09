@@ -29,9 +29,7 @@ internal R_BatchGroupNode *r_get_batch_group_n(
         u64 inst_size) {
     R_BatchGroupNode *group_n = pass->batch_groups.last;
 
-    if (!group_n 
-            || group_n->v.texture_handle.v != texture_handle.v
-            || group_n->v.batches.bytes_per_inst != inst_size) {
+    if (!group_n || group_n->v.batches.bytes_per_inst != inst_size) {
         group_n = push_struct(r_state->frame_arena, R_BatchGroupNode);
         group_n->v.texture_handle = texture_handle;
         group_n->v.batches.bytes_per_inst = inst_size;
@@ -69,6 +67,7 @@ internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params) {
 
     R_BatchGroupNode *batch_group_n = r_get_batch_group_n(
             pass, params.tex, sizeof(R_Rect2DInst));
+
     R_BatchList *batches = &batch_group_n->v.batches;
     assert(batches->bytes_per_inst == sizeof(R_Rect2DInst));
 
@@ -82,6 +81,12 @@ internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params) {
     rect_inst->corner_radius = params.corner_radius;
     rect_inst->edge_softness = params.edge_softness;
     rect_inst->border_thickness = params.border_thickness;
+    rect_inst->ignore_texture = (params.tex.v == nil_texture.v) ? 1 : 0;
+
+    if (rect_inst->ignore_texture < 1 &&
+            batch_group_n->v.texture_handle.v == nil_texture.v) {
+        batch_group_n->v.texture_handle = params.tex;
+    }
 
     return rect_inst;
 }

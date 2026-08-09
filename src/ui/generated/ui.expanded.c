@@ -4,6 +4,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Bodies
 /*
+*/ internal void ui_push_parent(UI_Box * v) { Parent_Node *n = push_struct(ui_state->build_arena, Parent_Node); n->v = v; n->next = ui_state->parent; ui_state->parent = n; } /*
 */ internal void ui_push_pref_width(UI_Size v) { PrefWidth_Node *n = push_struct(ui_state->build_arena, PrefWidth_Node); n->v = v; n->next = ui_state->pref_width; ui_state->pref_width = n; } /*
 */ internal void ui_push_pref_height(UI_Size v) { PrefHeight_Node *n = push_struct(ui_state->build_arena, PrefHeight_Node); n->v = v; n->next = ui_state->pref_height; ui_state->pref_height = n; } /*
 */ internal void ui_push_child_layout_axis(UI_Axis2 v) { ChildLayoutAxis_Node *n = push_struct(ui_state->build_arena, ChildLayoutAxis_Node); n->v = v; n->next = ui_state->child_layout_axis; ui_state->child_layout_axis = n; } /*
@@ -19,6 +20,7 @@
 */ internal void ui_push_border_thickness(f32 v) { BorderThickness_Node *n = push_struct(ui_state->build_arena, BorderThickness_Node); n->v = v; n->next = ui_state->border_thickness; ui_state->border_thickness = n; } /*
 */
 /*
+*/ internal void ui_pop_parent(void) { ui_state->parent = ui_state->parent->next; } /*
 */ internal void ui_pop_pref_width(void) { ui_state->pref_width = ui_state->pref_width->next; } /*
 */ internal void ui_pop_pref_height(void) { ui_state->pref_height = ui_state->pref_height->next; } /*
 */ internal void ui_pop_child_layout_axis(void) { ui_state->child_layout_axis = ui_state->child_layout_axis->next; } /*
@@ -34,6 +36,7 @@
 */ internal void ui_pop_border_thickness(void) { ui_state->border_thickness = ui_state->border_thickness->next; } /*
 */
 /*
+*/ internal UI_Box * ui_top_parent(void) { return ui_state->parent->v; } /*
 */ internal UI_Size ui_top_pref_width(void) { return ui_state->pref_width->v; } /*
 */ internal UI_Size ui_top_pref_height(void) { return ui_state->pref_height->v; } /*
 */ internal UI_Axis2 ui_top_child_layout_axis(void) { return ui_state->child_layout_axis->v; } /*

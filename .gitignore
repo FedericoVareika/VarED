@@ -1,5 +1,5 @@
 build
-fonts
+data/fonts
 *.test
 captures
 tags

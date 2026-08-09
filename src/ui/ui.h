@@ -3,8 +3,12 @@
 
 typedef u32 UI_BoxFlags; 
 enum {
-    UI_BoxFlag_Clickable    = (2 << 0), 
-    UI_BoxFlag_DrawText     = (2 << 1),
+    UI_BoxFlag_Clickable      = (1 << 0), 
+    UI_BoxFlag_DrawText       = (1 << 1),
+    UI_BoxFlag_Draggable      = (1 << 2),
+
+    UI_BoxFlag_DrawBackground = (1 << 3),
+    UI_BoxFlag_DrawBorder     = (1 << 4),
 };
 
 typedef struct UI_Key UI_Key; 
@@ -85,14 +89,17 @@ typedef struct UI_Comm UI_Comm;
 struct UI_Comm {
     UI_Box *box;
 
+    v2 mouse_pos;
+    v2 drag_delta;
+
     bool clicked; 
+    bool dragging;
+    bool hovering;
+    bool pressed;
+    bool released;
 
     // bool double_clicked; 
     // bool right_clicked; 
-    // bool pressed;
-    // bool released;
-    // bool dragging;
-    // bool hovering;
 };
 
 typedef struct UI_BoxHashSlot UI_BoxHashSlot;
@@ -121,7 +128,7 @@ struct UI_State {
 
     UI_Box *root;
 
-    UI_Box *parent;
+    // UI_Box *parent;
 
     // TODO(fede): Move to an event list maybe?
     //      This would amortize adding left + right mouse presses and other 
@@ -129,6 +136,10 @@ struct UI_State {
     bool mouse_release;
     bool mouse_press;
     v2 mouse_pos;
+    v2 mouse_delta;
+
+    v2 mouse_drag_start_pos;
+    v2 mouse_drag_start_rel_pos;
 
     // Style Stack
     GENERATE_STYLE_DECLS()
@@ -145,7 +156,7 @@ global UI_Box ui_nil_box = {
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): API
 
-internal UI_Key ui_key_null(void);
+internal UI_Key ui_nil_key(void);
 internal UI_Key ui_key_from_string(String8 string);
 internal bool ui_key_match(UI_Key a, UI_Key b);
 internal bool ui_box_is_nil(UI_Box *box);
@@ -156,9 +167,6 @@ internal UI_Box *ui_box_makef(UI_BoxFlags flags, char *fmt, ...);
 internal void ui_box_equip_string(UI_Box *box, String8 string);
 // TODO(fede): Move to style stack
 internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis); 
-
-internal UI_Box *ui_push_parent(UI_Box *box);
-internal UI_Box *ui_pop_parent(void);
 
 internal UI_Comm ui_comm_from_box(UI_Box *box);
 
@@ -177,6 +185,7 @@ internal inline UI_Size ui_size(UI_SizeKind kind, f32 val, f32 strictness);
 #define ui_px(v, s)  ui_size(UI_SizeKind_Pixels         , (v), (s))
 #define ui_em(v, s)  ui_size(UI_SizeKind_EM             , (v), (s))
 #define ui_tc(v, s)  ui_size(UI_SizeKind_TextContent    , (v), (s))
+#define ui_cs(s)     ui_size(UI_SizeKind_ChildrenSum    , 0  , (s))
 
 internal inline v4 ui_darken_color(v4 color, f32 t);
 internal inline v4 ui_lighten_color(v4 color, f32 t);
@@ -187,6 +196,9 @@ internal inline v4 ui_lighten_color(v4 color, f32 t);
 /// NOTE(fede): Common widgets
 
 internal UI_Comm ui_button(String8 str);
+internal void ui_spacer(UI_Size size);
+internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str);
+internal UI_Comm ui_f32_slider(f32 *val, f32 min, f32 max, String8 str);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Style stack DeferLoops
@@ -207,6 +219,12 @@ internal UI_Comm ui_button(String8 str);
 #define UI_BorderThickness(v) DeferLoop(ui_push_border_thickness(v), ui_pop_border_thickness())
 
 // #define UI_x(v) DeferLoop(ui_push_x(v), ui_pop_x())
+
+#define UI_Padding(v) DeferLoop(ui_spacer(v), ui_spacer(v))
+#define UI_NamedColumn(s) UI_ChildLayoutAxis(UI_Axis2_Y) UI_Parent(ui_box_make(0, s)) 
+#define UI_NamedRow(s) UI_ChildLayoutAxis(UI_Axis2_X) UI_Parent(ui_box_make(0, s)) 
+#define UI_Column UI_ChildLayoutAxis(UI_Axis2_Y) UI_Parent(ui_box_make(0, S8(""))) 
+#define UI_Row UI_ChildLayoutAxis(UI_Axis2_X) UI_Parent(ui_box_make(0, S8(""))) 
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Other Macros

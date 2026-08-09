@@ -24,6 +24,7 @@ typedef struct {
     f32 corner_radius;
     f32 edge_softness;
     f32 border_thickness;
+    f32 ignore_texture;
 } R_Rect2DInst;
 
 typedef enum {
@@ -130,6 +131,7 @@ struct R_Rect2Params {
     f32 corner_radius;
     f32 edge_softness;
     f32 border_thickness;
+    f32 ignore_texture;
 };
 
 global const R_Handle nil_texture = {0};

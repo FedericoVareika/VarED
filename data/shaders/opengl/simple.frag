@@ -12,6 +12,7 @@ in vec2 out_half_size;
 in float out_corner_radius; 
 in float out_edge_softness;
 in float out_border_thickness;
+in float out_ignore_texture;
 
 float rounded_rect_sdf(
         vec2 sample_pos,
@@ -60,5 +61,10 @@ void main() {
         border_factor = inside_f;
     }
 
-    gl_FragColor = out_color * texture(image, out_uv) * sdf_factor * border_factor;
+    vec4 texture_sample = vec4(1.f, 1.f, 1.f, 1.f);
+    if (out_ignore_texture < 1) {
+        texture_sample = texture(image, out_uv);
+    }
+
+    gl_FragColor = out_color * texture_sample * sdf_factor * border_factor;
 }

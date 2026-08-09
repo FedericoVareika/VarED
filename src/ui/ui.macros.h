@@ -2,6 +2,7 @@
 /// NOTE(fede): Styles
 
 #define STYLE_STACK_DEFS(M) /*
+*/ M(Parent          , parent            , UI_Box * , parent                    , ui_state->root) /*
 */ M(PrefWidth       , pref_width        , UI_Size  , semantic_size[UI_Axis2_X] , ui_pct(1, 1)) /*
 */ M(PrefHeight      , pref_height       , UI_Size  , semantic_size[UI_Axis2_Y] , ui_pct(1, 1)) /*
 */ M(ChildLayoutAxis , child_layout_axis , UI_Axis2 , child_layout_axis         , UI_Axis2_Y) /*

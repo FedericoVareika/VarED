@@ -53,6 +53,8 @@ struct FC_GlyphRunHashSlot {
     FC_GlyphRunNode *hash_last;
 };
 
+// TODO(fede): Change to a quad tree or something, the goal is to be able to 
+//      remove glyphs as well as add them
 typedef struct FC_Atlas FC_Atlas;
 struct FC_Atlas {
     R_Handle tex;
@@ -80,6 +82,8 @@ typedef struct FC_State FC_State;
 struct FC_State {
     Arena *arena;
     Arena *frame_arena;
+
+    u64 frame_idx;
 
     FC_GlyphHashSlot *glyph_table;
     u32 glyph_table_size;

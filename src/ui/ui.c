@@ -14,7 +14,7 @@ internal void ui_init(void) {
     ui_state->frame_idx = 0;
 
     ui_state->root = &ui_nil_box;
-    ui_state->parent = &ui_nil_box;
+    // ui_state->parent = &ui_nil_box;
 
     ui_state->box_table_size = 100;
     ui_state->box_table = push_array(arena, UI_BoxHashSlot, ui_state->box_table_size);
@@ -39,9 +39,11 @@ internal UI_Key ui_key_from_string(String8 string) {
     return (UI_Key){v}; 
 }
 
-internal UI_Key ui_key_from_string_seed(String8 string, UI_Key seed_key) {
-    u64 v = str8_hash_u64_seed(string, seed_key.v);
-    return (UI_Key){v}; 
+internal UI_Key ui_key_from_string_seed(String8 string, UI_Key key_seed) {
+    UI_Key result = {0};
+    if (string.size)
+        result.v = str8_hash_u64_seed(string, key_seed.v);
+    return result;
 }
 
 internal bool ui_key_match(UI_Key a, UI_Key b) {
@@ -52,30 +54,50 @@ internal bool ui_box_is_nil(UI_Box *box) {
     return box == 0 || box == &ui_nil_box;
 } 
 
-internal UI_Box *ui_box_from_key(UI_Key key) {
-    UI_BoxHashSlot *slot = &ui_state->box_table[key.v % ui_state->box_table_size];
+internal UI_Box *ui_key_is_duplicate(UI_Box *box, UI_Key key) {
+    if (ui_box_is_nil(box))
+        return 0;
 
-    for (UI_Box *box = slot->hash_first; !ui_box_is_nil(box); box = box->next) {
-        if (ui_key_match(box->key, key))
-            return box;
+    if (ui_key_match(key, box->key)) {
+        return box;
+    }
+
+    UI_Box *next = ui_key_is_duplicate(box->next, key);
+    UI_Box *first = ui_key_is_duplicate(box->first, key);
+
+    if (next) {
+        return next;
+    }
+    
+    if (first) {
+        return first;
     }
 
     return 0;
-} 
+}
+    
+internal UI_Box *ui_box_from_key(UI_BoxFlags flags, UI_Key key) {
+    UI_Box *result = 0;
 
-internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string) {
-    String8 hash_string = ui_hash_string(string);
-    UI_Key key;
-
-    // STUDY(fede): There probably is a better way to include the parent in the 
-    //      key.
-    if (!ui_box_is_nil(ui_state->parent)) {
-        key = ui_key_from_string_seed(hash_string, ui_state->parent->key);
+    if (ui_key_match(ui_nil_key(), key)) {
+        result = push_struct(ui_state->build_arena, UI_Box);
+        result->key = key;
     } else {
-        key = ui_key_from_string(hash_string);
+        UI_BoxHashSlot *slot = &ui_state->box_table[key.v % ui_state->box_table_size];
+        for (UI_Box *box = slot->hash_first; !ui_box_is_nil(box); box = box->next) {
+            if (ui_key_match(box->key, key)) {
+                result = box;
+                break;
+            }
+        }
     }
 
-    UI_Box *result = ui_box_from_key(key);
+#if VARED_INTERNAL
+    if (!ui_key_match(ui_nil_key(), key)) {
+        UI_Box *duplicate_box = ui_key_is_duplicate(ui_state->root, key);
+        assert(duplicate_box == 0);
+    }
+#endif
 
     if (!result) {
         if (ui_state->first_free_box) {
@@ -100,25 +122,36 @@ internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string) {
 
     result->first = result->last = result->next = result->prev = result->parent = &ui_nil_box;
 
-    if (!ui_box_is_nil(ui_state->parent)) {
-        result->parent = ui_state->parent;
-        DLL_PushBack_nil(result->parent->first, result->parent->last, result, &ui_nil_box);
-    }
-
     result->flags = flags;
-    result->string = string;
 
     result->last_frame_touched_idx = ui_state->frame_idx;
 
     GENERATE_STYLE_INIT_BOX();
 
-    if (!!(flags & UI_BoxFlag_DrawText)) {
-        result->display_string = ui_display_string(string);
-        result->display_run = fc_get_string_glyph_run(
-                result->font_handle,
-                result->display_string,
-                result->font_size);
+    if (!ui_box_is_nil(result->parent)) {
+        DLL_PushBack_nil(result->parent->first, result->parent->last, result, &ui_nil_box);
     }
+
+    return result;
+} 
+
+internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string) {
+    String8 hash_string = ui_hash_string(string);
+    UI_Key key = {0};
+
+    UI_Key seed_key = ui_nil_key();
+    for (UI_Box *ancestor = ui_top_parent();
+            !ui_box_is_nil(ancestor); 
+            ancestor = ancestor->parent) {
+        if (!ui_key_match(ui_nil_key(), ancestor->key)) {
+            seed_key = ancestor->key;
+            break;
+        }
+    }
+
+    key = ui_key_from_string_seed(hash_string, seed_key);
+    UI_Box *result = ui_box_from_key(flags, key);
+    ui_box_equip_string(result, string);
 
     return result;
 }
@@ -128,87 +161,115 @@ internal UI_Box *ui_box_makef(UI_BoxFlags flags, char *fmt, ...) {
     // TODO(fede): Somehting like this
     // String8 string = st8_from_fmt(fmt, ...); 
     // return ui_box_make(flags, string);
-    return ui_box_make(flags, str8_from_cstr(fmt));
+    String8 str = str8_from_cstr(fmt);
+
+    return ui_box_make(flags, str);
 }
 
-// TODO
 internal void ui_box_equip_string(UI_Box *box, String8 string) {
     box->string = string;
 
-    /*
-    // STUDY(fede): Dont know if i should update key with this.
-    String8 hash_string = ui_hash_string(string);
-    box->key = ui_key_from_hash_string(hash_string);
-    */
+    if (!!(box->flags & UI_BoxFlag_DrawText)) {
+        box->display_string = ui_display_string(string);
+        box->display_run = fc_get_string_glyph_run(
+                box->font_handle,
+                box->display_string,
+                box->font_size);
+    }
 }
 
 internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis) {
     box->child_layout_axis = axis;
 }
 
-internal UI_Box *ui_push_parent(UI_Box *box) {
-    ui_state->parent = box;
-    return ui_state->parent;
-}
-
-internal UI_Box *ui_pop_parent(void) {
-    UI_Box *result = ui_state->parent;
-    ui_state->parent = result->parent;
-    return result;
-}
-
 internal UI_Comm ui_comm_from_box(UI_Box *box) {
     UI_Comm comm = { .box = box };
+    comm.mouse_pos = ui_state->mouse_pos;
 
-    bool mouse_inside_box = rect2_test_inside(box->rect, ui_state->mouse_pos);
+    bool mouse_interactable = box->flags & UI_BoxFlag_Clickable || 
+        box->flags & UI_BoxFlag_Draggable;
 
-    // Clickable, Hot and not mouse inside -> not hot anymore
-    if (box->flags & UI_BoxFlag_Clickable && 
-            ui_key_match(ui_state->hot, box->key) &&
-            !mouse_inside_box) {
-        ui_state->hot = ui_nil_key();
-    }
+    if (mouse_interactable) {
+        bool mouse_inside_box = rect2_test_inside(box->rect, ui_state->mouse_pos);
+        bool mouse_press = ui_state->mouse_press;
+        bool mouse_release = ui_state->mouse_release;
 
-    // Clickable, not hot and mouse hover -> hot
-    if (box->flags & UI_BoxFlag_Clickable && 
-            !ui_key_match(ui_state->hot, box->key) &&
-            mouse_inside_box) {
-        ui_state->hot = box->key;
-    }
+        bool hot = ui_key_match(ui_state->hot, box->key);
+        bool active = ui_key_match(ui_state->active, box->key);
 
-    // Clickable, Hot and Mouse press 
-    if (box->flags & UI_BoxFlag_Clickable && 
-            ui_key_match(ui_state->hot, box->key) &&
-            ui_state->mouse_press) {
-        if (mouse_inside_box) {
-            ui_state->active = box->key;
-        } else {
-            assert(!"Why is the box hot when the mouse is not hovering?");
-            ui_state->hot = ui_nil_key();
-        }
-    }
+        bool hot_change = false;
+        bool active_change = false;
 
-    // Clickable, Active and Mouse release 
-    if (box->flags & UI_BoxFlag_Clickable && 
-            ui_key_match(ui_state->active, box->key) &&
-            ui_state->mouse_release) {
-        if (mouse_inside_box) {
-            comm.clicked = true;
-        } else {
-            ui_state->hot = ui_nil_key();
+        if (hot && !mouse_inside_box) {
+            hot = false;
+            hot_change = true;
         }
 
-        ui_state->active = ui_nil_key();
+        if (!hot && mouse_inside_box) {
+            hot = true;
+            hot_change = true;
+        }
+
+        if (hot && mouse_press) {
+            assert(mouse_inside_box);
+            active = true;
+            active_change = true;
+        }
+
+        // STUDY(fede): Maybe hovering should occurr after some time being hot.
+        // if (hot) {
+        //     comm.hovering = true;
+        // }
+
+        if (active && mouse_release) {
+            if (mouse_inside_box) {
+                if (box->flags & UI_BoxFlag_Clickable) {
+                    comm.clicked = true;
+                }
+            } else {
+                hot = false;
+                hot_change = true;
+            }
+
+            active = false;
+            active_change = true;
+        }
+
+        if (box->flags & UI_BoxFlag_Draggable && active) {
+            if (active_change) {
+                ui_state->mouse_drag_start_pos = ui_state->mouse_pos;
+                ui_state->mouse_drag_start_rel_pos = v2_sub(ui_state->mouse_pos, box->rect.min);
+            }
+
+            comm.dragging = true;
+            comm.drag_delta = v2_sub(ui_state->mouse_pos, ui_state->mouse_drag_start_pos);
+        }
+
+        // TODO(fede): Anim
+        if (hot_change) {
+            ui_state->hot = hot ? box->key : ui_nil_key();
+            box->hot_t = hot ? 1 : 0;
+        } 
+
+        if (active_change) {
+            ui_state->active = active ? box->key : ui_nil_key();
+            box->active_t = active ? 1 : 0;
+
+            if (!active) {
+                comm.released = true;
+            }
+        }
     }
 
     return comm;
 }
 
 internal void ui_begin_build(v2 window_dim, WMEventList *events) {
+    arena_clear(ui_state->build_arena);
+
     ui_state->frame_idx++;
 
     ui_state->root = &ui_nil_box;
-    ui_state->parent = &ui_nil_box;
 
     GENERATE_STYLE_INIT_DEFAULTS()
 
@@ -224,7 +285,7 @@ internal void ui_begin_build(v2 window_dim, WMEventList *events) {
         };
 
         ui_state->root = root;
-        ui_state->parent = ui_state->root;
+        ui_push_parent(ui_state->root);
     }
 
     ui_state->mouse_press = false;
@@ -238,15 +299,16 @@ internal void ui_begin_build(v2 window_dim, WMEventList *events) {
         // TODO(fede): Handle other key presses and releases
         switch (event->kind) {
         case WMEventKind_MouseMove: {
+            ui_state->mouse_delta = v2_sub(event->pos, ui_state->mouse_pos); 
             ui_state->mouse_pos = event->pos;
         } break;
         case WMEventKind_Release: {
-            if (event->key = WMKey_MOUSELEFT) {
+            if (event->key == WMKey_MOUSELEFT) {
                 ui_state->mouse_release = true;
             }
         } break;
         case WMEventKind_Press: {
-            if (event->key = WMKey_MOUSELEFT) {
+            if (event->key == WMKey_MOUSELEFT) {
                 ui_state->mouse_press = true;
             }
         } break;
@@ -299,7 +361,7 @@ internal void ui_layout_independent(UI_Box *box, UI_Axis2 axis) {
 
     } else if (size.kind == UI_SizeKind_TextContent) {
         assert(axis == UI_Axis2_X);
-        FC_GlyphRun *run = fc_get_string_glyph_run(
+        box->display_run = fc_get_string_glyph_run(
                 box->font_handle,
                 box->display_string,
                 box->font_size);
@@ -353,7 +415,44 @@ internal void ui_layout_resolve_conflicts(UI_Box *box, UI_Axis2 axis) {
     if (ui_box_is_nil(box))
         return;
 
-    UI_Size axis_size = box->semantic_size[axis];
+    f32 box_size = box->computed_size[axis];
+    f32 children_size = 0;
+    f32 children_max_shrink = 0;
+
+    for (UI_Box *child = box->first;
+            !ui_box_is_nil(child);
+            child = child->next) {
+        f32 size = child->computed_size[axis];
+        f32 strictness = child->semantic_size[axis].strictness;
+        if (box->child_layout_axis == axis) {
+            children_size += size;
+            children_max_shrink += size * (1 - strictness);
+        } else {
+            children_size = max(children_size, size);
+        }
+    }
+
+    f32 oversize_amount = children_size - box_size;
+    for (UI_Box *child = box->first;
+            !ui_box_is_nil(child);
+            child = child->next) {
+        f32 child_shrink = 0;
+
+        if (oversize_amount > 0) {
+            if (box->child_layout_axis == axis) {
+                f32 size = child->computed_size[axis];
+                f32 strictness = child->semantic_size[axis].strictness;
+                child_shrink = size * (1 - strictness);
+                child_shrink *= (oversize_amount / children_max_shrink);
+            } else {
+                child_shrink = max(child->computed_size[axis] - box_size, 0);
+            }
+        }
+
+        child->computed_size[axis] -= child_shrink;
+
+        ui_layout_resolve_conflicts(child, axis);
+    }
 }
 
 internal void ui_layout_end_calc(UI_Box *box, UI_Axis2 axis, f32 layout_pos) {
@@ -370,7 +469,7 @@ internal void ui_layout_end_calc(UI_Box *box, UI_Axis2 axis, f32 layout_pos) {
         ui_layout_end_calc(child, axis, layout_pos);
 
         if (box->child_layout_axis == axis) {
-            layout_pos += child->computed_size[axis] - 1;
+            layout_pos += child->computed_size[axis];
         }
     }
 }
@@ -397,23 +496,34 @@ internal void ui_render_boxes(UI_Box *box) {
             .corner_radius = box->corner_radius,
             .edge_softness = 1,
             .border_thickness = 0,
-            R_Color4(background));
+            R_Color4(RGBA(0, 0, 0, 0)));
 
-    r_push_rect2(
-            .pos = box->rect,
-            .corner_radius = box->corner_radius,
-            .edge_softness = 1,
-            .border_thickness = box->border_thickness,
-            R_Color4(box->border_color));
+    if (!!(box->flags & UI_BoxFlag_DrawBackground)) {
+        r_inst->color0 = background;
+        r_inst->color1 = background;
+        r_inst->color2 = background;
+        r_inst->color3 = background;
+    }
 
-    if (!!(box->flags & UI_BoxFlag_Clickable) &&
-            ui_key_match(ui_state->active, box->key)) {
+    if (!!(box->flags & UI_BoxFlag_DrawBorder)) {
+        r_push_rect2(
+                .pos = box->rect,
+                .corner_radius = box->corner_radius,
+                .edge_softness = 1,
+                .border_thickness = box->border_thickness,
+                R_Color4(box->border_color));
+    }
+
+
+    bool mouse_interactable = box->flags & UI_BoxFlag_Clickable || 
+        box->flags & UI_BoxFlag_Draggable;
+
+    if (mouse_interactable && ui_key_match(ui_state->active, box->key)) {
         r_inst->color0 = ui_darken_color(background, 0.3);
         r_inst->color1 = ui_lighten_color(background, 0.3);
         r_inst->color2 = ui_darken_color(background, 0.3);
         r_inst->color3 = ui_lighten_color(background, 0.3);
-    } else if (!!(box->flags & UI_BoxFlag_Clickable) &&
-            ui_key_match(ui_state->hot, box->key)) {
+    } else if (mouse_interactable && ui_key_match(ui_state->hot, box->key)) {
         r_inst->color0 = ui_lighten_color(background, 0.3);
         r_inst->color1 = ui_darken_color(background, 0.3);
         r_inst->color2 = ui_lighten_color(background, 0.3);
@@ -495,8 +605,101 @@ internal inline v4 ui_lighten_color(v4 color, f32 t) {
 internal UI_Comm ui_button(String8 str) {
     UI_Box *box = ui_box_make(
             UI_BoxFlag_Clickable | 
-            UI_BoxFlag_DrawText,
+            UI_BoxFlag_DrawText |
+            UI_BoxFlag_DrawBorder | 
+            UI_BoxFlag_DrawBackground ,
             str);
     return ui_comm_from_box(box);
+}
+
+internal void ui_spacer(UI_Size size) {
+    UI_Box *space = ui_box_from_key(0, ui_nil_key());
+    // UI_Box *space = ui_box_from_key(UI_BoxFlag_DrawBorder, ui_nil_key());
+    UI_Axis2 axis = ui_top_parent()->child_layout_axis;
+    space->semantic_size[axis] = size;
+}
+
+internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str) {
+    UI_Comm comm = {0};
+
+    UI_ChildLayoutAxis(UI_Axis2_X)
+        UI_BorderThickness(2)
+        UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder, "slider box"))
+    {
+        UI_BorderThickness(0)
+            UI_Padding(ui_em(1, 0))
+            UI_PrefWidth(ui_tc(0, 1)) 
+        {
+            ui_box_make(UI_BoxFlag_DrawText, str);
+        }
+
+        UI_Padding(ui_em(1, 0))
+            UI_PrefWidth(ui_pct(1, 0))
+            UI_Column
+            UI_Padding(ui_pct(1, 0))
+
+            UI_ChildLayoutAxis(UI_Axis2_X)
+            UI_PrefHeight(ui_em(1, 1))
+            UI_Parent(ui_box_makef(UI_BoxFlag_Draggable | UI_BoxFlag_DrawBorder, "slider"))
+            UI_PrefHeight(ui_pct(1, 1))
+        {
+            comm = ui_comm_from_box(ui_top_parent());
+
+            v2 ui_rect_dim = rect2_dim(ui_top_parent()->rect);
+
+            if (comm.dragging) {
+                v2 delta = v2_sub(comm.mouse_pos, ui_top_parent()->rect.min);
+                f32 t = delta.x / ui_rect_dim.x;
+                t = clamp(t, 0, 1);
+                *val = t * (max - min) + min;
+            }
+
+            f32 slider_percentage = (*val - min) / (max - min);
+
+            UI_BackgroundColor(RGBA(0.4, 0.5, 0.5, 1))
+                UI_PrefWidth(ui_pct(slider_percentage, 0)) 
+            {
+                ui_box_makef(UI_BoxFlag_DrawBackground, "");
+            }
+
+            ui_spacer(ui_pct(1 - slider_percentage, 0));
+        }
+    }
+
+    return comm;
+}
+
+internal UI_Comm ui_checkbox(bool *val, String8 str) {
+    UI_Comm comm = {0};
+
+    UI_ChildLayoutAxis(UI_Axis2_X)
+        UI_BorderThickness(2)
+        UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder, "checkbox box"))
+    {
+        UI_BorderThickness(0)
+            UI_Padding(ui_em(1, 0))
+            UI_PrefWidth(ui_tc(0, 1)) 
+        {
+            ui_box_make(UI_BoxFlag_DrawText, str);
+        }
+
+        UI_Padding(ui_em(1, 0))
+            UI_PrefWidth(ui_em(1, 0))
+            UI_Column
+            UI_Padding(ui_pct(1, 0))
+
+            UI_ChildLayoutAxis(UI_Axis2_X)
+            UI_PrefHeight(ui_em(1, 1))
+            UI_BackgroundColor(RGBA(0.4, 0.5, 0.5, 1))
+        {
+            comm = ui_comm_from_box(ui_box_makef(
+                        UI_BoxFlag_Clickable |
+                        UI_BoxFlag_DrawBorder |
+                        (*val ? UI_BoxFlag_DrawBackground : 0), "checkbox"));
+            if (comm.clicked) {
+                *val = !(*val);
+            }
+        }
+    }
 }
 

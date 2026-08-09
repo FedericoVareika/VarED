@@ -489,8 +489,8 @@ int main(void) {
 
     editor_init(&editor_params);
 
-    while (global_editor_running) {
 
+    while (global_editor_running) {
         WMEventList *event_list = push_struct(event_arena, WMEventList);
         SDL_Event event = {0};
 
@@ -584,6 +584,7 @@ int main(void) {
 
                 // NOTE(fede): Assuming button is the index 0-6.
                 event->key = WMKey_MOUSE0 + button.button; 
+                printf("Mouse Key: %d\n", button.button);
             } break;
             }
         }

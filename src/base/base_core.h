@@ -84,6 +84,8 @@ typedef struct {
 #define min(a, b) ((a) < (b) ? (a) : (b))
 #define abs(a) ((a) < 0 ? -(a) : (a))
 
+#define clamp(v, a, b) (min(max((v), (a)), (b)))
+
 #define array_count(a) (sizeof((a)) / sizeof((a)[0]))
 
 #define IsNil(x, nil) (x) == 0 || (x) == (nil)

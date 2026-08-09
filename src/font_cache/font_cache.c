@@ -7,6 +7,8 @@ internal void fc_init(void) {
     fc_state->arena = arena; 
     fc_state->frame_arena = arena_alloc();
 
+    fc_state->frame_idx = 0;
+
     fc_state->scratch_raster_dst_size = kilobytes(2);
     fc_state->scratch_raster_dst = push_size(arena, fc_state->scratch_raster_dst_size);
 
@@ -22,6 +24,8 @@ internal void fc_tick(void) {
     arena_clear(fc_state->frame_arena);
 
     // TODO(fede): Add a last frame idx and free the necessary glyphs, runs, etc.
+
+    fc_state->frame_idx++;
 }
 
 internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32 font_size) {

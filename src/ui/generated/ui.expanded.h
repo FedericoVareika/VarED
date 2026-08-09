@@ -12,6 +12,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Structs
 /*
+*/ typedef struct Parent_Node Parent_Node; struct Parent_Node { Parent_Node *next; UI_Box * v; }; /*
 */ typedef struct PrefWidth_Node PrefWidth_Node; struct PrefWidth_Node { PrefWidth_Node *next; UI_Size v; }; /*
 */ typedef struct PrefHeight_Node PrefHeight_Node; struct PrefHeight_Node { PrefHeight_Node *next; UI_Size v; }; /*
 */ typedef struct ChildLayoutAxis_Node ChildLayoutAxis_Node; struct ChildLayoutAxis_Node { ChildLayoutAxis_Node *next; UI_Axis2 v; }; /*
@@ -29,6 +30,7 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Headers
 /*
+*/ internal void ui_push_parent(UI_Box * v); /*
 */ internal void ui_push_pref_width(UI_Size v); /*
 */ internal void ui_push_pref_height(UI_Size v); /*
 */ internal void ui_push_child_layout_axis(UI_Axis2 v); /*
@@ -44,6 +46,7 @@
 */ internal void ui_push_border_thickness(f32 v); /*
 */
 /*
+*/ internal void ui_pop_parent(void); /*
 */ internal void ui_pop_pref_width(void); /*
 */ internal void ui_pop_pref_height(void); /*
 */ internal void ui_pop_child_layout_axis(void); /*
@@ -59,6 +62,7 @@
 */ internal void ui_pop_border_thickness(void); /*
 */
 /*
+*/ internal UI_Box * ui_top_parent(void); /*
 */ internal UI_Size ui_top_pref_width(void); /*
 */ internal UI_Size ui_top_pref_height(void); /*
 */ internal UI_Axis2 ui_top_child_layout_axis(void); /*

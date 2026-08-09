@@ -140,8 +140,8 @@ void editor_init(EditorParams *params) {
 
     fc_init();
     fp_init();
-    state->font = fp_open_font("fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
-    // state->font = fp_open_font("fonts/IosevkaTermNerdFontMono-Light.ttf");
+    // state->font = fp_open_font("data/fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
+    state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
     state->font_size = 14;
 
     ui_init();
@@ -337,49 +337,50 @@ void editor_update_and_render(EditorParams *params) {
         .y = r_state->window_height,
     };
     ui_begin_build(window_dim, events);
+
     UI_Font(state->font)
-    UI_FontSize(state->font_size)
-    UI_BackgroundColor(RGBA(0.11, 0.11, 0.11, 1))
-    UI_BorderColor(RGBA(0, 0, 0, 0))
+        UI_FontSize(state->font_size)
+        UI_BackgroundColor(RGBA(0.11, 0.11, 0.11, 1))
+        UI_BorderColor(RGBA(0, 0, 0, 0))
     {
-        UI_PrefWidth(ui_pct(1, 1)) UI_PrefHeight(ui_pct(0.5, 1))
+        UI_Row
+        UI_Parent(ui_box_makef(UI_BoxFlag_DrawBackground, ""))
+            UI_PrefHeight(ui_pct(1, 0)) UI_PrefWidth(ui_pct(0.5, 0))
+            UI_BorderColor(RGBA(0.4, 0.5, 0.5, 1))
         {
+            UI_Row
+                UI_Padding(ui_em(5, 0))
+                UI_ChildLayoutAxis(UI_Axis2_Y)
+                UI_PrefWidth(ui_pct(1, 0))
+                UI_Parent(ui_box_makef(0, "panel 1"))
+                UI_PrefWidth(ui_tc(10, 0)) UI_PrefHeight(ui_em(2, 1))
             {
-                UI_Box *container = ui_box_make(0, S8("Container 1"));
-                ui_box_equip_child_layout_axis(container, UI_Axis2_X);
+                ui_button(S8("hello 1"));
+                ui_button(S8("hello 2"));
 
-                UI_Parent(container) 
-                    UI_PrefWidth(ui_tc(20, 1)) UI_PrefHeight(ui_em(2, 1))
-                    UI_CornerRadius(10)
-                    UI_BorderColor(RGBA(0.3, 0.5, 0.5, 1))
-                    UI_BorderThickness(3)
+                UI_PrefWidth(ui_pct(1, 1)) 
                 {
-                    if (ui_button(S8("Button 1aslkdjf")).clicked) 
-                        printf("clicked 1!\n");
-                    if (ui_button(S8("Button 2")).clicked)
-                        printf("clicked 2!\n");
+                    ui_slider(&state->val1, 0, 100, S8("Slider 1"));
                 }
-
             }
 
+            UI_ChildLayoutAxis(UI_Axis2_Y)
+                UI_Parent(ui_box_makef(0, "panel 2"))
+                UI_PrefWidth(ui_tc(10, 0)) UI_PrefHeight(ui_em(2, 1))
             {
-                UI_Box *container = ui_box_make(0, S8("Container 2"));
-                ui_box_equip_child_layout_axis(container, UI_Axis2_Y);
+                ui_button(S8("hello 12"));
+                ui_button(S8("hello 23"));
 
-                UI_Parent(container) 
-                    UI_PrefWidth(ui_pct(0.5, 1)) UI_PrefHeight(ui_em(2, 1))
-                    UI_CornerRadius(3)
-                    UI_BorderColor(RGBA(0.3, 0.5, 0.5, 1))
-                    UI_BorderThickness(2)
-                {
-                    if (ui_button(S8("Button 1")).clicked) 
-                        printf("clicked 12!\n");
-                    if (ui_button(S8("Button 2")).clicked)
-                        printf("clicked 22!\n");
+                UI_PrefWidth(ui_cs(0))
+                    ui_checkbox(&state->bval, S8("See slider"));
+                if (state->bval) {
+                    UI_PrefWidth(ui_pct(1, 1)) 
+                    {
+                        ui_slider(&state->val2, -5, 5, S8("Slider 2"));
+                    }
                 }
             }
         }
-
     }
     ui_end_build();
 

@@ -83,13 +83,13 @@ internal R_ShaderType r_shader_from_pass_type[R_PassType_Count] = {
 
 char *r_vert_shader_filepaths[R_ShaderType_Count] = {
     [R_ShaderType_None] = 0,
-    [R_ShaderType_UI] ="shaders/simple.vert",
+    [R_ShaderType_UI] ="data/shaders/opengl/simple.vert",
 };
 
 // TODO(fede): static assert that the amount of shader types has not changed
 char *r_frag_shader_filepaths[R_ShaderType_Count] = {
     [R_ShaderType_None] = 0,
-    [R_ShaderType_UI] = "shaders/simple.frag",
+    [R_ShaderType_UI] = "data/shaders/opengl/simple.frag",
 };
 
 GLint r_ogl_texture_format[R_TextureFormat_Count] = {
@@ -218,7 +218,8 @@ void r_platform_init(void) {
     X(5, color3, 4, FLOAT) \
     X(6, corner_radius, 1, FLOAT) \
     X(7, edge_softness, 1, FLOAT) \
-    X(8, border_thickness, 1, FLOAT)
+    X(8, border_thickness, 1, FLOAT) \
+    X(9, ignore_texture, 1, FLOAT) 
 
 #define X(_, __, ___, ____) +1
         u32 n_vertex_attributes = 0 

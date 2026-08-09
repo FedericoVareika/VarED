@@ -8,15 +8,17 @@ in vec4 i_colors[4];
 in float i_corner_radius;
 in float i_edge_softness;
 in float i_border_thickness;
+in float i_ignore_texture;
 
 out vec4 out_color;
 out vec2 out_uv;
-out vec2 out_pos;      
+out vec2 out_pos;
 out vec2 out_center;
 out vec2 out_half_size;
 out float out_corner_radius; 
 out float out_edge_softness;
 out float out_border_thickness;
+out float out_ignore_texture;
 
 void main() {
     vec2 local_positions[] = vec2[](
@@ -48,4 +50,5 @@ void main() {
     out_corner_radius = i_corner_radius;
     out_edge_softness = i_edge_softness;
     out_border_thickness = i_border_thickness;
+    out_ignore_texture = i_ignore_texture;
 }
