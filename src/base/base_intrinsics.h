@@ -3,6 +3,8 @@
 
 #include <math.h>
 
+#define F32_INF INFINITY
+
 internal inline int round_f32_to_int(f32 a) {
     return roundf(a);
     // return (int)(a + 0.5); 

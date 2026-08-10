@@ -2,7 +2,7 @@
 
 ignore_warning_flags="-Wno-missing-field-initializers -Wno-override-init -Wno-override-init-side-effects"
 
-common_flags_internal="-DVARED_SLOW=1 -DVARED_INTERNAL=1 -ffile-prefix-map=old=new -g -W -Og -pedantic" # -fsanitize=address"
+common_flags_internal="-DVARED_SLOW=1 -DVARED_INTERNAL=1 -ffile-prefix-map=old=new -g -W -pedantic" # -fsanitize=address"
 common_flags_external="-DVARED_SLOW=0 -DVARED_INTERNAL=0 -ffile-prefix-map=old=new -g -W -O3 -pedantic"
 
 pkgs="sdl2 glew freetype2"

@@ -12,6 +12,10 @@ internal String8 str8(u8 *str, u64 size);
 #define S8(str) str8((u8 *)str, sizeof(str) - 1)
 
 internal String8 str8_skip(String8 str, u64 n);
+internal String8 str8_cat(Arena *arena, String8 a, String8 b);
+
+////////////////////////////////////////////////////////////////////////////////
+// NOTE(fede): Cstr
 
 internal u64 cstr_len(char *cstr);
 internal char *cstr_from_str8(Arena *arena, String8 str);

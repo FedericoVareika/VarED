@@ -65,6 +65,8 @@ internal inline v2 v2_neg(v2 a);
 internal inline f32 v2_dot(v2 a, v2 b);
 internal inline f32 v2_length2(v2 v);
 internal inline v2 v2_reflect(v2 a, v2 normal, f32 bounce);
+#define V2_INF ((v2){F32_INF, F32_INF})
+#define V2_NEG_INF ((v2){-F32_INF, -F32_INF})
 
 internal inline v2u v2u_add(v2u a, v2u b);
 internal inline v2u v2u_sub(v2u a, v2u b);
@@ -89,5 +91,6 @@ internal inline Rect2 rect2_min_dim(v2 min, v2 dim);
 internal inline Rect2 rect2_center_halfdim(v2 center, v2 halfdim);
 internal inline Rect2 rect2_center_dim(v2 center, v2 dim);
 internal inline bool rect2_test_inside(Rect2 rect, v2 test);
+#define R2_INF ((Rect2){V2_NEG_INF, V2_INF})
 
 #endif // VARED_MATH_H

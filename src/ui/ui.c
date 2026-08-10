@@ -433,6 +433,9 @@ internal void ui_layout_resolve_conflicts(UI_Box *box, UI_Axis2 axis) {
     }
 
     f32 oversize_amount = children_size - box_size;
+    if (!!(box->flags & (UI_BoxFlag_OverflowX << axis))) {
+        oversize_amount = 0;
+    }
     for (UI_Box *child = box->first;
             !ui_box_is_nil(child);
             child = child->next) {
@@ -486,7 +489,7 @@ internal void ui_layout(void) {
 }
 
 // TODO(fede): Do this correctly 
-internal void ui_render_boxes(UI_Box *box) {
+internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     if (ui_box_is_nil(box))
         return;
 
@@ -496,6 +499,7 @@ internal void ui_render_boxes(UI_Box *box) {
             .corner_radius = box->corner_radius,
             .edge_softness = 1,
             .border_thickness = 0,
+            .clip = clip,
             R_Color4(RGBA(0, 0, 0, 0)));
 
     if (!!(box->flags & UI_BoxFlag_DrawBackground)) {
@@ -511,6 +515,7 @@ internal void ui_render_boxes(UI_Box *box) {
                 .corner_radius = box->corner_radius,
                 .edge_softness = 1,
                 .border_thickness = box->border_thickness,
+                .clip = clip,
                 R_Color4(box->border_color));
     }
 
@@ -534,8 +539,14 @@ internal void ui_render_boxes(UI_Box *box) {
         // TODO(fede): Text alignment, for now, centered.
 
         FP_FontMetrics metrics = fp_get_font_metrics(box->font_handle, box->font_size);
+
+        v2 center = (v2) {
+            .x = box->rect.min.x + box->display_run->advance / 2,
+            .y = (box->rect.min.y + box->rect.max.y) / 2,
+        };
+
         Rect2 text_rect = rect2_center_dim(
-                v2_smul(v2_add(box->rect.min, box->rect.max), 0.5),
+                center,
                 (v2){ box->display_run->advance, metrics.height });
         v2 text_pos = text_rect.min;
         text_pos.y += metrics.ascender;
@@ -562,6 +573,7 @@ internal void ui_render_boxes(UI_Box *box) {
                         .tex = glyph->tex,
                         .pos = glyph_pos,
                         .uv = glyph->uvs,
+                        .clip = clip,
                         R_Color4(box->text_color));
             }
 
@@ -569,12 +581,15 @@ internal void ui_render_boxes(UI_Box *box) {
         }
     }
     
-    ui_render_boxes(box->next);
-    ui_render_boxes(box->first);
+    ui_render_boxes(box->next, clip);
+
+    Rect2 child_clip = !!(box->flags & (UI_BoxFlag_ClipChildren)) ? box->rect : R2_INF;
+
+    ui_render_boxes(box->first, child_clip);
 }
 
 internal void ui_render(void) {
-    ui_render_boxes(ui_state->root);
+    ui_render_boxes(ui_state->root, R2_INF);
 
     Rect2 mouse_rect = rect2_center_dim(ui_state->mouse_pos, (v2){5, 5});
     r_push_rect2(.pos = mouse_rect);
@@ -613,8 +628,8 @@ internal UI_Comm ui_button(String8 str) {
 }
 
 internal void ui_spacer(UI_Size size) {
-    // UI_Box *space = ui_box_from_key(0, ui_nil_key());
-    UI_Box *space = ui_box_from_key(UI_BoxFlag_DrawBorder, ui_nil_key());
+    UI_Box *space = ui_box_from_key(0, ui_nil_key());
+    // UI_Box *space = ui_box_from_key(UI_BoxFlag_DrawBorder, ui_nil_key());
     UI_Axis2 axis = ui_top_parent()->child_layout_axis;
     space->semantic_size[axis] = size;
 }

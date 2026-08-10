@@ -45,6 +45,7 @@ internal void *push_size(Arena *arena, u64 size) {
     assert(arena->commited >= new_pos);
 
     void *result = (u8 *)arena + arena_pos(arena);
+    mem_zero(result, size);
     arena->pos += size;
     return result;
 }

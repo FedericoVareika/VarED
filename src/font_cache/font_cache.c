@@ -6,6 +6,7 @@ internal void fc_init(void) {
     fc_state = push_struct(arena, FC_State);
     fc_state->arena = arena; 
     fc_state->frame_arena = arena_alloc();
+    fc_state->caching_arena = arena_alloc();
 
     fc_state->frame_idx = 0;
 
@@ -13,19 +14,29 @@ internal void fc_init(void) {
     fc_state->scratch_raster_dst = push_size(arena, fc_state->scratch_raster_dst_size);
 
     fc_state->glyph_table_size = 100;
-    fc_state->glyph_table = push_array(arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
+    fc_state->glyph_table = push_array(fc_state->caching_arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
 
     fc_state->run_hash_arena = arena_alloc();
     fc_state->run_table_size = 100;
-    fc_state->run_table = push_array(arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
+    fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
 }
 
 internal void fc_tick(void) {
     arena_clear(fc_state->frame_arena);
 
-    // TODO(fede): Add a last frame idx and free the necessary glyphs, runs, etc.
+    // TODO(fede): free the necessary glyphs, runs, etc.
+    // arena_clear(fc_state->run_hash_arena);
+    // fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
 
     fc_state->frame_idx++;
+}
+
+internal void fc_flush(void) {
+    arena_clear(fc_state->caching_arena);
+    fc_state->glyph_table = push_array(fc_state->caching_arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
+
+    arena_clear(fc_state->run_hash_arena);
+    fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
 }
 
 internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 font_size) {
@@ -33,7 +44,6 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 fon
     FC_GlyphNode *glyph_n = slot->hash_first;
     for (; glyph_n != 0; glyph_n = glyph_n->next) {
 
-        // TODO(fede): Font handle too?
         if (glyph_n->v.codepoint == codepoint &&
                 glyph_n->v.font_size == font_size) {
             break; 
@@ -41,7 +51,7 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 fon
     }
 
     if (!glyph_n) {
-        glyph_n = push_struct(fc_state->arena, FC_GlyphNode);
+        glyph_n = push_struct(fc_state->caching_arena, FC_GlyphNode);
         SLL_PushBack(slot->hash_first, slot->hash_last, glyph_n);
 
         glyph_n->v.codepoint = codepoint;
@@ -69,7 +79,7 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 fon
         }
 
         if (!atlas_n) {
-            atlas_n = push_struct(fc_state->arena, FC_AtlasNode);
+            atlas_n = push_struct(fc_state->caching_arena, FC_AtlasNode);
             QueuePush(atlases->first, atlases->last, atlas_n);
             atlases->count++;
 
@@ -121,7 +131,7 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
         String8 string,
         f32 font_size) {
 
-    FC_RunKey key = fc_run_key_from_string_size(string, font_size);
+    FC_RunKey key = fc_run_key_from_string_size(font, string, font_size);
     FC_GlyphRunHashSlot *slot = &fc_state->run_table[key.v % fc_state->run_table_size];
     FC_GlyphRunNode *run_n = slot->hash_first;
 
@@ -151,24 +161,27 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
 
             glyph_n->v = *fc_get_codepoint_glyph(font, codepoint.character, font_size);
 
-            // if (prev) {
-            //     v2 kerning = fp_get_kerning(font, glyph->v.metrics.glyph_idx, prev_glyph, font_size);
-            //     glyph_n->v.metrics.bearing_x += kerning.x;
-            //     glyph_n->v.metrics.bearing_y += kerning.y;
-            // }
+            if (prev_glyph) {
+                v2 kerning = fp_get_kerning(font, glyph_n->v.metrics.glyph_idx, prev_glyph, font_size);
+                glyph_n->v.metrics.bearing_x += kerning.x;
+                glyph_n->v.metrics.bearing_y += kerning.y;
+            }
 
             run->advance += glyph_n->v.metrics.advance; 
             run->count++;
+
+            prev_glyph = glyph_n->v.metrics.glyph_idx;
         }
     }
 
     return &run_n->v;
 }
 
-internal FC_RunKey fc_run_key_from_string_size(String8 string, f32 font_size) {
+internal FC_RunKey fc_run_key_from_string_size(FP_Handle font, String8 string, f32 font_size) {
     FC_RunKey result = {0};
 
     u64 seed = (u64)(*(u32 *)(&font_size));
+    // seed += font.v;
     result.v = str8_hash_u64_seed(string, seed);
 
     return result;

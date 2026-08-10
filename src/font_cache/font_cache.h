@@ -8,7 +8,7 @@ struct FC_Glyph {
     R_Handle tex;
     Rect2 uvs;
 
-    // TODO(fede): Font handle too?
+    FP_Handle font_handle;
     u32 codepoint;
     f32 font_size;
 };
@@ -82,6 +82,7 @@ typedef struct FC_State FC_State;
 struct FC_State {
     Arena *arena;
     Arena *frame_arena;
+    Arena *caching_arena;
 
     u64 frame_idx;
 
@@ -100,12 +101,12 @@ struct FC_State {
 
 internal void fc_init(void);
 internal void fc_tick(void);
+internal void fc_flush(void);
 
 internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 font_size);
 internal FC_GlyphRun *fc_get_string_glyph_run(FP_Handle font, String8 string, f32 font_size);
 
-// TODO(fede): Font handle too?
-internal FC_RunKey fc_run_key_from_string_size(String8 string, f32 font_size);
+internal FC_RunKey fc_run_key_from_string_size(FP_Handle font, String8 string, f32 font_size);
 internal bool fc_run_key_match(FC_RunKey a, FC_RunKey b);
 
 

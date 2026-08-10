@@ -31,6 +31,7 @@ struct FP_FontMetrics {
 
 internal void fp_init(void);
 internal FP_Handle fp_open_font(char *filepath);
+internal void fp_close_font(FP_Handle font);
 
 internal FP_FontMetrics fp_get_font_metrics(FP_Handle font, f32 size);
 

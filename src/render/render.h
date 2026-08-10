@@ -14,8 +14,9 @@ typedef enum {
 //      - White texture override (so that we dont have to change batch group
 //          when drawing both rectangles and text and such).
 typedef struct {
-    v4 pos_rect;    // fmt: min | max 
-    v4 uv_rect;     // fmt: min | max
+    v4 pos_rect;
+    v4 uv_rect; 
+    v4 clip_rect;
     v4 color0;   
     v4 color1;   
     v4 color2;   
@@ -124,6 +125,7 @@ struct R_Rect2Params {
     R_Handle tex;
     Rect2 pos;
     Rect2 uv;
+    Rect2 clip;
     v4 color0;
     v4 color1;
     v4 color2;

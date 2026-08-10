@@ -13,6 +13,44 @@ internal String8 str8_skip(String8 str, u64 n) {
     return str;
 }
 
+internal String8 str8_cat(Arena *arena, String8 a, String8 b) {
+    String8 result;
+    result.size = a.size + b.size;
+    result.str = push_size(arena, result.size);
+    mem_copy(result.str, a.str, a.size);
+    mem_copy(result.str + a.size, b.str, b.size);
+    return result;
+}
+
+internal String8 str8_from_u32(Arena *arena, u32 v) {
+    // TODO(fede): There has to be a better way    
+    
+    u64 size = 0;
+    u32 scratch = v;
+    do {
+        scratch /= 10;
+        size++;
+    } while (scratch > 0);
+
+    String8 result = {0};
+
+    result.size = size;
+    result.str = push_size(arena, size);
+
+    scratch = v;
+    u64 idx = 0;
+    do {
+        *(result.str + idx) = '0' + (scratch % 10);
+        scratch /= 10;
+        idx++;
+    } while (scratch > 0);
+
+    return result;
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// NOTE(fede): Cstr
+
 internal u64 cstr_len(char *cstr) {
     u64 result = 0;
     while (*cstr++) {

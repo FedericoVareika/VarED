@@ -140,7 +140,9 @@ void editor_init(EditorParams *params) {
 
     fc_init();
     fp_init();
-    state->font = fp_open_font("data/fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
+    state->font = fp_open_font("data/fonts/GoogleSans/static/GoogleSans-Regular.ttf");
+    // fp_close_font(state->font);
+    // state->font = fp_open_font("data/fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
     // state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
     state->font_size = 14;
 
@@ -356,14 +358,55 @@ void editor_update_and_render(EditorParams *params) {
                 UI_PrefWidth(ui_tc(10, 0)) UI_PrefHeight(ui_em(2, 1))
             {
                 ui_button(S8("BRAVO"));
-                ui_button(S8("hello 2"));
+                if (ui_button(S8("Use Iosevka")).clicked) {
+                    fp_close_font(state->font);
+                    fc_flush();
+                    state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
+                    printf("Using Iosevka\n");
+                }
+                if (ui_button(S8("Use Google Sans")).clicked) {
+                    fp_close_font(state->font);
+                    fc_flush();
+                    state->font = fp_open_font("data/fonts/GoogleSans/static/GoogleSans-Regular.ttf");
+                    printf("Using Google Sans\n");
+                }
 
                 UI_PrefWidth(ui_pct(1, 1)) 
                 {
                     ui_slider(&state->val1, 0, 100, S8("Slider 1"));
                 }
+
+                ui_spacer(ui_em(1, 0));
+
+                UI_PrefWidth(ui_pct(1, 1)) UI_PrefHeight(ui_pct(1, 0))
+                    UI_ChildLayoutAxis(UI_Axis2_Y)
+                    UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder |
+                                UI_BoxFlag_Clickable |
+                                UI_BoxFlag_OverflowX | 
+                                UI_BoxFlag_OverflowY |
+                                UI_BoxFlag_ClipChildren, "text"))
+                    // UI_Row UI_Padding(ui_em(1, 0))
+                    // UI_Column
+                    UI_PrefHeight(ui_em(2, 1))
+                {
+                    for (u32 line_idx = 0;
+                            line_idx < state->text.count;
+                            line_idx++) {
+                        Line *line = state->text.lines + line_idx;
+                        String8 display_string = str8(line->buf, line->count);
+                        String8 key_string = str8_cat(
+                                frame_arena,
+                                S8("line"),
+                                str8_from_u32(frame_arena, line_idx));
+                        
+                        UI_Box *line_box = ui_box_make(UI_BoxFlag_DrawText, key_string); 
+                        ui_box_equip_string(line_box, display_string);
+
+                    }
+                }
             }
 
+            /*
             UI_ChildLayoutAxis(UI_Axis2_Y)
                 UI_Parent(ui_box_makef(0, "panel 2"))
                 UI_PrefWidth(ui_tc(10, 0)) UI_PrefHeight(ui_em(2, 1))
@@ -380,6 +423,7 @@ void editor_update_and_render(EditorParams *params) {
                     }
                 }
             }
+            */
         }
     }
     ui_end_build();

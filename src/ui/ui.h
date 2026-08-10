@@ -9,6 +9,11 @@ enum {
 
     UI_BoxFlag_DrawBackground = (1 << 3),
     UI_BoxFlag_DrawBorder     = (1 << 4),
+    UI_BoxFlag_ClipChildren   = (1 << 5),
+
+    UI_BoxFlag_OverflowX      = (1 << 6),
+    UI_BoxFlag_OverflowY      = (1 << 7),
+
 };
 
 typedef struct UI_Key UI_Key; 
