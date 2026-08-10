@@ -28,7 +28,7 @@ internal void fc_tick(void) {
     fc_state->frame_idx++;
 }
 
-internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32 font_size) {
+internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 font_size) {
     FC_GlyphHashSlot *slot = &fc_state->glyph_table[codepoint % fc_state->glyph_table_size];
     FC_GlyphNode *glyph_n = slot->hash_first;
     for (; glyph_n != 0; glyph_n = glyph_n->next) {
@@ -117,7 +117,7 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32
 }
 
 internal FC_GlyphRun *fc_get_string_glyph_run(
-        FP_FontHandle font,
+        FP_Handle font,
         String8 string,
         f32 font_size) {
 
@@ -140,6 +140,7 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
         run->key = key;
         run->advance = 0;
         run->count = 0;
+        u32 prev_glyph = 0;
         for (u32 i = 0; i < string.size;) {
             FC_GlyphNode *glyph_n = push_struct(fc_state->run_hash_arena, FC_GlyphNode);
             SLL_PushBack(run->first, run->last, glyph_n);
@@ -149,6 +150,13 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
             i += codepoint.byte_size;
 
             glyph_n->v = *fc_get_codepoint_glyph(font, codepoint.character, font_size);
+
+            // if (prev) {
+            //     v2 kerning = fp_get_kerning(font, glyph->v.metrics.glyph_idx, prev_glyph, font_size);
+            //     glyph_n->v.metrics.bearing_x += kerning.x;
+            //     glyph_n->v.metrics.bearing_y += kerning.y;
+            // }
+
             run->advance += glyph_n->v.metrics.advance; 
             run->count++;
         }

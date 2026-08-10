@@ -613,8 +613,8 @@ internal UI_Comm ui_button(String8 str) {
 }
 
 internal void ui_spacer(UI_Size size) {
-    UI_Box *space = ui_box_from_key(0, ui_nil_key());
-    // UI_Box *space = ui_box_from_key(UI_BoxFlag_DrawBorder, ui_nil_key());
+    // UI_Box *space = ui_box_from_key(0, ui_nil_key());
+    UI_Box *space = ui_box_from_key(UI_BoxFlag_DrawBorder, ui_nil_key());
     UI_Axis2 axis = ui_top_parent()->child_layout_axis;
     space->semantic_size[axis] = size;
 }

@@ -13,7 +13,7 @@
 */ internal void ui_push_text_color(v4 v) { TextColor_Node *n = push_struct(ui_state->build_arena, TextColor_Node); n->v = v; n->next = ui_state->text_color; ui_state->text_color = n; } /*
 */ internal void ui_push_border_color(v4 v) { BorderColor_Node *n = push_struct(ui_state->build_arena, BorderColor_Node); n->v = v; n->next = ui_state->border_color; ui_state->border_color = n; } /*
 
-*/ internal void ui_push_font_handle(FP_FontHandle v) { FontHandle_Node *n = push_struct(ui_state->build_arena, FontHandle_Node); n->v = v; n->next = ui_state->font_handle; ui_state->font_handle = n; } /*
+*/ internal void ui_push_font_handle(FP_Handle v) { FontHandle_Node *n = push_struct(ui_state->build_arena, FontHandle_Node); n->v = v; n->next = ui_state->font_handle; ui_state->font_handle = n; } /*
 */ internal void ui_push_font_size(f32 v) { FontSize_Node *n = push_struct(ui_state->build_arena, FontSize_Node); n->v = v; n->next = ui_state->font_size; ui_state->font_size = n; } /*
 
 */ internal void ui_push_corner_radius(f32 v) { CornerRadius_Node *n = push_struct(ui_state->build_arena, CornerRadius_Node); n->v = v; n->next = ui_state->corner_radius; ui_state->corner_radius = n; } /*
@@ -45,7 +45,7 @@
 */ internal v4 ui_top_text_color(void) { return ui_state->text_color->v; } /*
 */ internal v4 ui_top_border_color(void) { return ui_state->border_color->v; } /*
 
-*/ internal FP_FontHandle ui_top_font_handle(void) { return ui_state->font_handle->v; } /*
+*/ internal FP_Handle ui_top_font_handle(void) { return ui_state->font_handle->v; } /*
 */ internal f32 ui_top_font_size(void) { return ui_state->font_size->v; } /*
 
 */ internal f32 ui_top_corner_radius(void) { return ui_state->corner_radius->v; } /*

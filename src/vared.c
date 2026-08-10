@@ -62,7 +62,7 @@ internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {
 //      - Kerning
 //      - Character aligning / hinting: STUDY
 internal v2 render_unicode_line_in_text_window(
-        FP_FontHandle font,
+        FP_Handle font,
         f32 font_size,
         Line *line,
         Rect2 text_window,
@@ -140,8 +140,8 @@ void editor_init(EditorParams *params) {
 
     fc_init();
     fp_init();
-    // state->font = fp_open_font("data/fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
-    state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
+    state->font = fp_open_font("data/fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
+    // state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
     state->font_size = 14;
 
     ui_init();
@@ -355,7 +355,7 @@ void editor_update_and_render(EditorParams *params) {
                 UI_Parent(ui_box_makef(0, "panel 1"))
                 UI_PrefWidth(ui_tc(10, 0)) UI_PrefHeight(ui_em(2, 1))
             {
-                ui_button(S8("hello 1"));
+                ui_button(S8("BRAVO"));
                 ui_button(S8("hello 2"));
 
                 UI_PrefWidth(ui_pct(1, 1)) 

@@ -21,7 +21,7 @@
 */ typedef struct TextColor_Node TextColor_Node; struct TextColor_Node { TextColor_Node *next; v4 v; }; /*
 */ typedef struct BorderColor_Node BorderColor_Node; struct BorderColor_Node { BorderColor_Node *next; v4 v; }; /*
 
-*/ typedef struct FontHandle_Node FontHandle_Node; struct FontHandle_Node { FontHandle_Node *next; FP_FontHandle v; }; /*
+*/ typedef struct FontHandle_Node FontHandle_Node; struct FontHandle_Node { FontHandle_Node *next; FP_Handle v; }; /*
 */ typedef struct FontSize_Node FontSize_Node; struct FontSize_Node { FontSize_Node *next; f32 v; }; /*
 
 */ typedef struct CornerRadius_Node CornerRadius_Node; struct CornerRadius_Node { CornerRadius_Node *next; f32 v; }; /*
@@ -39,7 +39,7 @@
 */ internal void ui_push_text_color(v4 v); /*
 */ internal void ui_push_border_color(v4 v); /*
 
-*/ internal void ui_push_font_handle(FP_FontHandle v); /*
+*/ internal void ui_push_font_handle(FP_Handle v); /*
 */ internal void ui_push_font_size(f32 v); /*
 
 */ internal void ui_push_corner_radius(f32 v); /*
@@ -71,7 +71,7 @@
 */ internal v4 ui_top_text_color(void); /*
 */ internal v4 ui_top_border_color(void); /*
 
-*/ internal FP_FontHandle ui_top_font_handle(void); /*
+*/ internal FP_Handle ui_top_font_handle(void); /*
 */ internal f32 ui_top_font_size(void); /*
 
 */ internal f32 ui_top_corner_radius(void); /*

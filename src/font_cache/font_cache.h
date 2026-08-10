@@ -101,8 +101,8 @@ struct FC_State {
 internal void fc_init(void);
 internal void fc_tick(void);
 
-internal FC_Glyph *fc_get_codepoint_glyph(FP_FontHandle font, u32 codepoint, f32 font_size);
-internal FC_GlyphRun *fc_get_string_glyph_run(FP_FontHandle font, String8 string, f32 font_size);
+internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 font_size);
+internal FC_GlyphRun *fc_get_string_glyph_run(FP_Handle font, String8 string, f32 font_size);
 
 // TODO(fede): Font handle too?
 internal FC_RunKey fc_run_key_from_string_size(String8 string, f32 font_size);

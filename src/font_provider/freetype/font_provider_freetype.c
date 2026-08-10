@@ -2,14 +2,14 @@
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Helpers
 
-internal FP_FontHandle fp_ft_font_handle_from_face(FT_Face *face) {
-    FP_FontHandle result = {
+internal FP_Handle fp_ft_font_handle_from_face(FT_Face *face) {
+    FP_Handle result = {
         .v = (u64)face,
     }; 
     return result;
 }
 
-internal FT_Face *fp_ft_face_from_font_handle(FP_FontHandle handle) {
+internal FT_Face *fp_ft_face_from_font_handle(FP_Handle handle) {
     FT_Face *result = (FT_Face *)handle.v;
     return result;
 }
@@ -27,7 +27,7 @@ internal void fp_init(void) {
     assert(!error);
 }
 
-internal FP_FontHandle fp_open_font(char *filepath) {
+internal FP_Handle fp_open_font(char *filepath) {
     // TODO(fede): Use FT_New_Memory_Face and handle the file memory ourselves
     FT_Face *face = push_struct(ft_state->arena, FT_Face);
 
@@ -40,7 +40,7 @@ internal FP_FontHandle fp_open_font(char *filepath) {
     return fp_ft_font_handle_from_face(face);
 }
 
-internal FP_FontMetrics fp_get_font_metrics(FP_FontHandle font, f32 size) {
+internal FP_FontMetrics fp_get_font_metrics(FP_Handle font, f32 size) {
     FT_Face face = *fp_ft_face_from_font_handle(font);
     FT_Error error = FT_Set_Pixel_Sizes(face, 0, (u32)((96.0f / 72.0f) * size));
     assert(!error);
@@ -52,14 +52,15 @@ internal FP_FontMetrics fp_get_font_metrics(FP_FontHandle font, f32 size) {
     };
 }
 
-internal FP_GlyphMetrics fp_get_character_metrics(FP_FontHandle font, u32 codepoint, f32 size) {
+internal FP_GlyphMetrics fp_get_character_metrics(FP_Handle font, u32 codepoint, f32 size) {
     FT_Face face = *fp_ft_face_from_font_handle(font);
     FT_GlyphSlot slot = face->glyph;
 
     FT_Error error = FT_Set_Pixel_Sizes(face, 0, (u32)((96.0f / 72.0f) * size));
     assert(!error);
 
-    error = FT_Load_Char(face, codepoint, FT_LOAD_BITMAP_METRICS_ONLY);
+    FT_UInt glyph = FT_Get_Char_Index(face, codepoint);
+    error = FT_Load_Glyph(face, glyph, FT_LOAD_BITMAP_METRICS_ONLY);
     assert(!error);
 
     FT_Glyph_Metrics metrics = slot->metrics;
@@ -69,12 +70,29 @@ internal FP_GlyphMetrics fp_get_character_metrics(FP_FontHandle font, u32 codepo
         .width        = (f32)(metrics.width >> 6),
         .height       = (f32)(metrics.height >> 6),
         .advance      = (f32)(metrics.horiAdvance >> 6),
+        .glyph_idx        = (u32)(glyph),
     };
 
     return result;
 }
 
-internal Bitmap2d fp_raster_character(Arena *arena, FP_FontHandle font, u32 codepoint, f32 size) {
+// internal v2 fp_get_kerning(FP_Handle font, u32 left_glyph, u32 right_glyph, f32 size) {
+//     FT_Face face = *fp_ft_face_from_font_handle(font);
+//
+//     FT_Error error = FT_Set_Pixel_Sizes(face, 0, (u32)((96.0f / 72.0f) * size));
+//     assert(!error);
+//
+//
+//     FT_Vector *akerning
+//     error = FT_Get_Kerning(face,
+//                   left_glyph,
+//                   right_glyph,
+//                   FT_KERNING_DEFAULT,
+//                   FT_Vector  *akerning );
+//     assert(!error);
+// }
+
+internal Bitmap2d fp_raster_character(Arena *arena, FP_Handle font, u32 codepoint, f32 size) {
     FT_Face face = *fp_ft_face_from_font_handle(font);
 
     FT_Error error = FT_Set_Pixel_Sizes(face, 0, (u32)((96.0f / 72.0f) * size));

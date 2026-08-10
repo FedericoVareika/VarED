@@ -37,7 +37,7 @@ typedef struct {
     Arena *frame_arena;
 
     f32 font_size;
-    FP_FontHandle font;
+    FP_Handle font;
 
     Rect2 text_window;
     LineBuffer text;

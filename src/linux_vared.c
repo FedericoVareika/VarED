@@ -584,7 +584,6 @@ int main(void) {
 
                 // NOTE(fede): Assuming button is the index 0-6.
                 event->key = WMKey_MOUSE0 + button.button; 
-                printf("Mouse Key: %d\n", button.button);
             } break;
             }
         }

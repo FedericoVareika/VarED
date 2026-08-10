@@ -11,7 +11,7 @@
 */ M(TextColor       , text_color       , v4 , text_color       , ((v4){1   , 1   , 1   , 1})) /*
 */ M(BorderColor     , border_color     , v4 , border_color     , ((v4){1   , 1   , 1   , 1})) /*
 
-*/ M(FontHandle, font_handle, FP_FontHandle, font_handle, (FP_FontHandle){0}) /*
+*/ M(FontHandle, font_handle, FP_Handle, font_handle, (FP_Handle){0}) /*
 */ M(FontSize  , font_size  , f32          , font_size  , 16) /*
 
 */ M(CornerRadius   , corner_radius   , f32, corner_radius   , 5) /*

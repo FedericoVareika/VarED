@@ -72,7 +72,7 @@ struct UI_Box {
     f32 corner_radius;
     f32 border_thickness;
 
-    FP_FontHandle font_handle;
+    FP_Handle font_handle;
     f32 font_size;
 
     // NOTE(fede): Computed at layout
