@@ -9,10 +9,6 @@ typedef enum {
     R_ShaderType_Count,
 } R_ShaderType;
 
-// TODO(fede): 
-//      - Border
-//      - White texture override (so that we dont have to change batch group
-//          when drawing both rectangles and text and such).
 typedef struct {
     v4 pos_rect;
     v4 uv_rect; 

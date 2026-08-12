@@ -140,10 +140,7 @@ void editor_init(EditorParams *params) {
 
     fc_init();
     fp_init();
-    state->font = fp_open_font("data/fonts/GoogleSans/static/GoogleSans-Regular.ttf");
-    // fp_close_font(state->font);
-    // state->font = fp_open_font("data/fonts/NotoSans/static/NotoSans_Condensed-Black.ttf");
-    // state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
+    state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
     state->font_size = 14;
 
     ui_init();
@@ -367,7 +364,7 @@ void editor_update_and_render(EditorParams *params) {
                 if (ui_button(S8("Use Google Sans")).clicked) {
                     fp_close_font(state->font);
                     fc_flush();
-                    state->font = fp_open_font("data/fonts/GoogleSans/static/GoogleSans-Regular.ttf");
+                    state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
                     printf("Using Google Sans\n");
                 }
 

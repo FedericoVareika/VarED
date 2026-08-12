@@ -1,4 +1,11 @@
 
+#define MACROS_C
+#if OS_LINUX
+#include <dlfcn.h>
+#endif
+#include "render_opengl.macros.c"
+#undef MACROS_C
+
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Copied code to check sdl errors
 
@@ -139,22 +146,27 @@ void r_platform_init(void) {
     r_ogl_state->arena = arena;
     r_ogl_state->buffer_arena = arena_alloc();
 
+    load_gl();
+
+    // int version = gladLoadGL((GLADloadfunc) SDL_GL_GetProcAddress);
+    // if (!version) {
+    //     assert(!"Unable to load OpenGL");
+    // }
+    // printf("GL %d.%d\n", GLAD_VERSION_MAJOR(version), GLAD_VERSION_MINOR(version));
+
     {
-        GLenum glewErr = glewInit();
-        if (glewErr != GLEW_OK) {
-            fprintf(stderr, "ERROR: Could not initialize GLEW: %s\n", glewGetErrorString(glewErr));
-            return;
-        }
+        // GLenum glewErr = glewInit();
+        // if (glewErr != GLEW_OK) {
+        //     fprintf(stderr, "ERROR: Could not initialize GLEW: %s\n", glewGetErrorString(glewErr));
+        //     return;
+        // }
 
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-        if (GLEW_ARB_debug_output) {
-            glEnable(GL_DEBUG_OUTPUT);
-            glDebugMessageCallback(MessageCallback, 0);
-        } else {
-            fprintf(stderr, "WARNING: GLEW_ARB_debug_output is not available");
-        }
+        glEnable(GL_DEBUG_OUTPUT);
+        glEnable(GL_DEBUG_OUTPUT_SYNCHRONOUS);
+        glDebugMessageCallback(MessageCallback, 0);
 
         scc(SDL_GL_SetSwapInterval(0));
     }

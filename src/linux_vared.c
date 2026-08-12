@@ -1,15 +1,10 @@
-#define SDL_INCLUDE_STDBOOL_H 0
-#include <SDL2/SDL.h>
-#include <GL/glew.h>
-#define GL_GLEXT_PROTOTYPES
-#include <SDL2/SDL_opengl.h>
-
 #include "vared.h"
 #include "vared.c"
 
 #include "linux_vared.h"
 
-// #include "vared_renderer_opengl.c"
+#define SDL_INCLUDE_STDBOOL_H 0
+#include <SDL2/SDL.h>
 
 #include <fcntl.h>
 #include <unistd.h>
@@ -17,6 +12,8 @@
 #include <errno.h>
 #include <time.h>
 #include <sys/stat.h>
+
+#include <dlfcn.h>
 
 #define WINDOW_WIDTH 1920
 #define WINDOW_HEIGHT 1080
@@ -477,6 +474,8 @@ int main(void) {
             printf("GL version %d.%d\n", major, minor);
 
             SDL_GLContext gl_context = scp(SDL_GL_CreateContext(window)); 
+
+            printf("SDL Video Driver: %s\n", SDL_GetCurrentVideoDriver());
         }
 
         r_init(WINDOW_WIDTH, WINDOW_HEIGHT);

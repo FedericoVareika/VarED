@@ -4,6 +4,10 @@
 #include "render.h"
 
 #if OS_LINUX
+#define GLAD_GL_IMPLEMENTATION
+// #include "../third_party/glad/gl.h"
+#include <SDL2/SDL.h>
+// #include <SDL2/SDL_opengl.h>
 #include "opengl/render_opengl.h"
 #endif
 

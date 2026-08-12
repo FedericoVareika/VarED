@@ -2,13 +2,13 @@
 
 uniform vec2 screen_resolution;
 
-in vec4 i_pos_rect;
-in vec4 i_uv_rect;
-in vec4 i_colors[4];
-in float i_corner_radius;
-in float i_edge_softness;
-in float i_border_thickness;
-in float i_ignore_texture;
+layout (location = 0) in vec4 i_pos_rect;
+layout (location = 1) in vec4 i_uv_rect;
+layout (location = 2) in vec4 i_colors[4];
+layout (location = 6) in float i_corner_radius;
+layout (location = 7) in float i_edge_softness;
+layout (location = 8) in float i_border_thickness;
+layout (location = 9) in float i_ignore_texture;
 
 out vec4 out_color;
 out vec2 out_uv;

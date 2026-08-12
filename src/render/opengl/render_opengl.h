@@ -1,10 +1,15 @@
 #ifndef RENDER_OPENGL_H
 #define RENDER_OPENGL_H
 
-#include <SDL2/SDL.h>
-#include <GL/glew.h>
-#define GL_GLEXT_PROTOTYPES
-#include <SDL2/SDL_opengl.h>
+// #define SDL_INCLUDE_STDBOOL_H 0
+// #include <SDL2/SDL.h>
+// #include <GL/glew.h>
+// #define GL_GLEXT_PROTOTYPES
+// #include <SDL2/SDL_opengl.h>
+
+#define MACROS_H
+#include "render_opengl.macros.h"
+#undef MACROS_H
 
 typedef struct R_OpenGL_Tex2D R_OpenGL_Tex2D; 
 struct R_OpenGL_Tex2D {
@@ -71,5 +76,10 @@ struct R_OpenGL_State {
 
 internal R_Handle r_ogl_handle_from_tex2d(R_OpenGL_Tex2D *tex);
 internal R_OpenGL_Tex2D *r_ogl_tex2d_from_handle(R_Handle handle);
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Lib loading
+
+void load_gl(void);
 
 #endif // RENDER_OPENGL_H

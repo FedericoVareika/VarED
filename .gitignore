@@ -3,3 +3,4 @@ data/fonts
 *.test
 captures
 tags
+.direnv
