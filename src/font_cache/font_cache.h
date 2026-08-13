@@ -11,11 +11,14 @@ struct FC_Glyph {
     FP_Handle font_handle;
     u32 codepoint;
     f32 font_size;
+
+    u64 last_frame_touched_idx;
 };
 
 typedef struct FC_GlyphNode FC_GlyphNode;
 struct FC_GlyphNode {
     FC_GlyphNode *next;
+    FC_GlyphNode *prev;
     FC_Glyph v;
 };
 
@@ -30,14 +33,24 @@ struct FC_RunKey {
     u64 v;
 };
 
+typedef struct FC_GlyphPtrNode FC_GlyphPtrNode;
+struct FC_GlyphPtrNode {
+    FC_GlyphPtrNode *next;
+    FC_GlyphPtrNode *prev;
+    FC_Glyph *v;
+};
+
 typedef struct FC_GlyphRun FC_GlyphRun;
 struct FC_GlyphRun {
-    FC_GlyphNode *first;
-    FC_GlyphNode *last;
+    FC_GlyphPtrNode *first;
+    FC_GlyphPtrNode *last;
 
     FC_RunKey key;
+    u32 font_size;
     u32 count;
     f32 advance;
+
+    u64 last_frame_touched_idx;
 };
 
 typedef struct FC_GlyphRunNode FC_GlyphRunNode;
@@ -86,6 +99,7 @@ struct FC_State {
 
     u64 frame_idx;
 
+    FC_GlyphNode *first_free_glyph;
     FC_GlyphHashSlot *glyph_table;
     u32 glyph_table_size;
 

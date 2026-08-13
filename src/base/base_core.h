@@ -115,7 +115,7 @@ typedef struct {
 #define DLL_Insert_NP_nil(f, l, p, n, next, prev, nil) IsNil(f, nil) ? \
     ((f) = (l) = (n), (n)->next = (nil), (n)->prev = (nil)) : \
     (IsNil(p, nil) ? \
-      ((n)->next = (f), (n)->prev = (nil), (f) = (n)) : \
+      ((n)->next = (f), (n)->prev = (nil), (f)->prev = (n), (f) = (n)) : \
       ((n)->prev = (p), (n)->next = (p)->next, (p)->next = (n), (p) == (l) ? (l) = (n) : ((p)->next->prev = (n))))
 
 #define DLL_PushBack_NP_nil(f, l, n, next, prev, nil) DLL_Insert_NP_nil(f, l, l, n, next, prev, nil)
@@ -136,7 +136,7 @@ typedef struct {
       ((n)->prev->next = (n)->next)))
 
 #define DLL_Remove_nil(f, l, n, nil) DLL_Remove_NP_nil(f, l, n, next, prev, nil)
-#define DLL_Remove(f, l, n) DLL_Remove_nil(f, l, n, nil)
+#define DLL_Remove(f, l, n) DLL_Remove_nil(f, l, n, 0)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): SLL (Singly-Linked-List)

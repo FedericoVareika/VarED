@@ -29,7 +29,11 @@ internal R_BatchGroupNode *r_get_batch_group_n(
         u64 inst_size) {
     R_BatchGroupNode *group_n = pass->batch_groups.last;
 
-    if (!group_n || group_n->v.batches.bytes_per_inst != inst_size) {
+    if (!group_n || 
+            group_n->v.batches.bytes_per_inst != inst_size ||
+            (texture_handle.v != 0 && 
+             group_n->v.texture_handle.v != 0 &&  
+             group_n->v.texture_handle.v != texture_handle.v)) {
         group_n = push_struct(r_state->frame_arena, R_BatchGroupNode);
         group_n->v.texture_handle = texture_handle;
         group_n->v.batches.bytes_per_inst = inst_size;
@@ -51,6 +55,7 @@ internal void *r_push_batch_inst_(R_BatchList *batches, u64 inst_bytes) {
         batch_n->v.byte_size = BATCH_SIZE;
 
         QueuePush(batches->first, batches->last, batch_n);
+        // SLL_PushBack(batches->first, batches->last, batch_n);
         batches->batch_count++;
     }
 

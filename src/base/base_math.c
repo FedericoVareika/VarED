@@ -97,7 +97,7 @@ internal inline bool rect2_test_inside(Rect2 rect, v2 test) {
         rect.max.y > test.y;
 }
 
-internal inline bool rect2_intersect(Rect2 a, Rect2 b) {
+internal inline bool rect2_overlap(Rect2 a, Rect2 b) {
     return 
         a.min.x < b.max.x && a.max.x > b.min.x &&
         a.min.y < b.max.y && a.max.y > b.min.y;

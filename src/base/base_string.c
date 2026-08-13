@@ -48,6 +48,32 @@ internal String8 str8_from_u32(Arena *arena, u32 v) {
     return result;
 }
 
+internal String8 str8_from_u64(Arena *arena, u64 v) {
+    // TODO(fede): There has to be a better way    
+    
+    u64 size = 0;
+    u32 scratch = v;
+    do {
+        scratch /= 10;
+        size++;
+    } while (scratch > 0);
+
+    String8 result = {0};
+
+    result.size = size;
+    result.str = push_size(arena, size);
+
+    scratch = v;
+    u64 idx = 0;
+    do {
+        *(result.str + idx) = '0' + (scratch % 10);
+        scratch /= 10;
+        idx++;
+    } while (scratch > 0);
+
+    return result;
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // NOTE(fede): Cstr
 

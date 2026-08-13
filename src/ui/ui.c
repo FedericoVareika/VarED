@@ -84,7 +84,7 @@ internal UI_Box *ui_box_from_key(UI_BoxFlags flags, UI_Key key) {
         result->key = key;
     } else {
         UI_BoxHashSlot *slot = &ui_state->box_table[key.v % ui_state->box_table_size];
-        for (UI_Box *box = slot->hash_first; !ui_box_is_nil(box); box = box->next) {
+        for (UI_Box *box = slot->hash_first; !ui_box_is_nil(box); box = box->hash_next) {
             if (ui_key_match(box->key, key)) {
                 result = box;
                 break;
@@ -151,6 +151,7 @@ internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string) {
 
     key = ui_key_from_string_seed(hash_string, seed_key);
     UI_Box *result = ui_box_from_key(flags, key);
+    result->string = string;
     ui_box_equip_string(result, string);
 
     return result;
@@ -167,7 +168,7 @@ internal UI_Box *ui_box_makef(UI_BoxFlags flags, char *fmt, ...) {
 }
 
 internal void ui_box_equip_string(UI_Box *box, String8 string) {
-    box->string = string;
+    // box->string = string;
 
     if (!!(box->flags & UI_BoxFlag_DrawText)) {
         box->display_string = ui_display_string(string);
@@ -317,12 +318,14 @@ internal void ui_begin_build(v2 window_dim, WMEventList *events) {
 }
 
 internal void ui_end_build(void) {
+    u32 n_freed = 0;
     for (u32 i = 0; i < ui_state->box_table_size; i++) {
         UI_BoxHashSlot *slot = &ui_state->box_table[i];
 
         for (UI_Box *box = slot->hash_first;
-                !ui_box_is_nil(box);
-                box = box->hash_next) {
+                !ui_box_is_nil(box);) {
+            UI_Box *next_box = box->next;
+
             if (box->last_frame_touched_idx != ui_state->frame_idx) {
                 DLL_Remove_NP_nil(
                         slot->hash_first, 
@@ -333,9 +336,13 @@ internal void ui_end_build(void) {
                         &ui_nil_box);
                 box->next = ui_state->first_free_box;
                 ui_state->first_free_box = box;
+                n_freed++;
             }
+
+            box = next_box;
         }
     }
+    // printf("n_freed: %u\n", n_freed);
 }
 
 /*
@@ -493,7 +500,7 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     if (ui_box_is_nil(box))
         return;
 
-    if (!rect2_intersect(box->rect, clip))
+    if (!rect2_overlap(box->rect, clip))
         return;
 
     v4 background = box->background_color;
@@ -555,11 +562,11 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
         text_pos.x += box->semantic_size[UI_Axis2_X].value;
         text_pos.y += metrics.ascender;
 
-        for (FC_GlyphNode *glyph_n = box->display_run->first;
-                glyph_n != 0;
-                glyph_n = glyph_n->next) {
+        for (FC_GlyphPtrNode *glyph_ptr_n = box->display_run->first;
+                glyph_ptr_n != 0;
+                glyph_ptr_n = glyph_ptr_n->next) {
 
-            FC_Glyph *glyph = &glyph_n->v;
+            FC_Glyph *glyph = glyph_ptr_n->v;
             
             {
                 v2 pos = v2_add(text_pos, (v2){
@@ -574,7 +581,7 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
 
                 Rect2 glyph_rect = rect2_min_dim(pos, dim);
 
-                if (!rect2_intersect(glyph_rect, clip))
+                if (!rect2_overlap(glyph_rect, clip))
                     break;
 
                 r_push_rect2(
@@ -646,11 +653,9 @@ internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str) {
     UI_Comm comm = {0};
 
     UI_ChildLayoutAxis(UI_Axis2_X)
-        UI_BorderThickness(2)
         UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder, "slider box"))
     {
-        UI_BorderThickness(0)
-            UI_Padding(ui_em(1, 0))
+        UI_Padding(ui_em(1, 0))
             UI_PrefWidth(ui_tc(0, 1)) 
         {
             ui_box_make(UI_BoxFlag_DrawText, str);
@@ -696,11 +701,9 @@ internal UI_Comm ui_checkbox(bool *val, String8 str) {
     UI_Comm comm = {0};
 
     UI_ChildLayoutAxis(UI_Axis2_X)
-        UI_BorderThickness(2)
         UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder, "checkbox box"))
     {
-        UI_BorderThickness(0)
-            UI_Padding(ui_em(1, 0))
+        UI_Padding(ui_em(1, 0))
             UI_PrefWidth(ui_tc(0, 1)) 
         {
             ui_box_make(UI_BoxFlag_DrawText, str);

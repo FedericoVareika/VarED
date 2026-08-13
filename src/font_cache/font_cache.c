@@ -24,9 +24,21 @@ internal void fc_init(void) {
 internal void fc_tick(void) {
     arena_clear(fc_state->frame_arena);
 
-    // TODO(fede): free the necessary glyphs, runs, etc.
-    // arena_clear(fc_state->run_hash_arena);
-    // fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
+    for (u32 i = 0; i < fc_state->glyph_table_size; i++) {
+        FC_GlyphHashSlot *slot = &fc_state->glyph_table[i];
+
+        for (FC_GlyphNode *glyph_n = slot->hash_first; glyph_n != 0;) {
+            FC_GlyphNode *next_n = glyph_n->next;
+
+            if (glyph_n->v.last_frame_touched_idx != fc_state->frame_idx) {
+                DLL_Remove(slot->hash_first, slot->hash_last, glyph_n);
+                glyph_n->next = fc_state->first_free_glyph;
+                fc_state->first_free_glyph = glyph_n;
+            }
+
+            glyph_n = next_n;
+        }
+    }
 
     fc_state->frame_idx++;
 }
@@ -34,6 +46,7 @@ internal void fc_tick(void) {
 internal void fc_flush(void) {
     arena_clear(fc_state->caching_arena);
     fc_state->glyph_table = push_array(fc_state->caching_arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
+    fc_state->first_free_glyph = 0;
 
     arena_clear(fc_state->run_hash_arena);
     fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
@@ -51,8 +64,14 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 fon
     }
 
     if (!glyph_n) {
-        glyph_n = push_struct(fc_state->caching_arena, FC_GlyphNode);
-        SLL_PushBack(slot->hash_first, slot->hash_last, glyph_n);
+        if (fc_state->first_free_glyph) {
+            glyph_n = fc_state->first_free_glyph;
+            fc_state->first_free_glyph = fc_state->first_free_glyph->next;
+        } else {
+            glyph_n = push_struct(fc_state->caching_arena, FC_GlyphNode);
+        }
+
+        DLL_PushBack(slot->hash_first, slot->hash_last, glyph_n);
 
         glyph_n->v.codepoint = codepoint;
         glyph_n->v.font_size = font_size;
@@ -94,7 +113,6 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 fon
         FC_Atlas *atlas = &atlas_n->v;
 
         v2 first_free_f = { atlas->first_free.x, atlas->first_free.y };
-
         Rect2 atlas_dst = rect2_min_dim(first_free_f, (v2){ pixel_width, pixel_height });
 
         atlas->first_free.x += pixel_width + 1;
@@ -123,6 +141,8 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 fon
         }
     }
 
+    glyph_n->v.last_frame_touched_idx = fc_state->frame_idx;
+
     return &glyph_n->v;
 }
 
@@ -136,43 +156,63 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
     FC_GlyphRunNode *run_n = slot->hash_first;
 
     for (; run_n != 0; run_n = run_n->next) {
-        if (fc_run_key_match(key, run_n->v.key)) {
+        if (fc_run_key_match(key, run_n->v.key) && run_n->v.font_size == font_size) {
             break;
         }
     }
 
+    FC_GlyphRun *run;
     if (!run_n) {
         run_n = push_struct(fc_state->run_hash_arena, FC_GlyphRunNode);
         DLL_PushBack(slot->hash_first, slot->hash_last, run_n);
 
-        FC_GlyphRun *run = &run_n->v;
+        run = &run_n->v;
 
         run->key = key;
         run->advance = 0;
         run->count = 0;
+        run->font_size = font_size;
+        run->last_frame_touched_idx = -1;
+    }
+
+    run = &run_n->v;
+    
+    // TODO(fede): This is hacky, means that we should redo the run if it wasnt 
+    //      touched the previous frame, such that the glyph nodes would already 
+    //      be cleaned up. I do not think this is appropiate, and it is a 
+    //      workaround mostly for font increasing/decreasing.
+    if (run->last_frame_touched_idx + 1 < fc_state->frame_idx) {
         u32 prev_glyph = 0;
-        for (u32 i = 0; i < string.size;) {
-            FC_GlyphNode *glyph_n = push_struct(fc_state->run_hash_arena, FC_GlyphNode);
-            SLL_PushBack(run->first, run->last, glyph_n);
+        run->count = 0;
+        run->advance = 0;
+
+        FC_GlyphPtrNode *glyph_ptr_n = run->first;
+        for (u32 i = 0; i < string.size; glyph_ptr_n = glyph_ptr_n->next) {
+            if (glyph_ptr_n == 0) {
+                glyph_ptr_n = push_struct(fc_state->run_hash_arena, FC_GlyphPtrNode);
+                DLL_PushBack(run->first, run->last, glyph_ptr_n);
+            }
 
             String8 substring = str8_skip(string, i);
             UnicodeCodepoint codepoint = utf8_decode(substring.str, substring.size);
             i += codepoint.byte_size;
 
-            glyph_n->v = *fc_get_codepoint_glyph(font, codepoint.character, font_size);
+            glyph_ptr_n->v = fc_get_codepoint_glyph(font, codepoint.character, font_size);
 
-            if (prev_glyph) {
-                v2 kerning = fp_get_kerning(font, glyph_n->v.metrics.glyph_idx, prev_glyph, font_size);
-                glyph_n->v.metrics.bearing_x += kerning.x;
-                glyph_n->v.metrics.bearing_y += kerning.y;
-            }
-
-            run->advance += glyph_n->v.metrics.advance; 
+            run->advance += glyph_ptr_n->v->metrics.advance; 
             run->count++;
 
-            prev_glyph = glyph_n->v.metrics.glyph_idx;
+            prev_glyph = glyph_ptr_n->v->metrics.glyph_idx;
         }
     }
+
+    for (FC_GlyphPtrNode *glyph_ptr_n = run_n->v.first;
+            glyph_ptr_n != 0;
+            glyph_ptr_n = glyph_ptr_n->next) {
+        glyph_ptr_n->v->last_frame_touched_idx = fc_state->frame_idx;
+    }
+
+    run->last_frame_touched_idx = fc_state->frame_idx;
 
     return &run_n->v;
 }
@@ -180,8 +220,7 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
 internal FC_RunKey fc_run_key_from_string_size(FP_Handle font, String8 string, f32 font_size) {
     FC_RunKey result = {0};
 
-    u64 seed = (u64)(*(u32 *)(&font_size));
-    // seed += font.v;
+    u64 seed = font_size;
     result.v = str8_hash_u64_seed(string, seed);
 
     return result;

@@ -41,7 +41,7 @@ ctags --recurse=yes \
     --exclude=.git \
     --exclude=build \
     --exclude=data \
-    --exclude=vendored \
+    --exclude=.direnv \
     --c++-kinds=+p \
     . $sdl2_include $freetype_include &
 

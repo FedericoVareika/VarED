@@ -323,13 +323,12 @@ void editor_update_and_render(EditorParams *params) {
         } break;
 
         case WMEventKind_MouseMove: {
-            // TODO
-            // printf("Mouse move: (%f, %f)\n", event.pos.x, event.pos.y);
             
         } break;
         }
     }
 
+// #error TODO(fede): Memroy leak
 #if 1
     v2 window_dim = {
         .x = r_state->window_width,
@@ -396,7 +395,11 @@ void editor_update_and_render(EditorParams *params) {
                                 S8("line"),
                                 str8_from_u32(frame_arena, line_idx));
                         
-                        UI_Box *line_box = ui_box_make(UI_BoxFlag_DrawText, key_string); 
+
+                        UI_Box *line_box = ui_box_make(
+                                ((state->cursor_line == line_idx) ? UI_BoxFlag_DrawBorder : 0) |
+                                UI_BoxFlag_DrawText,
+                                key_string); 
                         ui_box_equip_string(line_box, display_string);
 
                     }
