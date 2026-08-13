@@ -2,16 +2,16 @@
 
 ignore_warning_flags="-Wno-missing-field-initializers -Wno-override-init -Wno-override-init-side-effects"
 
-common_flags_internal="-DVARED_SLOW=1 -DVARED_INTERNAL=1 -ffile-prefix-map=old=new -g -W" # -fsanitize=address"
+common_flags_internal="-DVARED_SLOW=1 -DVARED_INTERNAL=1 -ffile-prefix-map=old=new -g -W -pipe" # -fsanitize=address"
 common_flags_external="-DVARED_SLOW=0 -DVARED_INTERNAL=0 -ffile-prefix-map=old=new -g -W -O3"
 
-pkgs="sdl2 freetype2" # glew
+pkgs="sdl2 freetype2"
 linker_flags="-lm -ldl"
-
-# glew_libdir="$(pkg-config --variable=libdir glew)"
 
 sdl2_include="$(pkg-config --variable=includedir sdl2)/SDL2"
 freetype_include="$(pkg-config --variable=includedir freetype2)/freetype2"
+
+echo "Expanding macros..." 
 
 # Macro expansion 
 find src -type f \( -name "*.macros.c" -o -name "*.macros.h" \) | while read -r source_file; do
@@ -35,15 +35,21 @@ find src -type f \( -name "*.macros.c" -o -name "*.macros.h" \) | while read -r 
     echo " -> Generated: $out_file"
 done
 
+echo "Generating ctags..." 
+
 ctags --recurse=yes \
     --exclude=.git \
     --exclude=build \
     --exclude=data \
     --exclude=vendored \
     --c++-kinds=+p \
-    . $sdl2_include $freetype_include
+    . $sdl2_include $freetype_include &
+
+echo "Making build dir..." 
 
 mkdir -p build
+
+echo "Compiling..." 
 
 gcc -std=gnu11 \
     $common_flags_internal \
@@ -52,5 +58,6 @@ gcc -std=gnu11 \
     $(pkg-config --cflags $pkgs) \
     -o build/vared \
     $(pkg-config --libs $pkgs) \
-    $linker_flags -Wl,-rpath,$(realpath build) #:$glew_libdir
+    $linker_flags -Wl,-rpath,$(realpath build)
 
+echo "Done!"

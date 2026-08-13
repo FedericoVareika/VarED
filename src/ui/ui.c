@@ -539,7 +539,7 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     }
 
     if (!!(box->flags & UI_BoxFlag_DrawText)) {
-        // TODO(fede): Text alignment, for now, centered.
+        // TODO(fede): Text alignment, for now, left aligned.
 
         FP_FontMetrics metrics = fp_get_font_metrics(box->font_handle, box->font_size);
 
@@ -552,6 +552,7 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
                 center,
                 (v2){ box->display_run->advance, metrics.height });
         v2 text_pos = text_rect.min;
+        text_pos.x += box->semantic_size[UI_Axis2_X].value;
         text_pos.y += metrics.ascender;
 
         for (FC_GlyphNode *glyph_n = box->display_run->first;

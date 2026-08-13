@@ -344,7 +344,7 @@ void editor_update_and_render(EditorParams *params) {
     {
         UI_Row
         UI_Parent(ui_box_makef(UI_BoxFlag_DrawBackground, ""))
-            UI_PrefHeight(ui_pct(1, 0)) UI_PrefWidth(ui_pct(0.5, 0))
+            UI_PrefHeight(ui_pct(1, 0)) UI_PrefWidth(ui_pct(1, 0))
             UI_BorderColor(RGBA(0.4, 0.5, 0.5, 1))
         {
             UI_Row
@@ -370,7 +370,8 @@ void editor_update_and_render(EditorParams *params) {
 
                 UI_PrefWidth(ui_pct(1, 1)) 
                 {
-                    ui_slider(&state->val1, 0, 100, S8("Slider 1"));
+                    ui_slider(&state->font_size, 6, 20, S8("Slider 1"));
+                    state->font_size = (f32)ceil_f32_to_int(state->font_size);
                 }
 
                 ui_spacer(ui_em(1, 0));
@@ -379,12 +380,11 @@ void editor_update_and_render(EditorParams *params) {
                     UI_ChildLayoutAxis(UI_Axis2_Y)
                     UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder |
                                 UI_BoxFlag_Clickable |
-                                UI_BoxFlag_OverflowX | 
                                 UI_BoxFlag_OverflowY |
                                 UI_BoxFlag_ClipChildren, "text"))
-                    // UI_Row UI_Padding(ui_em(1, 0))
-                    // UI_Column
-                    UI_PrefHeight(ui_em(2, 1))
+                    UI_PrefHeight(ui_em(1.2, 1))
+                    UI_PrefWidth(ui_tc(5, 0))
+                    UI_Padding(ui_em(1, 1))
                 {
                     for (u32 line_idx = 0;
                             line_idx < state->text.count;
@@ -402,25 +402,6 @@ void editor_update_and_render(EditorParams *params) {
                     }
                 }
             }
-
-            /*
-            UI_ChildLayoutAxis(UI_Axis2_Y)
-                UI_Parent(ui_box_makef(0, "panel 2"))
-                UI_PrefWidth(ui_tc(10, 0)) UI_PrefHeight(ui_em(2, 1))
-            {
-                ui_button(S8("hello 12"));
-                ui_button(S8("hello 23"));
-
-                UI_PrefWidth(ui_cs(0))
-                    ui_checkbox(&state->bval, S8("See slider"));
-                if (state->bval) {
-                    UI_PrefWidth(ui_pct(1, 1)) 
-                    {
-                        ui_slider(&state->val2, -5, 5, S8("Slider 2"));
-                    }
-                }
-            }
-            */
         }
     }
     ui_end_build();
