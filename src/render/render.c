@@ -74,6 +74,7 @@ internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params) {
     R_Rect2DInst *rect_inst = r_push_batch_inst(batches, R_Rect2DInst);
     rect_inst->pos_rect = params.pos.V4;
     rect_inst->uv_rect = params.uv.V4,
+    rect_inst->clip_rect = params.clip.V4,
     rect_inst->color0 = params.color0;
     rect_inst->color1 = params.color1;
     rect_inst->color2 = params.color2;

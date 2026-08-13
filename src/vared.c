@@ -375,7 +375,7 @@ void editor_update_and_render(EditorParams *params) {
 
                 ui_spacer(ui_em(1, 0));
 
-                UI_PrefWidth(ui_pct(1, 1)) UI_PrefHeight(ui_pct(1, 0))
+                UI_PrefWidth(ui_pct(1, 1)) UI_PrefHeight(ui_pct(0.5, 0))
                     UI_ChildLayoutAxis(UI_Axis2_Y)
                     UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder |
                                 UI_BoxFlag_Clickable |

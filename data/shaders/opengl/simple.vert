@@ -4,17 +4,20 @@ uniform vec2 screen_resolution;
 
 layout (location = 0) in vec4 i_pos_rect;
 layout (location = 1) in vec4 i_uv_rect;
-layout (location = 2) in vec4 i_colors[4];
-layout (location = 6) in float i_corner_radius;
-layout (location = 7) in float i_edge_softness;
-layout (location = 8) in float i_border_thickness;
-layout (location = 9) in float i_ignore_texture;
+layout (location = 2) in vec4 i_clip_rect;
+layout (location = 3) in vec4 i_colors[4];
+layout (location = 7) in float i_corner_radius;
+layout (location = 8) in float i_edge_softness;
+layout (location = 9) in float i_border_thickness;
+layout (location = 10) in float i_ignore_texture;
 
 out vec4 out_color;
 out vec2 out_uv;
 out vec2 out_pos;
 out vec2 out_center;
 out vec2 out_half_size;
+out vec4 out_clip_rect;
+
 out float out_corner_radius; 
 out float out_edge_softness;
 out float out_border_thickness;
@@ -47,6 +50,9 @@ void main() {
     out_pos = dst_pos;
     out_center = dst_center;
     out_half_size = dst_half_size;
+
+    out_clip_rect = i_clip_rect;
+
     out_corner_radius = i_corner_radius;
     out_edge_softness = i_edge_softness;
     out_border_thickness = i_border_thickness;

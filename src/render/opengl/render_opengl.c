@@ -224,14 +224,15 @@ void r_platform_init(void) {
 #define X_VERTEX_UI_ATTRIBUTES \
     X(0, pos_rect, 4, FLOAT) \
     X(1, uv_rect, 4, FLOAT) \
-    X(2, color0, 4, FLOAT) \
-    X(3, color1, 4, FLOAT) \
-    X(4, color2, 4, FLOAT) \
-    X(5, color3, 4, FLOAT) \
-    X(6, corner_radius, 1, FLOAT) \
-    X(7, edge_softness, 1, FLOAT) \
-    X(8, border_thickness, 1, FLOAT) \
-    X(9, ignore_texture, 1, FLOAT) 
+    X(2, clip_rect, 4, FLOAT) \
+    X(3, color0, 4, FLOAT) \
+    X(4, color1, 4, FLOAT) \
+    X(5, color2, 4, FLOAT) \
+    X(6, color3, 4, FLOAT) \
+    X(7, corner_radius, 1, FLOAT) \
+    X(8, edge_softness, 1, FLOAT) \
+    X(9, border_thickness, 1, FLOAT) \
+    X(10, ignore_texture, 1, FLOAT) 
 
 #define X(_, __, ___, ____) +1
         u32 n_vertex_attributes = 0 

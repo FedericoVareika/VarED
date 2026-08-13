@@ -493,6 +493,9 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     if (ui_box_is_nil(box))
         return;
 
+    if (!rect2_intersect(box->rect, clip))
+        return;
+
     v4 background = box->background_color;
     R_Rect2DInst *r_inst = r_push_rect2(
             .pos = box->rect,
@@ -568,10 +571,14 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
                     glyph->metrics.height,
                 };
 
-                Rect2 glyph_pos = rect2_min_dim(pos, dim);
+                Rect2 glyph_rect = rect2_min_dim(pos, dim);
+
+                if (!rect2_intersect(glyph_rect, clip))
+                    break;
+
                 r_push_rect2(
                         .tex = glyph->tex,
-                        .pos = glyph_pos,
+                        .pos = glyph_rect,
                         .uv = glyph->uvs,
                         .clip = clip,
                         R_Color4(box->text_color));
@@ -583,7 +590,7 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     
     ui_render_boxes(box->next, clip);
 
-    Rect2 child_clip = !!(box->flags & (UI_BoxFlag_ClipChildren)) ? box->rect : R2_INF;
+    Rect2 child_clip = !!(box->flags & (UI_BoxFlag_ClipChildren)) ? box->rect : clip;
 
     ui_render_boxes(box->first, child_clip);
 }

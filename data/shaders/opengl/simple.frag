@@ -9,6 +9,9 @@ in vec2 out_uv;
 in vec2 out_pos;      
 in vec2 out_center;
 in vec2 out_half_size;
+
+in vec4 out_clip_rect;
+
 in float out_corner_radius; 
 in float out_edge_softness;
 in float out_border_thickness;
@@ -26,6 +29,12 @@ float rounded_rect_sdf(
 }
 
 void main() {
+    float clipped_factor = 1;
+    if (out_pos.x < out_clip_rect.x || out_pos.y < out_clip_rect.y ||
+            out_pos.x > out_clip_rect.z || out_pos.y > out_clip_rect.w) {
+        clipped_factor = 0;
+    }
+
     float softness = out_edge_softness;
     vec2 softness_padding = vec2(max(0, softness*2-1),
                                      max(0, softness*2-1));
@@ -66,5 +75,5 @@ void main() {
         texture_sample = texture(image, out_uv);
     }
 
-    gl_FragColor = out_color * texture_sample * sdf_factor * border_factor;
+    gl_FragColor = out_color * texture_sample * sdf_factor * border_factor * clipped_factor;
 }

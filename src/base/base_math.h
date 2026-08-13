@@ -91,6 +91,7 @@ internal inline Rect2 rect2_min_dim(v2 min, v2 dim);
 internal inline Rect2 rect2_center_halfdim(v2 center, v2 halfdim);
 internal inline Rect2 rect2_center_dim(v2 center, v2 dim);
 internal inline bool rect2_test_inside(Rect2 rect, v2 test);
+internal inline bool rect2_intersect(Rect2 a, Rect2 b);
 #define R2_INF ((Rect2){V2_NEG_INF, V2_INF})
 
 #endif // VARED_MATH_H
