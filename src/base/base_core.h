@@ -92,7 +92,7 @@ typedef struct {
 #define IsNil(x, nil) (x) == 0 || (x) == (nil)
 
 ////////////////////////////////////////////////////////////////////////////////
-/// NOTE(fede): Queue
+/// NOTE(fede): Queue. TODO return head
 
 #define QueuePush_N_nil(f, l, n, next, nil) IsNil(f, nil) ? \
     ((f) = (l) = (n), (n)->next = (nil)) : \
@@ -117,6 +117,10 @@ typedef struct {
     (IsNil(p, nil) ? \
       ((n)->next = (f), (n)->prev = (nil), (f)->prev = (n), (f) = (n)) : \
       ((n)->prev = (p), (n)->next = (p)->next, (p)->next = (n), (p) == (l) ? (l) = (n) : ((p)->next->prev = (n))))
+
+#define DLL_Insert_NP(f, l, p, n, next, prev) DLL_Insert_NP_nil(f, l, p, n, next, prev, 0)
+#define DLL_Insert_nil(f, l, p, n, nil) DLL_Insert_NP_nil(f, l, p, n, next, prev, nil)
+#define DLL_Insert(f, l, p, n) DLL_Insert_nil(f, l, p, n, 0)
 
 #define DLL_PushBack_NP_nil(f, l, n, next, prev, nil) DLL_Insert_NP_nil(f, l, l, n, next, prev, nil)
 #define DLL_PushBack_NP(f, l, n, next, prev) DLL_Insert_NP_nil(f, l, l, n, next, prev, 0)

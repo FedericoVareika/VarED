@@ -13,6 +13,9 @@
 #include "ui/ui.h"
 #include "ui/ui.c"
 
+#include "text/text.h"
+#include "text/text.c"
+
 #include "vared.h"
 
 internal Line line_alloc(Arena *arena, u32 size) {

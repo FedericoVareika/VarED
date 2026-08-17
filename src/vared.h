@@ -17,6 +17,7 @@
 #include "base/base_inc.h"
 #include "render/render_inc.h"
 #include "font_provider/font_provider_inc.h"
+#include "text/text.h"
 
 #include "vared_platform.h"
 
@@ -43,6 +44,10 @@ typedef struct {
     LineBuffer text;
     u32 cursor_line;
     u32 cursor_char;
+
+    TXT_Text text_;
+    u32 cursor_row;
+    u32 cursor_col;
 
     bool is_opening_file;
 
