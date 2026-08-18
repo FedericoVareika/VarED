@@ -48,7 +48,8 @@ typedef struct {
     Arena *text_arena;
     TXT_Text *text_;
     u32 cursor_row;
-    u32 cursor_col;
+    u32 cursor_col;         // in characters (utf-8)
+    u32 cursor_col_bytes;   // in bytes
 
     bool is_opening_file;
 

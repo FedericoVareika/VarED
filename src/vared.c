@@ -208,25 +208,70 @@ void editor_update_and_render(EditorParams *params) {
             } break;
 
             case WMKey_LEFT: {
-                Line *line = &state->text.lines[state->cursor_line];
-                do {
-                    if (state->cursor_char > 0) 
-                        state->cursor_char--;
-                    else break;
-                } while (!utf8_byte_is_header(line->buf[state->cursor_char]));
+                {
+                    Line *line = &state->text.lines[state->cursor_line];
+                    do {
+                        if (state->cursor_char > 0) 
+                            state->cursor_char--;
+                        else break;
+                    } while (!utf8_byte_is_header(line->buf[state->cursor_char]));
+                }
+
+                {
+                    // TODO(fede): Scratch arena.
+                    String8 line = txt_get_line(state->frame_arena, state->text_, state->cursor_row);
+                    do {
+                        if (state->cursor_col_bytes > 0) {
+                            state->cursor_col_bytes--;
+                        } else {
+                            state->cursor_row = max(0, state->cursor_row - 1);
+                            line = txt_get_line(state->frame_arena, state->text_, state->cursor_row);
+                            state->cursor_col_bytes = line.size;
+                        }
+                    } while (!utf8_byte_is_header(line.str[state->cursor_col_bytes]));
+                }
             } break;
             case WMKey_RIGHT: {
-                Line *line = &state->text.lines[state->cursor_line];
-                do {
-                    if (state->cursor_char < line->count) 
-                        state->cursor_char++;
-                    else break;
-                } while (!utf8_byte_is_header(line->buf[state->cursor_char]));
+                {
+                    Line *line = &state->text.lines[state->cursor_line];
+                    do {
+                        if (state->cursor_char < line->count) 
+                            state->cursor_char++;
+                        else break;
+                    } while (!utf8_byte_is_header(line->buf[state->cursor_char]));
+                }
+
+                {
+                    // TODO(fede): Scratch arena.
+                    String8 line = txt_get_line(state->frame_arena, state->text_, state->cursor_row);
+                    do {
+                        if (state->cursor_col_bytes < line.size) {
+                            state->cursor_col_bytes++;
+                        } else {
+                            state->cursor_row = max(txt_get_n_lines(state->text_), state->cursor_row + 1);
+                            line = txt_get_line(state->frame_arena, state->text_, state->cursor_row);
+                            state->cursor_col_bytes = 0;
+                        }
+                    } while (!utf8_byte_is_header(line.str[state->cursor_col_bytes]));
+                }
             } break;
             case WMKey_UP: {
-                if (state->cursor_line > 0) {
-                    state->cursor_line--;
-                    state->cursor_char = 0;
+                {
+                    if (state->cursor_line > 0) {
+                        state->cursor_line--;
+                        state->cursor_char = 0;
+                    }
+                }
+                {
+                    if (state->cursor_row > 0) {
+                        state->cursor_row--;
+
+                        // TODO(fede): Do optically aligned, instead of byte aligned.
+                        String8 line = txt_get_line(state->frame_arena, state->text_, state->cursor_row);
+                        while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
+                            state->cursor_col_bytes--;
+                        }
+                    }
                 }
             } break;
             case WMKey_DOWN: {
@@ -234,6 +279,17 @@ void editor_update_and_render(EditorParams *params) {
                         state->text.count) {
                     state->cursor_line++;
                     state->cursor_char = 0;
+                }
+                {
+                    if (state->cursor_row + 1 < txt_get_n_lines(state->text_)) {
+                        state->cursor_row++;
+
+                        // TODO(fede): Do optically aligned, instead of byte aligned.
+                        String8 line = txt_get_line(state->frame_arena, state->text_, state->cursor_row);
+                        while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
+                            state->cursor_col_bytes--;
+                        }
+                    }
                 }
             } break;
 
@@ -253,7 +309,9 @@ void editor_update_and_render(EditorParams *params) {
                         break;
                     }
 
-                    txt_insert(state->text_arena, state->text_, str8(file.memory, file.size), 0);
+                    u64 at = txt_get_line_offset(state->text_, state->cursor_row);
+                    at += state->cursor_col_byte;
+                    txt_insert(state->text_arena, state->text_, str8(file.memory, file.size), at);
 
                     u32 lines_added = 0;
                     u8 *c = (u8 *)file.memory;
@@ -325,6 +383,10 @@ void editor_update_and_render(EditorParams *params) {
                             byte_idx++) {
                         insert_char(line, &state->cursor_char, insert_chars[byte_idx]);
                     }
+
+                    u64 at = txt_get_line_offset(state->text_, state->cursor_row);
+                    at += state->cursor_col_byte;
+                    txt_insert(state->text_arena, state->text_, str8((u8 *)&insert_chars, codepint_byte_size), at);
                 }
             } break; 
             }

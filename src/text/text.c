@@ -309,3 +309,60 @@ internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n) {
         }
     }
 }
+
+// TODO(fede): Cache this?
+internal u64 txt_get_n_lines(TXT_Text *text) {
+    u64 result = 0;
+    for (TXT_PieceNode *piece_n = text->first; 
+            piece_n != 0; 
+            piece_n = piece_n->next) {
+        TXT_Piece *piece = &piece_n->v;
+        u64 n_lines = piece->end.line_idx - piece->start.line_idx + 1; // +-1?
+        result += n_lines;
+    }
+
+    return result;
+}
+
+internal u64 txt_get_line_offset(TXT_Text *text, u32 row) {
+    u64 result = 0;
+    u64 line_idx = 0;
+    TXT_PieceNode *piece_n = text->first;
+    for (; piece_n != 0; 
+            piece_n = piece_n->next) {
+        TXT_Piece *piece = &piece_n->v;
+        u64 n_lines = piece->end.line_idx - piece->start.line_idx + 1; // +-1?
+
+        if (line_idx + n_lines >= row) {
+            break;
+        }
+
+        result += piece->size;
+    }
+    /*
+     * TODO(fede): I have a brute approx, now i have to increase the result by 
+     *      the internal piece offset to the line i want to get.
+     *
+     *              pn.start                  pn.end
+     *         \n      |      \n      row        |
+     *          |______|_______|_______|_________|
+     *                 |               |         |
+     *                 |_______________|         
+     *                 |  amnt to add  |
+     *              cur.res         fin.res
+     *                         
+     */
+
+    TXT_Piece *piece = &piece_n->v;
+    TXT_LinePos target_line = piece->start;
+    for (; line_idx < row; line_idx++) {
+
+    }
+
+
+
+    return result;
+}
+
+internal String8 txt_get_line(Arena *arena, TXT_Text *text, u32 row) {
+}

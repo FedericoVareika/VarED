@@ -68,4 +68,8 @@ internal TXT_Buffer *txt_get_buffer_for_str(Arena *arena, TXT_Text *text, String
 internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at);
 internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n);
 
+internal u64 txt_get_n_lines(TXT_Text *text);
+internal u64 txt_get_line_offset(TXT_Text *text, u32 row);
+internal String8 txt_get_line(Arena *arena, TXT_Text *text, u32 row);
+
 #endif // TEXT_H
