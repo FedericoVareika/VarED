@@ -325,13 +325,6 @@ void editor_update_and_render(EditorParams *params) {
                             byte_idx++) {
                         insert_char(line, &state->cursor_char, insert_chars[byte_idx]);
                     }
-
-                    txt_insert(
-                            state->text_arena,
-                            state->text_,
-                            str8(&insert_chars, codepoint_byte_size),
-                            
-                            );
                 }
             } break; 
             }
