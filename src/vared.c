@@ -141,6 +141,9 @@ void editor_init(EditorParams *params) {
     // STUDY(fede): change commit/reserve sizes for this
     state->frame_arena = arena_alloc();
 
+    state->text_arena = arena_alloc();
+    state->text_ = push_struct(state->text_arena, TXT_Text);
+
     fc_init();
     fp_init();
     state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
@@ -250,6 +253,8 @@ void editor_update_and_render(EditorParams *params) {
                         break;
                     }
 
+                    txt_insert(state->text_arena, state->text_, str8(file.memory, file.size), 0);
+
                     u32 lines_added = 0;
                     u8 *c = (u8 *)file.memory;
                     u32 line_start = 0;
@@ -320,6 +325,13 @@ void editor_update_and_render(EditorParams *params) {
                             byte_idx++) {
                         insert_char(line, &state->cursor_char, insert_chars[byte_idx]);
                     }
+
+                    txt_insert(
+                            state->text_arena,
+                            state->text_,
+                            str8(&insert_chars, codepoint_byte_size),
+                            
+                            );
                 }
             } break; 
             }

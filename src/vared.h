@@ -45,7 +45,8 @@ typedef struct {
     u32 cursor_line;
     u32 cursor_char;
 
-    TXT_Text text_;
+    Arena *text_arena;
+    TXT_Text *text_;
     u32 cursor_row;
     u32 cursor_col;
 

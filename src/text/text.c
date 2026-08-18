@@ -24,7 +24,7 @@ internal TXT_LinePos txt_advance_line_pos(TXT_Buffer *buffer, TXT_LinePos pos, u
     while (true) {
         u64 from = buffer->line_starts[result.line_idx] + result.offset;
         u64 to = buffer->line_starts[result.line_idx];
-        if (from - to > n - advanced) {
+        if (from - to >= n - advanced) { // +-1?
             break;    
         }
 
@@ -32,7 +32,7 @@ internal TXT_LinePos txt_advance_line_pos(TXT_Buffer *buffer, TXT_LinePos pos, u
         result.line_idx++;
         result.offset = 0;
     }
-    assert(n > advanced);
+    assert(n >= advanced);
     result.offset = n - advanced;
     
     return result;
@@ -41,36 +41,18 @@ internal TXT_LinePos txt_advance_line_pos(TXT_Buffer *buffer, TXT_LinePos pos, u
 internal TXT_Buffer *txt_get_buffer_for_str(Arena *arena, TXT_Text *text, String8 str) {
     TXT_BufferNode *buffer_n = text->buffer_queue; 
 
-    // Init first buffer. 
-    if (!buffer_n) {
-        assert(!text->first_free_piece);
-        assert(!text->first);
-        assert(!text->last);
-
+    if (!buffer_n || str.size > buffer_n->v.size - buffer_n->v.count) {
         buffer_n = push_struct(arena, TXT_BufferNode);
         buffer_n->next = text->buffer_queue;
         text->buffer_queue = buffer_n;
 
-        buffer_n->v.buf = push_array(arena, u8, str.size);
-        buffer_n->v.size = str.size;
+        TXT_Buffer *buffer = &buffer_n->v;
 
-        assert(str.size > buffer_n->v.size - buffer_n->v.count);
-    }
-
-    TXT_Buffer *result = &buffer_n->v;
-
-    if (str.size > result->size - result->count) {
-        buffer_n = push_struct(arena, TXT_BufferNode);
-        buffer_n->next = text->buffer_queue;
-        text->buffer_queue = buffer_n;
-
-        result = &buffer_n->v;
-
-        result->size = max(TXT_WRITE_BUFFER_SIZE, str.size);
-        result->buf = push_array(arena, u8, result->size);
+        buffer->size = max(TXT_WRITE_BUFFER_SIZE, str.size);
+        buffer->buf = push_array(arena, u8, buffer->size);
 
         // Consider this insert as a large paste or file open.
-        if (result->size > TXT_WRITE_BUFFER_SIZE) {
+        if (buffer->size > TXT_WRITE_BUFFER_SIZE) {
             u64 line_count = 1;
 
             // TODO(fede): Investigate and support CRLF, LF, and CR modes
@@ -80,15 +62,16 @@ internal TXT_Buffer *txt_get_buffer_for_str(Arena *arena, TXT_Text *text, String
                 }
             }
 
-            result->line_starts = push_array(arena, u64, line_count);
-            // NOTE(fede): The result contents are not updated
-            result->line_count = 1; 
+            buffer->line_starts = push_array(arena, u64, line_count);
         } else {
-            result->line_starts = push_array(arena, u64, TXT_WRITE_BUFFER_MAX_LINES);
+            buffer->line_starts = push_array(arena, u64, TXT_WRITE_BUFFER_MAX_LINES);
         }
+
+        // NOTE(fede): The result contents are not updated
+        buffer->line_count = 1; 
     }
 
-    return result;
+    return &buffer_n->v;
 }
 
 // STUDY(fede): The entire file is stored in memory right now,
@@ -98,25 +81,25 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
     TXT_Buffer *buffer = txt_get_buffer_for_str(arena, text, str);
 
     TXT_LinePos start = {0};
-    start.line_idx = buffer->line_count;
-    start.offset = buffer->count - buffer->line_starts[buffer->line_count]; 
+    start.line_idx = buffer->line_count - 1;
+    start.offset = buffer->count - buffer->line_starts[buffer->line_count - 1]; 
 
     for (u64 i = 0; i < str.size; i++) {
-        assert(buffer->line_count < TXT_WRITE_BUFFER_MAX_LINES);
-
         u64 buf_idx = i + buffer->count;
         if (str.str[i] == '\n') {
             buffer->line_starts[buffer->line_count] = buf_idx;
             buffer->line_count++;
-
-            // STUDY perf
-            buffer->buf[buf_idx] = str.str[i];
         }
+
+        // STUDY perf
+        buffer->buf[buf_idx] = str.str[i];
     }
 
+    buffer->count += str.size;
+
     TXT_LinePos end = {0};
-    start.line_idx = buffer->line_count;
-    start.offset = buffer->count - buffer->line_starts[buffer->line_count]; 
+    end.line_idx = buffer->line_count;
+    end.offset = buffer->count - buffer->line_starts[buffer->line_count]; 
 
     TXT_PieceNode *piece_n = txt_get_piece_n(arena, text);
 
@@ -147,7 +130,7 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
     // TODO(fede): if this is at a limit of two pieces, then instead of inserting 
     //      a node in the middle, it would delete the right one, insert the new
     //      one, and add the right one again.
-    for (; piece_n_at != 0, piece_n_at->v.size <= offset;
+    for (; piece_n_at != 0 && piece_n_at->v.size <= offset;
             piece_n_at = piece_n_at->next, offset -= piece_n_at->v.size) {
     }
 
@@ -173,14 +156,14 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
          *                         | i.off |
          *
          */
-        TXT_LinePos insert_pos = txt_advance_line_pos(buffer, piece_n_at->v.end, offset);
+        TXT_LinePos insert_pos = txt_advance_line_pos(buffer, piece_n_at->v.start, offset);
 
         TXT_PieceNode *insertion_node = piece_n_at;
         if (size_l) {
             TXT_PieceNode *left_n = txt_get_piece_n(arena, text);
 
             left_n->v = (TXT_Piece){
-                .buffer = buffer,
+                .buffer = piece_n_at->v.buffer,
                 .start = piece_n_at->v.start,
                 .end = insert_pos,
             };
@@ -198,7 +181,7 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
             TXT_PieceNode *right_n = txt_get_piece_n(arena, text);
 
             right_n->v = (TXT_Piece){
-                .buffer = buffer,
+                .buffer = piece_n_at->v.buffer,
                 .start = insert_pos,
                 .end = piece_n_at->v.end,
             };
