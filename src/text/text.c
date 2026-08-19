@@ -22,14 +22,14 @@ internal TXT_LinePos txt_advance_line_pos(TXT_Buffer *buffer, TXT_LinePos pos, u
     
     u64 advanced = 0;
     while (true) {
-        u64 from = buffer->line_starts[result.line_idx] + result.offset;
-        u64 to = buffer->line_starts[result.line_idx];
-        if (from - to >= n - advanced) { // +-1?
+        u64 to = buffer->line_starts[result.newline_idx] + result.offset;
+        u64 from = buffer->line_starts[result.newline_idx];
+        if (to - from >= n - advanced) { // +-1?
             break;    
         }
 
         advanced += from - to;
-        result.line_idx++;
+        result.newline_idx++;
         result.offset = 0;
     }
     assert(n >= advanced);
@@ -53,22 +53,22 @@ internal TXT_Buffer *txt_get_buffer_for_str(Arena *arena, TXT_Text *text, String
 
         // Consider this insert as a large paste or file open.
         if (buffer->size > TXT_WRITE_BUFFER_SIZE) {
-            u64 line_count = 1;
+            u64 newline_count = 0;
 
             // TODO(fede): Investigate and support CRLF, LF, and CR modes
             for (u64 i = 0; i < str.size; i++) {
                 if (str.str[i] == '\n') {
-                    line_count++;
+                    newline_count++;
                 }
             }
 
-            buffer->line_starts = push_array(arena, u64, line_count);
+            buffer->line_starts = push_array(arena, u64, newline_count);
         } else {
             buffer->line_starts = push_array(arena, u64, TXT_WRITE_BUFFER_MAX_LINES);
         }
 
         // NOTE(fede): The result contents are not updated
-        buffer->line_count = 1; 
+        buffer->newline_count = 0; 
     }
 
     return &buffer_n->v;
@@ -81,14 +81,14 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
     TXT_Buffer *buffer = txt_get_buffer_for_str(arena, text, str);
 
     TXT_LinePos start = {0};
-    start.line_idx = buffer->line_count - 1;
-    start.offset = buffer->count - buffer->line_starts[buffer->line_count - 1]; 
+    start.newline_idx = buffer->newline_count - 1;
+    start.offset = buffer->count - buffer->line_starts[buffer->newline_count - 1]; 
 
     for (u64 i = 0; i < str.size; i++) {
         u64 buf_idx = i + buffer->count;
         if (str.str[i] == '\n') {
-            buffer->line_starts[buffer->line_count] = buf_idx;
-            buffer->line_count++;
+            buffer->line_starts[buffer->newline_count] = buf_idx;
+            buffer->newline_count++;
         }
 
         // STUDY perf
@@ -98,8 +98,8 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
     buffer->count += str.size;
 
     TXT_LinePos end = {0};
-    end.line_idx = buffer->line_count;
-    end.offset = buffer->count - buffer->line_starts[buffer->line_count]; 
+    end.newline_idx = buffer->newline_count;
+    end.offset = buffer->count - buffer->line_starts[buffer->newline_count]; 
 
     TXT_PieceNode *piece_n = txt_get_piece_n(arena, text);
 
@@ -264,17 +264,17 @@ internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n) {
         {
             TXT_LinePos left_end = start;
             if (left_end.offset == 0) {
-                assert(left_end.line_idx > 0);
-                left_end.offset = buffer->line_starts[left_end.line_idx] -
-                    buffer->line_starts[left_end.line_idx - 1];
-                left_end.line_idx--;
+                assert(left_end.newline_idx > 0);
+                left_end.offset = buffer->line_starts[left_end.newline_idx] -
+                    buffer->line_starts[left_end.newline_idx - 1];
+                left_end.newline_idx--;
             } else {
                 left_end.offset--;
             }
 
             TXT_PieceNode *insertion_n = delete_n;
-            if (left_end.line_idx > delete->start.line_idx || 
-                    left_end.line_idx == delete->start.line_idx && 
+            if (left_end.newline_idx > delete->start.newline_idx || 
+                    left_end.newline_idx == delete->start.newline_idx && 
                     left_end.offset > delete->start.offset) {
 
                 TXT_PieceNode *left_n = txt_get_piece_n(arena, text);
@@ -290,8 +290,8 @@ internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n) {
             }
 
             TXT_LinePos right_start = end;
-            if (right_start.line_idx < delete->end.line_idx || 
-                    right_start.line_idx == delete->end.line_idx && 
+            if (right_start.newline_idx < delete->end.newline_idx || 
+                    right_start.newline_idx == delete->end.newline_idx && 
                     right_start.offset < delete->end.offset) {
 
                 TXT_PieceNode *right_n = txt_get_piece_n(arena, text);
@@ -317,34 +317,36 @@ internal u64 txt_get_n_lines(TXT_Text *text) {
             piece_n != 0; 
             piece_n = piece_n->next) {
         TXT_Piece *piece = &piece_n->v;
-        u64 n_lines = piece->end.line_idx - piece->start.line_idx + 1; // +-1?
+        u64 n_lines = piece->end.newline_idx - piece->start.newline_idx + 1; // +-1?
         result += n_lines;
     }
 
     return result;
 }
 
-internal u64 txt_get_line_offset(TXT_Text *text, u32 row) {
+internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
     u64 result = 0;
     u64 line_idx = 0;
     TXT_PieceNode *piece_n = text->first;
     for (; piece_n != 0; 
             piece_n = piece_n->next) {
         TXT_Piece *piece = &piece_n->v;
-        u64 n_lines = piece->end.line_idx - piece->start.line_idx + 1; // +-1?
+        u64 n_lines = piece->end.newline_idx - piece->start.newline_idx; // +-1?
 
         if (line_idx + n_lines >= row) {
             break;
         }
 
+        line_idx += n_lines;
         result += piece->size;
     }
+
     /*
      * TODO(fede): I have a brute approx, now i have to increase the result by 
      *      the internal piece offset to the line i want to get.
      *
-     *              pn.start                  pn.end
-     *         \n      |      \n      row        |
+     *              pn.start          row     pn.end
+     *         \n      |      \n      \n         |
      *          |______|_______|_______|_________|
      *                 |               |         |
      *                 |_______________|         
@@ -354,15 +356,75 @@ internal u64 txt_get_line_offset(TXT_Text *text, u32 row) {
      */
 
     TXT_Piece *piece = &piece_n->v;
+    TXT_Buffer *buffer = piece->buffer;
     TXT_LinePos target_line = piece->start;
     for (; line_idx < row; line_idx++) {
+        // Reached the end, return the line offset number basically
+        if (target_line.newline_idx + 1 == buffer->newline_count) {
+            break;
+        }
 
+        u64 amnt = 
+            buffer->line_starts[target_line.newline_idx + 1] -
+            buffer->line_starts[target_line.newline_idx];
+        amnt -= target_line.offset; 
+
+        result += amnt;
+
+        target_line.newline_idx++;
+        target_line.offset = 0;
     }
-
-
 
     return result;
 }
 
-internal String8 txt_get_line(Arena *arena, TXT_Text *text, u32 row) {
+internal String8 txt_get_buffer_substr(
+        TXT_Buffer *buffer,
+        LinePos start, LinePos end) {
+    u64 buf_offset = buffer->line_starts[start.newline_idx] + start.offset;
+    u64 size = 
+        buffer->line_starts[end.newline_idx] - 
+        buffer->line_starts[start.newline_idx];
+    size += end.offset - start.offset;
+
+    return str8(buffer->buf + buf_offset, size);
+}
+
+internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
+    u64 line_idx = 0;
+    TXT_PieceNode *piece_n = text->first;
+    for (; piece_n != 0; 
+            piece_n = piece_n->next) {
+        TXT_Piece *piece = &piece_n->v;
+        u64 n_lines = piece->end.newline_idx - piece->start.newline_idx; // +-1?
+
+        if (line_idx + n_lines >= row) {
+            break;
+        }
+
+        line_idx += n_lines;
+    }
+
+    /* TODO(fede): Use the buffer substring func to do this
+    TXT_Piece *piece = &piece_n->v;
+    TXT_Buffer *buffer = piece->buffer;
+
+    u64 buffer_line_idx = piece->start.line_idx;
+    buffer_line_idx += row - line_idx;
+    buffer_line_idx = max(buffer_line_idx, buffer->newline_count);
+
+    // TODO(fede): Use scratch arena and implement pop
+    String8 result = S8("");
+    while (true) {
+        u8 *line = buffer->buf + buffer->line_starts[buffer_line_idx];
+        String8 line_substr = 
+        result = str8_cat(result, line_substr);
+
+        if (buffer_line_idx < piece->end.newline_idx) {
+            break;
+        }
+    }
+
+    return result;
+    */
 }

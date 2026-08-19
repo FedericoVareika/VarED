@@ -11,7 +11,7 @@ struct TXT_Buffer {
     u64 count;
 
     u64 *line_starts;
-    u64 line_count;
+    u64 newline_count;
 };
 
 typedef struct TXT_BufferNode TXT_BufferNode;
@@ -23,7 +23,7 @@ struct TXT_BufferNode {
 
 typedef struct TXT_LinePos TXT_LinePos;
 struct TXT_LinePos {
-    u64 line_idx;
+    u64 newline_idx;
     u64 offset;
 };
 
@@ -69,7 +69,7 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at);
 internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n);
 
 internal u64 txt_get_n_lines(TXT_Text *text);
-internal u64 txt_get_line_offset(TXT_Text *text, u32 row);
-internal String8 txt_get_line(Arena *arena, TXT_Text *text, u32 row);
+internal u64 txt_get_line_offset(TXT_Text *text, u64 row);
+internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row);
 
 #endif // TEXT_H
