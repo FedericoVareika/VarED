@@ -485,9 +485,9 @@ int main(void) {
     SDL_StartTextInput();
 
     u64 last_counter = SDL_GetPerformanceCounter();
+    f32 dt_for_frame = 0;
 
     editor_init(&editor_params);
-
 
     while (global_editor_running) {
         WMEventList *event_list = push_struct(event_arena, WMEventList);
@@ -588,6 +588,7 @@ int main(void) {
         }
 
         editor_params.events = event_list;
+        editor_params.dt = dt_for_frame;
 
         editor_update_and_render(&editor_params);
 
@@ -610,6 +611,7 @@ int main(void) {
 
             last_counter = SDL_GetPerformanceCounter();
 
+            dt_for_frame = seconds_elapsed_for_frame;
 #if 0
             f64 ms_per_frame = seconds_elapsed_for_frame * 1000;
             f64 fps = 1000.0f / ms_per_frame;

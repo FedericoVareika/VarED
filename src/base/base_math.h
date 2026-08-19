@@ -19,6 +19,8 @@ typedef struct {
     };
 } v2u;
 
+#define v3(x, y, z) ((V3){(x), (y), (z)})
+#define expand_v3(v) (v).x, (v).y, (v).z
 typedef struct {
     union {
         struct {
@@ -28,6 +30,7 @@ typedef struct {
     };
 } v3;
 
+#define v4(x, y, z, w) ((V4){x, y, z, w})
 typedef struct {
     union {
         struct {
@@ -38,6 +41,10 @@ typedef struct {
         };
         struct {
             v2 xy, zw;
+        };
+        struct {
+            v3 xyz;
+            f32 w_;
         };
         f32 e[4];
     };
@@ -53,8 +60,6 @@ typedef struct {
         };
     };
 } Rect2;
-
-internal inline f32 square(f32 a);
 
 internal inline v2 v2_add(v2 a, v2 b);
 internal inline v2 v2_sub(v2 a, v2 b);

@@ -249,15 +249,39 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
         // TODO(fede): Anim
         if (hot_change) {
             ui_state->hot = hot ? box->key : ui_nil_key();
-            box->hot_t = hot ? 1 : 0;
         } 
 
         if (active_change) {
             ui_state->active = active ? box->key : ui_nil_key();
-            box->active_t = active ? 1 : 0;
 
             if (!active) {
                 comm.released = true;
+            }
+        }
+
+        // Hot anim
+        {
+            if (hot) {
+                box->hot_t += ui_state->dt * 2;
+                box->hot_t = min(1, box->hot_t);
+            }
+
+            if (!hot) {
+                box->hot_t -= ui_state->dt * 2;
+                box->hot_t = max(0, box->hot_t);
+            }
+        }
+
+        // Active anim
+        {
+            if (active) {
+                box->active_t += ui_state->dt * 4;
+                box->active_t = min(1, box->active_t);
+            }
+
+            if (!active) {
+                box->active_t -= ui_state->dt * 2;
+                box->active_t = max(0, box->active_t);
             }
         }
     }
@@ -265,10 +289,11 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
     return comm;
 }
 
-internal void ui_begin_build(v2 window_dim, WMEventList *events) {
+internal void ui_begin_build(v2 window_dim, WMEventList *events, f32 dt) {
     arena_clear(ui_state->build_arena);
 
     ui_state->frame_idx++;
+    ui_state->dt = dt;
 
     ui_state->root = &ui_nil_box;
 
@@ -533,16 +558,62 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     bool mouse_interactable = box->flags & UI_BoxFlag_Clickable || 
         box->flags & UI_BoxFlag_Draggable;
 
-    if (mouse_interactable && ui_key_match(ui_state->active, box->key)) {
-        r_inst->color0 = ui_darken_color(background, 0.3);
-        r_inst->color1 = ui_lighten_color(background, 0.3);
-        r_inst->color2 = ui_darken_color(background, 0.3);
-        r_inst->color3 = ui_lighten_color(background, 0.3);
-    } else if (mouse_interactable && ui_key_match(ui_state->hot, box->key)) {
-        r_inst->color0 = ui_lighten_color(background, 0.3);
-        r_inst->color1 = ui_darken_color(background, 0.3);
-        r_inst->color2 = ui_lighten_color(background, 0.3);
-        r_inst->color3 = ui_darken_color(background, 0.3);
+    {
+        bool hot = mouse_interactable && ui_key_match(ui_state->hot, box->key);
+        bool active = mouse_interactable && ui_key_match(ui_state->active, box->key);
+
+        bool hot_anim = !!(box->flags & UI_BoxFlag_HotAnimation);
+        bool active_anim = !!(box->flags & UI_BoxFlag_ActiveAnimation);
+
+        f32 transition = 0;
+        f32 color_t = 0.3;
+
+        v4 debossed_color0 = ui_lighten_color(r_inst->color0, color_t);
+        v4 debossed_color1 = ui_darken_color(r_inst->color1, color_t);
+        v4 debossed_color2 = ui_lighten_color(r_inst->color2, color_t);
+        v4 debossed_color3 = ui_darken_color(r_inst->color3, color_t);  
+
+        v4 embossed_color0 = ui_darken_color(r_inst->color0, color_t);
+        v4 embossed_color1 = ui_lighten_color(r_inst->color1, color_t);
+        v4 embossed_color2 = ui_darken_color(r_inst->color2, color_t);  
+        v4 embossed_color3 = ui_lighten_color(r_inst->color3, color_t);
+
+        if (mouse_interactable) {
+            if (hot_anim) {
+                if (hot) {
+                    transition -= ease_out_quint_f32(box->hot_t);
+                } else {
+                    transition -= ease_in_expo_f32(box->hot_t);
+                }
+            } else if (hot) {
+                transition = -1;
+            }
+
+            if (active_anim) {
+                if (active) {
+                    transition = ease_out_quint_f32(box->active_t) * 2 - 1;
+                } else {
+                    transition += ease_in_expo_f32(box->active_t) * 2;
+                }
+            } else if (active) {
+                transition = 1;
+            }
+        }
+
+        color_t *= transition;
+
+        if (color_t < 0) {
+            color_t = -color_t;
+            r_inst->color0 = ui_darken_color(background, color_t);
+            r_inst->color1 = ui_lighten_color(background, color_t);
+            r_inst->color2 = ui_darken_color(background, color_t);  
+            r_inst->color3 = ui_lighten_color(background, color_t);
+        } else if (color_t > 0) {
+            r_inst->color0 = ui_lighten_color(background, color_t);
+            r_inst->color1 = ui_darken_color(background, color_t);
+            r_inst->color2 = ui_lighten_color(background, color_t);
+            r_inst->color3 = ui_darken_color(background, color_t);  
+        }  
     }
 
     if (!!(box->flags & UI_BoxFlag_DrawText)) {
@@ -621,12 +692,16 @@ internal inline UI_Size ui_size(UI_SizeKind kind, f32 val, f32 strictness) {
     return result;
 }
 
+internal inline v4 ui_blend_colors(v4 a, v4 b, f32 t) {
+    return v4_lerp(a, b, t);
+}
+
 internal inline v4 ui_darken_color(v4 color, f32 t) {
-    return v4_lerp(color, RGBA(0, 0, 0, 1), t);
+    return ui_blend_colors(color, RGBA(0, 0, 0, 1), t);
 }
 
 internal inline v4 ui_lighten_color(v4 color, f32 t) {
-    return v4_lerp(color, RGBA(1, 1, 1, 1), t);
+    return ui_blend_colors(color, RGBA(1, 1, 1, 1), t);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -637,7 +712,9 @@ internal UI_Comm ui_button(String8 str) {
             UI_BoxFlag_Clickable | 
             UI_BoxFlag_DrawText |
             UI_BoxFlag_DrawBorder | 
-            UI_BoxFlag_DrawBackground ,
+            UI_BoxFlag_DrawBackground |
+            UI_BoxFlag_ActiveAnimation |
+            UI_BoxFlag_HotAnimation,
             str);
     return ui_comm_from_box(box);
 }
@@ -668,7 +745,12 @@ internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str) {
 
             UI_ChildLayoutAxis(UI_Axis2_X)
             UI_PrefHeight(ui_em(1, 1))
-            UI_Parent(ui_box_makef(UI_BoxFlag_Draggable | UI_BoxFlag_DrawBorder, "slider"))
+            UI_Parent(ui_box_makef(
+                        UI_BoxFlag_Draggable |
+                        UI_BoxFlag_DrawBorder |
+                        UI_BoxFlag_HotAnimation |
+                        UI_BoxFlag_ActiveAnimation,
+                        "slider"))
             UI_PrefHeight(ui_pct(1, 1))
         {
             comm = ui_comm_from_box(ui_top_parent());

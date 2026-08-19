@@ -193,6 +193,8 @@ typedef struct {
 typedef struct {
     void **memory;
     WMEventList *events;
+
+    f32 dt;
 } EditorParams;
 
 void editor_init(EditorParams *params);

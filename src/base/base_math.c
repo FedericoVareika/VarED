@@ -48,10 +48,6 @@ internal inline f32 v2_length2(v2 v) {
     return v2_dot(v, v);
 }
 
-internal inline f32 square(f32 a) {
-    return a * a;
-}
-
 internal inline v2 reflect(v2 a, v2 normal, f32 bounce) {
     return v2_add(a, v2_smul(normal, (1 + bounce) * v2_dot(a, v2_neg(normal))));
 }
@@ -214,3 +210,4 @@ internal inline f32 v4_length2(v4 v) {
 internal inline v4 v4_lerp(v4 a, v4 b, f32 t) {
     return v4_add(v4_smul(a, (1-t)), v4_smul(b, t));
 }
+

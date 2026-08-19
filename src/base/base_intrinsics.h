@@ -48,6 +48,26 @@ internal inline int sign_int(int val) {
     return (val > 0) - (val < 0);
 }
 
+internal inline f32 pow_f32(f32 x, f32 y) {
+    return powf(x, y);
+}
+
+internal inline f32 square_f32(f32 a) {
+    return a * a;
+}
+
+internal inline f32 lerp_f32(f32 a, f32 b, f32 t) {
+    return a * (1 - t) + b * t;
+}
+
+internal inline f32 ease_out_quint_f32(f32 x) {
+    return 1 - pow_f32(1 - x, 5);
+}
+
+internal inline f32 ease_in_expo_f32(f32 x) {
+    return x == 0 ? 0 : pow_f32(2, 10 * x - 10);
+}
+
 typedef struct {
     u32 index;
     bool found;

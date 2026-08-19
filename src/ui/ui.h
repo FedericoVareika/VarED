@@ -3,17 +3,19 @@
 
 typedef u32 UI_BoxFlags; 
 enum {
-    UI_BoxFlag_Clickable      = (1 << 0), 
-    UI_BoxFlag_DrawText       = (1 << 1),
-    UI_BoxFlag_Draggable      = (1 << 2),
+    UI_BoxFlag_Clickable       = (1 << 0), 
+    UI_BoxFlag_DrawText        = (1 << 1),
+    UI_BoxFlag_Draggable       = (1 << 2),
 
-    UI_BoxFlag_DrawBackground = (1 << 3),
-    UI_BoxFlag_DrawBorder     = (1 << 4),
-    UI_BoxFlag_ClipChildren   = (1 << 5),
+    UI_BoxFlag_DrawBackground  = (1 << 3),
+    UI_BoxFlag_DrawBorder      = (1 << 4),
+    UI_BoxFlag_ClipChildren    = (1 << 5),
 
-    UI_BoxFlag_OverflowX      = (1 << 6),
-    UI_BoxFlag_OverflowY      = (1 << 7),
+    UI_BoxFlag_OverflowX       = (1 << 6),
+    UI_BoxFlag_OverflowY       = (1 << 7),
 
+    UI_BoxFlag_HotAnimation    = (1 << 8),
+    UI_BoxFlag_ActiveAnimation = (1 << 9),
 };
 
 typedef struct UI_Key UI_Key; 
@@ -122,6 +124,7 @@ struct UI_State {
     Arena *arena;
     Arena *build_arena;
     u64 frame_idx;
+    f32 dt;
     
     UI_Box *first_free_box;
 
@@ -176,7 +179,7 @@ internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis);
 internal UI_Comm ui_comm_from_box(UI_Box *box);
 
 internal void ui_init(void);
-internal void ui_begin_build(v2 window_dim, WMEventList *events);
+internal void ui_begin_build(v2 window_dim, WMEventList *events, f32 dt);
 internal void ui_end_build(void);
 internal void ui_layout(void);
 internal void ui_render(void);
@@ -192,6 +195,7 @@ internal inline UI_Size ui_size(UI_SizeKind kind, f32 val, f32 strictness);
 #define ui_tc(v, s)  ui_size(UI_SizeKind_TextContent    , (v), (s))
 #define ui_cs(s)     ui_size(UI_SizeKind_ChildrenSum    , 0  , (s))
 
+internal inline v4 ui_blend_colors(v4 a, v4 b, f32 t);
 internal inline v4 ui_darken_color(v4 color, f32 t);
 internal inline v4 ui_lighten_color(v4 color, f32 t);
 

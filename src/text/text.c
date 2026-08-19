@@ -380,7 +380,7 @@ internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
 
 internal String8 txt_get_buffer_substr(
         TXT_Buffer *buffer,
-        LinePos start, LinePos end) {
+        TXT_LinePos start, TXT_LinePos end) {
     u64 buf_offset = buffer->line_starts[start.newline_idx] + start.offset;
     u64 size = 
         buffer->line_starts[end.newline_idx] - 
@@ -404,6 +404,8 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
 
         line_idx += n_lines;
     }
+
+    return S("");
 
     /* TODO(fede): Use the buffer substring func to do this
     TXT_Piece *piece = &piece_n->v;

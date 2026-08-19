@@ -38,5 +38,7 @@
 
 #define XXH_STATIC_LINKING_ONLY /* access advanced declarations */
 #define XXH_IMPLEMENTATION      /* access definitions */
+#define XXH_NO_STREAM
+#define XXH_NO_STDLIB
 
 #include "xxhash.h"
