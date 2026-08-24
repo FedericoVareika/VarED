@@ -181,6 +181,7 @@ void editor_update_and_render(EditorParams *params) {
                     !(event.modifiers & WMModifier_shift) &&
                     !(event.modifiers & WMModifier_alt)) {
                     // TODO(fede): Use scratch arena and implement pop
+                    // TODO(fede): Strip out whitespace, impl a string func for this.
                     String8 path = txt_get_line(state->frame_arena, state->text, state->cursor_row);
 
                     // TODO(fede): Use scratch arena and implement pop
