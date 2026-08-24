@@ -1,6 +1,13 @@
 #ifndef UI_H
 #define UI_H
 
+typedef enum {
+    UI_Axis2_X,
+    UI_Axis2_Y,
+    
+    UI_Axis2_Count,
+} UI_Axis2;
+
 typedef u32 UI_BoxFlags; 
 enum {
     UI_BoxFlag_Clickable       = (1 << 0), 
@@ -11,11 +18,18 @@ enum {
     UI_BoxFlag_DrawBorder      = (1 << 4),
     UI_BoxFlag_ClipChildren    = (1 << 5),
 
-    UI_BoxFlag_OverflowX       = (1 << 6),
-    UI_BoxFlag_OverflowY       = (1 << 7),
+    // TODO: Impl layout
+    UI_BoxFlag_FloatAxis       = (1 << 6),
+    UI_BoxFlag_FloatX          = (UI_BoxFlag_FloatAxis << UI_Axis2_X),
+    UI_BoxFlag_FloatY          = (UI_BoxFlag_FloatAxis << UI_Axis2_Y),
 
-    UI_BoxFlag_HotAnimation    = (1 << 8),
-    UI_BoxFlag_ActiveAnimation = (1 << 9),
+    UI_BoxFlag_OverflowX       = (1 << 8),
+    UI_BoxFlag_OverflowY       = (1 << 9),
+
+    UI_BoxFlag_HotAnimation    = (1 << 10),
+    UI_BoxFlag_ActiveAnimation = (1 << 11),
+
+    UI_BoxFlag_RenderBucket    = (1 << 12),
 };
 
 typedef struct UI_Key UI_Key; 
@@ -34,13 +48,6 @@ typedef enum {
 
     UI_SizeKind_Count,
 } UI_SizeKind;
-
-typedef enum {
-    UI_Axis2_X,
-    UI_Axis2_Y,
-    
-    UI_Axis2_Count,
-} UI_Axis2;
 
 typedef struct UI_Size UI_Size;
 struct UI_Size {
@@ -69,6 +76,8 @@ struct UI_Box {
 
     String8 display_string;
     FC_GlyphRun *display_run;
+
+    R_Bucket *r_bucket;
 
     // NOTE(fede): Style stacks
     UI_Size semantic_size[UI_Axis2_Count];
@@ -173,6 +182,7 @@ internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string);
 internal UI_Box *ui_box_makef(UI_BoxFlags flags, char *fmt, ...);
 
 internal void ui_box_equip_string(UI_Box *box, String8 string);
+internal void ui_box_equip_r_bucket(UI_Box *box, R_Bucket *bucket);
 // TODO(fede): Move to style stack
 internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis); 
 

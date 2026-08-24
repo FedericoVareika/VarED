@@ -291,8 +291,8 @@ internal void r_consume_pass(R_Pass *pass) {
             R_OpenGL_Tex2D *tex2d = r_ogl_tex2d_from_handle(batch_group->texture_handle);
             glBindTexture(GL_TEXTURE_2D, tex2d->id);
         }
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
-        glTexParameteri( GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);	
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 
         R_BatchList *batches = &batch_group->batches;
 
@@ -356,6 +356,7 @@ internal void r_consume_passes(R_PassList *passes) {
         R_Pass *pass = &pass_n->v;
         switch (pass->type) {
         case R_PassType_UI: {
+            glDepthMask(GL_FALSE);
             R_ShaderType program = r_shader_from_pass_type[pass->type];
             GLuint ogl_program = r_ogl_state->programs[program];
             glUseProgram(ogl_program);
@@ -381,9 +382,14 @@ internal void r_consume_all(void) {
     glClearColor(0x0, 0x0, 0x0, 0xFF);
     glClear(GL_COLOR_BUFFER_BIT);
 
-    r_consume_passes(&r_state->passes);
+    for (R_BucketNode *bucket_n = r_state->top_bucket;
+            bucket_n != 0;
+            bucket_n = bucket_n->next) {
+        R_PassList *passes = &bucket_n->v->passes;
+        r_consume_passes(passes);
+    }
 
-    r_state->passes = (R_PassList){0};
+    r_state->top_bucket = 0;
     arena_clear(r_state->frame_arena);
 }
 

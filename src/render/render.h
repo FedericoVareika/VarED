@@ -134,6 +134,17 @@ struct R_Rect2Params {
 
 global const R_Handle nil_texture = {0};
 
+typedef struct R_Bucket R_Bucket;
+struct R_Bucket {
+    R_PassList passes;
+};
+
+typedef struct R_BucketNode R_BucketNode;
+struct R_BucketNode {
+    R_BucketNode *next;
+    R_Bucket *v;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Render state
 
@@ -142,19 +153,26 @@ struct R_State {
     Arena *arena;
     Arena *frame_arena;
 
-    R_PassList passes;
+    R_BucketNode *top_bucket;
+
+    // R_PassList passes;
     u32 window_width, window_height;
 };
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Hooks
 
-#define WHITE_V4 (v4){1, 1, 1, 1}
-#define BLACK_V4 (v4){1, 1, 1, 1}
+#define WHITE_V4 V4(1, 1, 1, 1)
+#define BLACK_V4 V4(1, 1, 1, 1)
 
 internal void r_init(u32 window_width, u32 window_height);
 internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params);
-#define r_push_rect2(...) r_push_rect2_((R_Rect2Params){.tex = nil_texture, .color0 = WHITE_V4, .color1 = WHITE_V4, .color2 = WHITE_V4, .color3 = WHITE_V4, __VA_ARGS__})
+#define r_push_rect2(...) r_push_rect2_((R_Rect2Params){.tex = nil_texture, .color0 = WHITE_V4, .color1 = WHITE_V4, .color2 = WHITE_V4, .color3 = WHITE_V4, .clip = R2_INF, __VA_ARGS__})
+
+internal R_Bucket *r_get_new_bucket();
+internal void r_push_bucket(R_Bucket *bucket);
+internal void r_pop_bucket();
+internal void r_feed_top_bucket(R_Bucket *bucket);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Platform dependent hooks

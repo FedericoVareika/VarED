@@ -51,6 +51,7 @@
 */  M(glUseProgram, void, GLuint program) /*
 */  M(glVertexAttribDivisor, void, GLuint index, GLuint divisor) /*
 */  M(glVertexAttribPointer, void, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) /*
+*/  M(glDepthMask, void,  GLboolean flag) /*
 */
 
 #define GL_ARRAY_BUFFER 0x8892

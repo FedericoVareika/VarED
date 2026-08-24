@@ -179,6 +179,11 @@ internal void ui_box_equip_string(UI_Box *box, String8 string) {
     }
 }
 
+internal void ui_box_equip_r_bucket(UI_Box *box, R_Bucket *bucket) {
+    box->r_bucket = bucket;
+    box->flags |= UI_BoxFlag_RenderBucket;
+}
+
 internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis) {
     box->child_layout_axis = axis;
 }
@@ -451,6 +456,7 @@ internal void ui_layout_resolve_conflicts(UI_Box *box, UI_Axis2 axis) {
     f32 children_size = 0;
     f32 children_max_shrink = 0;
 
+
     for (UI_Box *child = box->first;
             !ui_box_is_nil(child);
             child = child->next) {
@@ -638,8 +644,8 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
                 glyph_ptr_n = glyph_ptr_n->next) {
 
             FC_Glyph *glyph = glyph_ptr_n->v;
-            
-            {
+
+            if (glyph->codepoint != '\n') {
                 v2 pos = v2_add(text_pos, (v2){
                     glyph->metrics.bearing_x,
                     -glyph->metrics.bearing_y,
@@ -665,6 +671,10 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
 
             text_pos.x += glyph->metrics.advance;
         }
+    }
+
+    if (!!(box->flags & UI_BoxFlag_RenderBucket)) {
+        r_feed_top_bucket(box->r_bucket);
     }
     
     ui_render_boxes(box->next, clip);

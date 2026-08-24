@@ -38,6 +38,7 @@ void load_gl(void) {
 */ void (*glUseProgram_ptr)(GLuint program) = dlsym(gl_handle, "glUseProgram"); if (!glUseProgram_ptr) { fprintf(stderr, "ded at %s:%d\n", "src/render/opengl/render_opengl.macros.c", 13); assert(0); } else { glUseProgram = *glUseProgram_ptr; } /*
 */ void (*glVertexAttribDivisor_ptr)(GLuint index, GLuint divisor) = dlsym(gl_handle, "glVertexAttribDivisor"); if (!glVertexAttribDivisor_ptr) { fprintf(stderr, "ded at %s:%d\n", "src/render/opengl/render_opengl.macros.c", 13); assert(0); } else { glVertexAttribDivisor = *glVertexAttribDivisor_ptr; } /*
 */ void (*glVertexAttribPointer_ptr)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) = dlsym(gl_handle, "glVertexAttribPointer"); if (!glVertexAttribPointer_ptr) { fprintf(stderr, "ded at %s:%d\n", "src/render/opengl/render_opengl.macros.c", 13); assert(0); } else { glVertexAttribPointer = *glVertexAttribPointer_ptr; } /*
+*/ void (*glDepthMask_ptr)(GLboolean flag) = dlsym(gl_handle, "glDepthMask"); if (!glDepthMask_ptr) { fprintf(stderr, "ded at %s:%d\n", "src/render/opengl/render_opengl.macros.c", 13); assert(0); } else { glDepthMask = *glDepthMask_ptr; } /*
 */
     dlclose(gl_handle);
 }

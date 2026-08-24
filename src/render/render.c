@@ -12,12 +12,13 @@ internal void r_init(u32 window_width, u32 window_height) {
 }
 
 internal R_PassNode *r_get_pass_n(R_PassType type) {
-    R_PassNode *pass_n = r_state->passes.last;
+    R_PassList *passes = &r_state->top_bucket->v->passes;
+    R_PassNode *pass_n = passes->last;
     if (!pass_n || pass_n->v.type != R_PassType_UI) {
         pass_n = push_struct(r_state->frame_arena, R_PassNode);
         pass_n->v.type = R_PassType_UI;
-        QueuePush(r_state->passes.first, r_state->passes.last, pass_n);
-        r_state->passes.count++;
+        QueuePush(passes->first, passes->last, pass_n);
+        passes->count++;
     } 
 
     return pass_n;
@@ -96,3 +97,38 @@ internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params) {
 
     return rect_inst;
 }
+
+internal R_Bucket *r_get_new_bucket() {
+    return push_struct(r_state->frame_arena, R_Bucket);
+}
+
+internal void r_push_bucket(R_Bucket *bucket) {
+    R_BucketNode *bucket_n = push_struct(r_state->frame_arena, R_BucketNode);
+    bucket_n->v = bucket;
+    bucket_n->next = r_state->top_bucket;
+    r_state->top_bucket = bucket_n;
+}
+
+internal void r_pop_bucket() {
+    r_state->top_bucket = r_state->top_bucket->next;
+}
+
+internal void r_feed_top_bucket(R_Bucket *bucket) {
+    R_Bucket *top_bucket = r_state->top_bucket->v;
+
+    R_PassList *passes = &bucket->passes;
+
+    R_PassNode *pass_n = passes->first;
+    for (u32 i = 0;
+            i < passes->count;
+            i++, pass_n = pass_n->next) {
+        R_Pass *src = &pass_n->v;
+        R_PassNode *dst_n = r_get_pass_n(src->type);
+        R_Pass *dst = &dst_n->v;
+
+        dst->batch_groups.last->next = src->batch_groups.first;
+        dst->batch_groups.last = src->batch_groups.last;
+        dst->batch_groups.count += src->batch_groups.count;
+    }
+}
+
