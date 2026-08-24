@@ -13,28 +13,37 @@ internal TXT_PieceNode *txt_get_piece_n(Arena *arena, TXT_Text *text) {
 
 internal void txt_remove_piece_n(TXT_Text *text ,TXT_PieceNode *piece_n) {
     DLL_Remove(text->first, text->last, piece_n);
+    // text->first_free_piece works as a SLL stack
+    piece_n->prev = 0; 
     piece_n->next = text->first_free_piece;
     text->first_free_piece = piece_n;
 } 
 
+internal inline u64 txt_piece_line_start_count(TXT_Piece *piece) {
+    assert(piece);
+    return piece->end.line_idx - piece->start.line_idx;
+}
+
 internal TXT_LinePos txt_advance_line_pos(TXT_Buffer *buffer, TXT_LinePos pos, u64 n) {
     TXT_LinePos result = pos;
-    
-    u64 advanced = 0;
-    while (true) {
-        u64 to = buffer->line_starts[result.newline_idx] + result.offset;
-        u64 from = buffer->line_starts[result.newline_idx];
-        if (to - from >= n - advanced) { // +-1?
-            break;    
-        }
 
-        advanced += from - to;
-        result.newline_idx++;
-        result.offset = 0;
+    u64 start_byte = buffer->line_starts[result.line_idx];
+    start_byte += result.offset;
+
+    u64 end_byte = start_byte + n;
+
+    for (; result.line_idx + 1 < buffer->line_count;
+            result.line_idx++) {
+        if (buffer->line_starts[result.line_idx + 1] > end_byte) {
+            break;
+        }
     }
-    assert(n >= advanced);
-    result.offset = n - advanced;
-    
+
+    // NOTE(fede): Prevent advancing past the buffer end.
+    u64 max_offset = buffer->count - buffer->line_starts[result.line_idx];
+    result.offset = end_byte - buffer->line_starts[result.line_idx];
+    result.offset = min(result.offset, max_offset);
+
     return result;
 }
 
@@ -68,27 +77,133 @@ internal TXT_Buffer *txt_get_buffer_for_str(Arena *arena, TXT_Text *text, String
         }
 
         // NOTE(fede): The result contents are not updated
-        buffer->newline_count = 0; 
+        buffer->line_count = 1; 
     }
 
     return &buffer_n->v;
+}
+
+internal TXT_PieceNode *txt_split_piece_n(
+        Arena *arena, TXT_Text *text,
+        TXT_PieceNode *piece_n, u64 at, u64 gap) {
+    assert(piece_n);
+
+    TXT_Piece *piece = &piece_n->v;
+    assert(at <= piece->size); 
+
+    if (at == piece->size) {
+        return piece_n;
+    }
+
+    TXT_Buffer *buffer = piece->buffer;
+
+    u64 l_size = at;
+    u64 r_size = piece->size - at - gap;
+
+    TXT_PieceNode *insertion_node = piece_n->prev; 
+    if (l_size > 0) {
+        TXT_PieceNode *left_n = txt_get_piece_n(arena, text);
+
+        TXT_LinePos left_end = txt_advance_line_pos(buffer, piece->start, l_size - 1);
+        u64 left_newlines = left_end.line_idx - piece->start.line_idx;
+
+        if (txt_line_pos_is_end_of_line(buffer, left_end))
+            left_newlines++;
+
+        left_n->v = (TXT_Piece){
+            .buffer = piece->buffer,
+            .start = piece->start,
+            .end = left_end,
+            .size = l_size,
+            .newline_count = left_newlines,
+        };
+
+        DLL_Insert(text->first, text->last, insertion_node, left_n);
+        insertion_node = left_n;
+    }
+
+    if (r_size > 0) {
+        TXT_PieceNode *right_n = txt_get_piece_n(arena, text);
+
+        TXT_LinePos right_start = txt_advance_line_pos(buffer, piece->start, at + gap);
+        u64 right_newlines = piece->end.line_idx - right_start.line_idx;
+
+        if (txt_line_pos_is_end_of_line(buffer, piece->end))
+            right_newlines++;
+
+        right_n->v = (TXT_Piece){
+            .buffer = piece->buffer,
+            .start = right_start,
+            .end = piece->end,
+            .size = r_size,
+            .newline_count = right_newlines,
+        };
+
+        DLL_Insert(text->first, text->last, insertion_node, right_n);
+    }
+
+    txt_remove_piece_n(text, piece_n);
+
+    return insertion_node;
+}
+
+internal bool txt_line_pos_is_end_of_line(TXT_Buffer *buffer, TXT_LinePos pos) {
+    if (pos.line_idx + 1 >= buffer->line_count) {
+        assert(pos.line_idx + 1 == buffer->line_count);
+
+        return false;
+    }
+
+    u64 expanded_pos = buffer->line_starts[pos.line_idx] + pos.offset;
+    u64 end_of_line = buffer->line_starts[pos.line_idx + 1] - 1;
+    return expanded_pos == end_of_line;
+}
+
+internal inline bool txt_line_pos_is_continuation(TXT_Buffer *buffer, TXT_LinePos a, TXT_LinePos b) {
+    bool result = a.line_idx == b.line_idx &&
+        a.offset + 1 == b.offset;
+
+    result |= txt_line_pos_is_end_of_line(buffer, a) &&
+        a.line_idx + 1 == b.line_idx &&
+        b.offset == 0;
+
+    return result;
 }
 
 // STUDY(fede): The entire file is stored in memory right now,
 //      is there a common alternative, is there any *good* alternative?
 //      File streaming?
 internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
+    assert(str.size);
+
     TXT_Buffer *buffer = txt_get_buffer_for_str(arena, text, str);
 
+    u64 piece_newline_count = 0; 
+
+    // NOTE(fede): The piece should include start and end bytes.
+    //      Like so:
+    //          [start, end] <- inclusive
+    //      Not: 
+    //          [start, end) <- exclusive
     TXT_LinePos start = {0};
-    start.newline_idx = buffer->newline_count - 1;
-    start.offset = buffer->count - buffer->line_starts[buffer->newline_count - 1]; 
+    start.line_idx = buffer->line_count - 1;
+    start.offset = buffer->count - buffer->line_starts[start.line_idx]; 
+
+    TXT_LinePos end = {0};
 
     for (u64 i = 0; i < str.size; i++) {
+        // NOTE(fede): Set the line idx to the last inserted byte line idx, if 
+        // the last byte is a '\n', we don't want it to have the end.line_idx be
+        // on the next line. This reassures us of inclusive ranges, not exclusive.
+        end.line_idx = buffer->line_count - 1;
+
         u64 buf_idx = i + buffer->count;
         if (str.str[i] == '\n') {
-            buffer->line_starts[buffer->newline_count] = buf_idx;
-            buffer->newline_count++;
+            // The next byte is the start of a line
+            buffer->line_starts[buffer->line_count] = buf_idx + 1;
+            buffer->line_count++;
+
+            piece_newline_count++;
         }
 
         // STUDY perf
@@ -97,21 +212,24 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
 
     buffer->count += str.size;
 
-    TXT_LinePos end = {0};
-    end.newline_idx = buffer->newline_count;
-    end.offset = buffer->count - buffer->line_starts[buffer->newline_count]; 
+    // NOTE(fede): The -1 is because the range is inclusive: [start, end]
+    end.offset = buffer->count - buffer->line_starts[end.line_idx] - 1; 
 
-    TXT_PieceNode *piece_n = txt_get_piece_n(arena, text);
+#ifdef VARED_INTERNAL
+    if (str.size == 1) {
+        assert(start.line_idx == end.line_idx);
+        assert(start.offset == end.offset);
+    }
+#endif // VARED_INTERNAL
 
-    piece_n->v = (TXT_Piece){
+    TXT_Piece piece = (TXT_Piece){
         .buffer = buffer,
         .start = start,
         .end = end,
         .size = str.size,
+        .newline_count = piece_newline_count,
     };
 
-    u64 offset = at;
-    TXT_PieceNode *piece_n_at = text->first; 
     /*
      *  Offset becomes the offset from the start of piece_n_at, to the place 
      *  where we want to insert the new piece: 
@@ -127,198 +245,98 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
      *                 |_______________|
      *                 |      off      |
      */
-    // TODO(fede): if this is at a limit of two pieces, then instead of inserting 
-    //      a node in the middle, it would delete the right one, insert the new
-    //      one, and add the right one again.
-    for (; piece_n_at != 0 && piece_n_at->v.size <= offset;
-            piece_n_at = piece_n_at->next, offset -= piece_n_at->v.size) {
+    u64 offset = at;
+    TXT_PieceNode *piece_n_at = text->first; 
+    for (; piece_n_at != 0; piece_n_at = piece_n_at->next) {
+        if (piece_n_at->v.size >= offset)
+            break;
+        offset -= piece_n_at->v.size;
     }
 
     // Split the piece.
+    //
+    // TODO(fede): if this is at a limit of two pieces, then instead of inserting 
+    //      a node in the middle, it would delete the right one, insert the new
+    //      one, and add the right one again.
     if (piece_n_at) {
-        u64 size_l = offset; 
-        u64 size_r = piece_n_at->v.size - size_l;
+        TXT_Piece *piece_at = &piece_n_at->v;
+        if (piece_at->buffer == buffer && offset == piece_at->size) {
+            if (txt_line_pos_is_continuation(buffer, piece_at->end, start)) {
+                *piece_at = (TXT_Piece) {
+                    .buffer = buffer,
+                    .start = piece_at->start,
+                    .end = end,
+                    .size = piece_at->size + piece.size,
+                    .newline_count = piece_at->newline_count + piece.newline_count,
+                };
 
-        /*
-         *  insert_pos becomes the line pos relative to piece_n_at where the 
-         *  offset is (where we want to insert)
-         *
-         *      pn = piece_n_at
-         *      \n = line starts
-         *      i.off = insert_pos.offset
-         *      l1 = insert_pos.line
-         * 
-         *              pn.start                  pn.end
-         *         l0      |      l1                 |
-         *          |______|_______|_________________|
-         *                 |       |       |         |
-         *                         |_______|
-         *                         | i.off |
-         *
-         */
-        TXT_LinePos insert_pos = txt_advance_line_pos(buffer, piece_n_at->v.start, offset);
-
-        TXT_PieceNode *insertion_node = piece_n_at;
-        if (size_l) {
-            TXT_PieceNode *left_n = txt_get_piece_n(arena, text);
-
-            left_n->v = (TXT_Piece){
-                .buffer = piece_n_at->v.buffer,
-                .start = piece_n_at->v.start,
-                .end = insert_pos,
-            };
-
-            DLL_Insert(text->first, text->last, insertion_node, left_n);
-            insertion_node = left_n;
-
-            insert_pos.offset++;
+                return;
+            } else {
+                piece_n_at = piece_n_at->next;
+            }
         }
+    }
 
-        DLL_Insert(text->first, text->last, insertion_node, piece_n);
-        insertion_node = piece_n;
+    TXT_PieceNode *piece_n = txt_get_piece_n(arena, text);
+    piece_n->v = piece;
 
-        if (size_r) {
-            TXT_PieceNode *right_n = txt_get_piece_n(arena, text);
-
-            right_n->v = (TXT_Piece){
-                .buffer = piece_n_at->v.buffer,
-                .start = insert_pos,
-                .end = piece_n_at->v.end,
-            };
-
-            DLL_Insert(text->first, text->last, insertion_node, right_n);
-        } else {
-            // TODO(fede): We can merge with this piece if the buffer is the same
-        }
-
-        txt_remove_piece_n(text, piece_n_at);
+    if (piece_n_at) {
+        TXT_PieceNode *gap = txt_split_piece_n(arena, text, piece_n_at, offset, 0);
+        DLL_Insert(text->first, text->last, gap, piece_n);
     } else {
         DLL_PushBack(text->first, text->last, piece_n);
     }
 }
 
+internal u64 txt_delete_from_node(
+        Arena *arena, TXT_Text *text,
+        TXT_PieceNode *node, u64 at, u64 n) {
+    TXT_PieceNode *gap = txt_split_piece_n(arena, text, node, at, n);
+
+    assert(node);
+    assert(n);
+
+    TXT_Piece *piece = &node->v;
+    assert(at < piece->size);
+
+    u64 n_deleted = n;
+    if (piece->size - at - n <= 0) {
+        n_deleted = piece->size - at;
+    }
+
+    return n_deleted;
+}
+
 internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n) {
     u64 offset = at;
-    TXT_PieceNode *first_to_delete = text->first;
-    for (; first_to_delete != 0, first_to_delete->v.size <= offset;
-            first_to_delete = first_to_delete->next, offset -= first_to_delete->v.size) {
-    } 
-    TXT_LinePos start = txt_advance_line_pos(
-            first_to_delete->v.buffer,
-            first_to_delete->v.start,
-            offset);
-    u64 new_first_piece_size = offset;
-
-    offset = n;
-    u32 pieces_to_delete_fully = 0;
-    TXT_PieceNode *last_to_delete = first_to_delete;
-    for (; last_to_delete != 0, last_to_delete->v.size <= offset;
-            last_to_delete = last_to_delete->next, offset -= last_to_delete->v.size) {
-        pieces_to_delete_fully++;
-    } 
-    pieces_to_delete_fully--;
-
-    TXT_LinePos end = txt_advance_line_pos(
-            last_to_delete->v.buffer,
-            last_to_delete->v.start,
-            offset);
-    u64 new_end_piece_size = last_to_delete->v.size - offset;
-
-    {
-        TXT_PieceNode *delete = first_to_delete->next;
-        for (u32 i = 0; i < pieces_to_delete_fully; i++) {
-            TXT_PieceNode *delete_next = delete->next;
-            txt_remove_piece_n(text, delete);
-            delete = delete_next;
-        }
-
-        assert(!pieces_to_delete_fully && first_to_delete == last_to_delete || 
-                pieces_to_delete_fully && delete == last_to_delete);
+    TXT_PieceNode *delete_n = text->first;
+    for (; delete_n != 0; delete_n = delete_n->next) {
+        if (delete_n->v.size > offset)
+            break;
+        offset -= delete_n->v.size;
     }
 
-    {
-        if (new_first_piece_size) {
-            TXT_PieceNode *new_n = txt_get_piece_n(arena, text);
-            new_n->v = first_to_delete->v;
-            new_n->v.end = start;
-            new_n->v.size = new_first_piece_size;
+    u64 n_deleted = 0;
+    for (; delete_n != 0; delete_n = delete_n->next) {
+        n_deleted += txt_delete_from_node(arena, text, delete_n, offset, n - n_deleted);
+
+        if (n_deleted >= n) {
+            assert(n_deleted == n);
+            break;
         }
-        txt_remove_piece_n(text, first_to_delete);
 
-        if (new_end_piece_size) {
-            TXT_PieceNode *new_n = txt_get_piece_n(arena, text);
-            new_n->v = last_to_delete->v;
-            new_n->v.start = end;
-            new_n->v.size = new_end_piece_size;
-        }
-        txt_remove_piece_n(text, last_to_delete);
-    }
-
-    u64 deleted_amount = 0;
-    for (TXT_PieceNode *delete_n = first_to_delete;
-            deleted_amount < n, delete_n != 0;
-            delete_n = delete_n->next) {
-        TXT_Piece *delete = &delete_n->v;
-        TXT_Buffer *buffer = delete->buffer;
-
-        {
-            TXT_LinePos left_end = start;
-            if (left_end.offset == 0) {
-                assert(left_end.newline_idx > 0);
-                left_end.offset = buffer->line_starts[left_end.newline_idx] -
-                    buffer->line_starts[left_end.newline_idx - 1];
-                left_end.newline_idx--;
-            } else {
-                left_end.offset--;
-            }
-
-            TXT_PieceNode *insertion_n = delete_n;
-            if (left_end.newline_idx > delete->start.newline_idx || 
-                    left_end.newline_idx == delete->start.newline_idx && 
-                    left_end.offset > delete->start.offset) {
-
-                TXT_PieceNode *left_n = txt_get_piece_n(arena, text);
-
-                left_n->v = (TXT_Piece){
-                    .buffer = buffer,
-                    .start = delete->start,
-                    .end = left_end,
-                };
-
-                DLL_Insert(text->first, text->last, insertion_n, left_n);
-                insertion_n = left_n;
-            }
-
-            TXT_LinePos right_start = end;
-            if (right_start.newline_idx < delete->end.newline_idx || 
-                    right_start.newline_idx == delete->end.newline_idx && 
-                    right_start.offset < delete->end.offset) {
-
-                TXT_PieceNode *right_n = txt_get_piece_n(arena, text);
-
-                right_n->v = (TXT_Piece){
-                    .buffer = buffer,
-                    .start = right_start,
-                    .end = end,
-                };
-
-                DLL_Insert(text->first, text->last, insertion_n, right_n);
-            }
-
-            txt_remove_piece_n(text, delete_n);
-        }
+        offset = 0;
     }
 }
 
 // TODO(fede): Cache this?
 internal u64 txt_get_n_lines(TXT_Text *text) {
-    u64 result = 0;
+    u64 result = 1;
     for (TXT_PieceNode *piece_n = text->first; 
             piece_n != 0; 
             piece_n = piece_n->next) {
         TXT_Piece *piece = &piece_n->v;
-        u64 n_lines = piece->end.newline_idx - piece->start.newline_idx + 1; // +-1?
-        result += n_lines;
+        result += piece->newline_count;
     }
 
     return result;
@@ -328,17 +346,25 @@ internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
     u64 result = 0;
     u64 line_idx = 0;
     TXT_PieceNode *piece_n = text->first;
+    if (!piece_n)
+        return 0;
+
     for (; piece_n != 0; 
             piece_n = piece_n->next) {
         TXT_Piece *piece = &piece_n->v;
-        u64 n_lines = piece->end.newline_idx - piece->start.newline_idx; // +-1?
+        u64 n_line_starts = txt_piece_line_start_count(piece);
 
-        if (line_idx + n_lines >= row) {
+        if (line_idx + n_line_starts >= row) {
             break;
         }
 
-        line_idx += n_lines;
+        line_idx += piece->newline_count;
         result += piece->size;
+    }
+
+    if (!piece_n) {
+        assert(line_idx == row);
+        return result;
     }
 
     /*
@@ -357,76 +383,156 @@ internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
 
     TXT_Piece *piece = &piece_n->v;
     TXT_Buffer *buffer = piece->buffer;
-    TXT_LinePos target_line = piece->start;
+    TXT_LinePos buf_line = piece->start;
     for (; line_idx < row; line_idx++) {
-        // Reached the end, return the line offset number basically
-        if (target_line.newline_idx + 1 == buffer->newline_count) {
-            break;
-        }
+        assert(buf_line.line_idx < buffer->line_count);
 
-        u64 amnt = 
-            buffer->line_starts[target_line.newline_idx + 1] -
-            buffer->line_starts[target_line.newline_idx];
-        amnt -= target_line.offset; 
+        // NOTE(fede): if line_idx needs to be incremented, then the next one 
+        //      must be available.
+        assert(buf_line.line_idx + 1 < buffer->line_count);
 
-        result += amnt;
+        u64 buffer_line_size = 
+            buffer->line_starts[buf_line.line_idx + 1] - 
+            buffer->line_starts[buf_line.line_idx];
+        buffer_line_size -= buf_line.offset; 
 
-        target_line.newline_idx++;
-        target_line.offset = 0;
+        result += buffer_line_size;
+
+        buf_line.line_idx++;
+        buf_line.offset = 0;
     }
 
     return result;
 }
 
+// [start, end]
 internal String8 txt_get_buffer_substr(
         TXT_Buffer *buffer,
         TXT_LinePos start, TXT_LinePos end) {
-    u64 buf_offset = buffer->line_starts[start.newline_idx] + start.offset;
-    u64 size = 
-        buffer->line_starts[end.newline_idx] - 
-        buffer->line_starts[start.newline_idx];
-    size += end.offset - start.offset;
+    assert(start.line_idx < end.line_idx ||
+            start.line_idx == end.line_idx && 
+            start.offset <= end.offset);
 
+    /*
+     *  NOTE(fede): To make sure the +-1 is correct, check with this 
+     *      complicated diagram that is kind of readable.
+     *
+     *                     l  pn.start    l       l     pn.end
+     *                     |     |        |       |        |
+     *               ..._____________________________________________...
+     *                    ||     |       |       ||        |
+     *                   \n|     |      \n      \n|        |
+     *  pn.start.offset => [----][-------------------------] <== size
+     *                     |  6              27   |        |
+     *                     |                      |        |
+     *      end - start => [----------------------][-------] <= pn.end.offset
+     *                                24               9
+     *                                  
+     *      pn.start.line_idx: n
+     *      pn.start.offset: 6
+     *      pn.end.line_idx: n + 2
+     *      pn.end.offset: 9
+     *
+     *  NOTE(fede): Since we are using unsigned integers, change the 
+     *          -(line_start-1) to (-line_start + 1) in code
+     *
+     *      pn.end.line_start - (pn.start.line_start - 1) = 24
+     *
+     *      24 + pn.end.offset = 24 + 9 = 33
+     *      33 - pn.start.offset = 33 - 6 = 27
+     *
+     *      size = 27
+     *
+     * */
+
+    u64 size = 
+        buffer->line_starts[end.line_idx] -
+        buffer->line_starts[start.line_idx] + 1;
+    size += end.offset;
+    size -= start.offset;
+
+    u64 buf_offset = buffer->line_starts[start.line_idx] + start.offset;
     return str8(buffer->buf + buf_offset, size);
 }
 
+// NOTE(fede): Ends with \n if its not the end of text
 internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
     u64 line_idx = 0;
     TXT_PieceNode *piece_n = text->first;
-    for (; piece_n != 0; 
-            piece_n = piece_n->next) {
-        TXT_Piece *piece = &piece_n->v;
-        u64 n_lines = piece->end.newline_idx - piece->start.newline_idx; // +-1?
 
-        if (line_idx + n_lines >= row) {
-            break;
+    // NOTE(fede): Get the LinePos of the start of the `row` 
+    TXT_LinePos line_start_pos = {0}; 
+    {
+        for (; piece_n != 0; 
+                piece_n = piece_n->next) {
+            TXT_Piece *piece = &piece_n->v;
+            u64 n_line_starts = txt_piece_line_start_count(piece);
+
+            if (line_idx + n_line_starts >= row) {
+                break;
+            }
+
+            line_idx += piece->newline_count;
         }
 
-        line_idx += n_lines;
+        if (!piece_n) 
+            return str8(0, 0);
+
+        TXT_Piece *piece = &piece_n->v;
+        TXT_Buffer *buffer = piece->buffer;
+
+        line_start_pos = piece->start;
+        for (; line_idx < row; line_idx++) {
+            if (line_start_pos.line_idx >= buffer->line_count) {
+                assert(line_start_pos.line_idx == buffer->line_count);
+                break;
+            }
+
+            line_start_pos.line_idx++;
+            line_start_pos.offset = 0;
+        }
+
+        assert(line_start_pos.line_idx < piece->end.line_idx ||
+                line_start_pos.line_idx == piece->end.line_idx &&
+                line_start_pos.offset <= piece->end.offset);
     }
 
-    return S("");
 
-    /* TODO(fede): Use the buffer substring func to do this
-    TXT_Piece *piece = &piece_n->v;
-    TXT_Buffer *buffer = piece->buffer;
+    // NOTE(fede): Do the string cats
+    String8 result = S("");
+    {
+        TXT_Piece *piece = &piece_n->v;
+        TXT_Buffer *buffer = piece->buffer;
 
-    u64 buffer_line_idx = piece->start.line_idx;
-    buffer_line_idx += row - line_idx;
-    buffer_line_idx = max(buffer_line_idx, buffer->newline_count);
+        // TODO(fede): Use scratch arena and implement pop
+        while (true) {
+            TXT_LinePos line_end_pos = piece->end;
+            if (line_start_pos.line_idx < line_end_pos.line_idx) {
+                line_end_pos.offset =
+                    buffer->line_starts[line_start_pos.line_idx + 1] -
+                    buffer->line_starts[line_start_pos.line_idx] - 1;
+                line_end_pos.line_idx = line_start_pos.line_idx;
+            }
 
-    // TODO(fede): Use scratch arena and implement pop
-    String8 result = S8("");
-    while (true) {
-        u8 *line = buffer->buf + buffer->line_starts[buffer_line_idx];
-        String8 line_substr = 
-        result = str8_cat(result, line_substr);
+            String8 buf_substr = 
+                txt_get_buffer_substr(buffer, line_start_pos, line_end_pos);
 
-        if (buffer_line_idx < piece->end.newline_idx) {
-            break;
+            result = str8_cat(arena, result, buf_substr);
+
+            if (txt_line_pos_is_end_of_line(buffer, line_end_pos)) {
+                break;
+            }
+
+            piece_n = piece_n->next;
+            if (!piece_n) {
+                break;
+            }
+
+            piece = &piece_n->v;
+            line_start_pos = piece->start;
+            buffer = piece->buffer;
         }
     }
 
     return result;
-    */
 }

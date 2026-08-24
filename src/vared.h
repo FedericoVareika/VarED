@@ -40,13 +40,8 @@ typedef struct {
     f32 font_size;
     FP_Handle font;
 
-    Rect2 text_window;
-    LineBuffer text;
-    u32 cursor_line;
-    u32 cursor_char;
-
     Arena *text_arena;
-    TXT_Text *text_;
+    TXT_Text *text;
     u32 cursor_row;
     u32 cursor_col;         // in characters (utf-8)
     u32 cursor_col_bytes;   // in bytes
