@@ -1,6 +1,14 @@
 #ifndef BASE_STRING_H
 #define BASE_STRING_H
 
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Character handling
+
+internal inline bool u8_is_whitespace(u8 c);
+
+////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): Strings
+
 typedef struct {
     u8 *str;
     u64 size;
@@ -13,6 +21,9 @@ internal String8 str8(u8 *str, u64 size);
 
 internal String8 str8_skip(String8 str, u64 n);
 internal String8 str8_cat(Arena *arena, String8 a, String8 b);
+internal String8 str8_strip_left(String8 v);
+internal String8 str8_strip_right(String8 v);
+internal String8 str8_strip(String8 v);
 
 ////////////////////////////////////////////////////////////////////////////////
 // NOTE(fede): Cstr

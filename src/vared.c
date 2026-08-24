@@ -18,47 +18,6 @@
 
 #include "vared.h"
 
-internal Line line_alloc(Arena *arena, u32 size) {
-    Line line = {0};
-    line.buf = push_array(arena, u8, size);
-    line.count = 0;
-    line.size = size;
-    return line;
-}
-
-internal void shift_at_cursor(Line *line, u32 cursor, int n) {
-    assert(line->size >= line->count + n);
-    assert(cursor <= line->count);
-    assert(cursor + n < line->size);
-    assert((i64)cursor + n >= 0);
-
-    u8 *src = line->buf + cursor;
-    u8 *dst = src + n;
-    u64 count = line->count - cursor; 
-    mem_move(dst, src, count);
-    line->count += n;
-}
-
-internal void insert_char(Line *line, u32 *cursor, char c) {
-    shift_at_cursor(line, *cursor, 1);
-    line->buf[*cursor] = c;
-    *cursor = *cursor + 1;
-}
-
-internal Line *new_line(Arena *arena, LineBuffer *text, u32 at) {
-    // TODO(fede): Real text data structure, this assert fires when opening a large 
-    //      file
-    assert(text->count < text->size);
-    for (u32 i = text->count; i > at; i--) {
-        text->lines[i] = text->lines[i - 1];
-    }
-
-    text->lines[at] = line_alloc(arena, kilobytes(1));
-    text->count++;
-
-    return &text->lines[at];
-}
-
 void editor_init(EditorParams *params) {
     // STUDY(fede): change to *params->memory = arena_bootstrap_struct(EditorState, arena)
     // STUDY(fede): change commit/reserve sizes for this
@@ -106,11 +65,33 @@ void editor_update_and_render(EditorParams *params) {
             } break;
 
             case WMKey_BACKSPACE: {
+                String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                u64 n = 0;
+                if (state->cursor_row == 0 && state->cursor_col_bytes == 0)
+                    break;
+                do {
+                    if (state->cursor_col_bytes > 0) {
+                        state->cursor_col_bytes--;
+                    } else {
+                        if (state->cursor_row)
+                            state->cursor_row--;
+
+                        line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                        state->cursor_col_bytes = line.size - 1; // before the \n
+                    }
+                    n++;
+                } while (!utf8_byte_is_header(line.str[state->cursor_col_bytes]));
+
+                u64 at = txt_get_line_offset(state->text, state->cursor_row);
+                at += state->cursor_col_bytes;
+                txt_delete(state->text_arena, state->text, at, n);
             } break;
 
             case WMKey_LEFT: {
                 // TODO(fede): Scratch arena.
                 String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                if (state->cursor_row == 0 && state->cursor_col_bytes == 0)
+                    break;
                 do {
                     if (state->cursor_col_bytes > 0) {
                         state->cursor_col_bytes--;
@@ -159,6 +140,8 @@ void editor_update_and_render(EditorParams *params) {
 
                     // TODO(fede): Do optically aligned, instead of byte aligned.
                     String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                    state->cursor_col_bytes = min(line.size - 1, state->cursor_col_bytes);
+
                     while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
                         state->cursor_col_bytes--;
                     }
@@ -170,6 +153,8 @@ void editor_update_and_render(EditorParams *params) {
 
                     // TODO(fede): Do optically aligned, instead of byte aligned.
                     String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                    state->cursor_col_bytes = min(line.size - 1, state->cursor_col_bytes);
+
                     while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
                         state->cursor_col_bytes--;
                     }
@@ -181,8 +166,8 @@ void editor_update_and_render(EditorParams *params) {
                     !(event.modifiers & WMModifier_shift) &&
                     !(event.modifiers & WMModifier_alt)) {
                     // TODO(fede): Use scratch arena and implement pop
-                    // TODO(fede): Strip out whitespace, impl a string func for this.
                     String8 path = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                    path = str8_strip(path);
 
                     // TODO(fede): Use scratch arena and implement pop
                     char *path_cstr = cstr_from_str8(frame_arena, path);
@@ -301,6 +286,8 @@ void editor_update_and_render(EditorParams *params) {
                     UI_PrefHeight(ui_em(1.2, 1))
                     UI_PrefWidth(ui_tc(text_padding_px, 0))
                 {
+                    ui_spacer(ui_em(1, 0));
+
                     for (u32 line_idx = 0; 
                             line_idx < txt_get_n_lines(state->text);
                             line_idx++) {
@@ -311,7 +298,6 @@ void editor_update_and_render(EditorParams *params) {
                                 str8_from_u32(frame_arena, line_idx));
 
                         UI_Box *line_box = ui_box_make(
-                                // ((state->cursor_row == line_idx) ? UI_BoxFlag_DrawBorder : 0) |
                                 UI_BoxFlag_DrawText,
                                 key_string); 
                         ui_box_equip_string(line_box, display_string);
@@ -338,10 +324,10 @@ void editor_update_and_render(EditorParams *params) {
                                 f32 cursor_width = ui_top_font_size() / 10;
                                 Rect2 cursor_rect = (Rect2){
                                     .V4 = V4(
-                                            line_box->rect.min.x + advance + text_padding_px,
-                                            line_box->rect.min.y,
-                                            line_box->rect.min.x + advance + cursor_width + text_padding_px,
-                                            line_box->rect.max.y),
+                                        line_box->rect.min.x + advance + text_padding_px,
+                                        line_box->rect.min.y,
+                                        line_box->rect.min.x + advance + cursor_width + text_padding_px,
+                                        line_box->rect.max.y),
                                 };
 
                                 r_push_rect2(.pos = cursor_rect);

@@ -517,10 +517,9 @@ int main(void) {
             // case SDL_KEYUP:
             case SDL_KEYDOWN: {
                 SDL_KeyboardEvent key_event = event.key;
-                PrintKeyInfo(&key_event);
+                // PrintKeyInfo(&key_event);
                 SDL_Keymod mod = key_event.keysym.mod;
 
-                // TODO(fede): push-back macro
                 WMEventNode *event_n = push_struct(event_arena, WMEventNode);
                 SLL_PushBack(event_list->first, event_list->last, event_n);
                 event_list->count++;

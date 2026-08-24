@@ -272,6 +272,7 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
 
                 return;
             } else {
+                offset -= piece_n_at->v.size;
                 piece_n_at = piece_n_at->next;
             }
         }

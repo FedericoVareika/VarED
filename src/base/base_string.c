@@ -1,4 +1,12 @@
 
+internal inline bool u8_is_whitespace(u8 c) {
+    // 9..13:
+    // Horizontal tab, line feed, vertical tab, form feed, carriage return
+    return 
+        c >= 9 && c <= 13 || 
+        c == ' ';
+}
+
 internal String8 str8(u8 *str, u64 size) {
     return (String8){
         .str = str,
@@ -22,8 +30,30 @@ internal String8 str8_cat(Arena *arena, String8 a, String8 b) {
     return result;
 }
 
+internal String8 str8_strip_left(String8 v) {
+    u32 i = 0; 
+    while (i < v.size && u8_is_whitespace(v.str[i])) {
+        i++;
+    }
+
+    return str8(v.str + i, v.size - i);
+}
+
+internal String8 str8_strip_right(String8 v) {
+    u32 i = v.size; 
+    while (i > 0 && u8_is_whitespace(v.str[i - 1])) {
+        i--;
+    }
+
+    return str8(v.str, i);
+}
+
+internal String8 str8_strip(String8 v) {
+    return str8_strip_right(str8_strip_left(v));
+}
+
 internal String8 str8_from_u32(Arena *arena, u32 v) {
-    // TODO(fede): There has to be a better way    
+    // TODO(fede): There has to be a better way
     
     u64 size = 0;
     u32 scratch = v;
