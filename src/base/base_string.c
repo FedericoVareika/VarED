@@ -224,14 +224,18 @@ internal u32 utf8_encode(u32 character, u8 *dst) {
 
         u32 data_mask = utf8_byte_class_data_mask[byte_class];
 
-        *dst = utf8_byte_class_mask[byte_class];
-        *dst |= character & data_mask;
+        if (original_dst) {
+            *dst = utf8_byte_class_mask[byte_class];
+            *dst |= character & data_mask;
+        }
         
         character >>= 6; 
     }
 
 #if VARED_SLOW
-    assert(original_dst == dst + 1);
+    if (original_dst) {
+        assert(original_dst == dst + 1);
+    }
 #endif // VARED_SLOW
        
     return bytes_to_write;

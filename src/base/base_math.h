@@ -1,6 +1,7 @@
 #ifndef VARED_MATH_H
 #define VARED_MATH_H
 
+#define V2(x, y) ((v2){(x), (y)})
 typedef struct {
     union {
         struct {
@@ -19,7 +20,7 @@ typedef struct {
     };
 } v2u;
 
-#define v3(x, y, z) ((V3){(x), (y), (z)})
+#define V3(x, y, z) ((v3){(x), (y), (z)})
 #define expand_v3(v) (v).x, (v).y, (v).z
 typedef struct {
     union {
@@ -30,7 +31,7 @@ typedef struct {
     };
 } v3;
 
-#define v4(x, y, z, w) ((V4){x, y, z, w})
+#define V4(x, y, z, w) ((v4){x, y, z, w})
 typedef struct {
     union {
         struct {
@@ -70,8 +71,8 @@ internal inline v2 v2_neg(v2 a);
 internal inline f32 v2_dot(v2 a, v2 b);
 internal inline f32 v2_length2(v2 v);
 internal inline v2 v2_reflect(v2 a, v2 normal, f32 bounce);
-#define V2_INF ((v2){F32_INF, F32_INF})
-#define V2_NEG_INF ((v2){-F32_INF, -F32_INF})
+#define V2_INF (V2(F32_INF, F32_INF))
+#define V2_NEG_INF (V2(-F32_INF, -F32_INF))
 
 internal inline v2u v2u_add(v2u a, v2u b);
 internal inline v2u v2u_sub(v2u a, v2u b);

@@ -115,7 +115,9 @@ typedef struct {
     ((f) = (l) = (n), (n)->next = (nil), (n)->prev = (nil)) : \
     (IsNil(p, nil) ? \
       ((n)->next = (f), (n)->prev = (nil), (f)->prev = (n), (f) = (n)) : \
-      ((n)->prev = (p), (n)->next = (p)->next, (p)->next = (n), (p) == (l) ? (l) = (n) : ((p)->next->prev = (n))))
+      ((p) == (l) ? \
+       ((n)->prev = (p), (n)->next = (p)->next, (p)->next = (n), (l) = (n)) : \
+       ((n)->prev = (p), (n)->next = (p)->next, (p)->next->prev = (n), (p)->next = (n))))
 
 #define DLL_Insert_NP(f, l, p, n, next, prev) DLL_Insert_NP_nil(f, l, p, n, next, prev, 0)
 #define DLL_Insert_nil(f, l, p, n, nil) DLL_Insert_NP_nil(f, l, p, n, next, prev, nil)
@@ -126,7 +128,7 @@ typedef struct {
 #define DLL_PushBack_nil(f, l, n, nil) DLL_PushBack_NP_nil(f, l, n, next, prev, nil)
 #define DLL_PushBack(f, l, n) DLL_PushBack_NP_nil(f, l, n, next, prev, 0)
 
-#define DLL_PushFront_NP_nil(f, l, n, next, prev, nil) DLL_Insert_NP_nil(l, f, f, n, prev, next, nil)
+#define DLL_PushFront_NP_nil(f, l, n, next, prev, nil) DLL_Insert_NP_nil(l, f, nil, n, prev, next, nil)
 #define DLL_PushFront_nil(f, l, n, nil) DLL_PushFront_NP_nil(f, l, n, next, prev, nil)
 #define DLL_PushFront(f, l, n) DLL_PushFront_NP_nil(f, l, n, next, prev, 0)
 
@@ -136,7 +138,7 @@ typedef struct {
      ((f) = (f)->next, (f)->prev = (nil)) : \
      ((n) == (l) ? \
       ((l) = (l)->prev, (l)->next = (nil)) : \
-      ((n)->prev->next = (n)->next)))
+      ((n)->prev->next = (n)->next, (n)->next->prev = (n)->prev)))
 
 #define DLL_Remove_nil(f, l, n, nil) DLL_Remove_NP_nil(f, l, n, next, prev, nil)
 #define DLL_Remove(f, l, n) DLL_Remove_nil(f, l, n, 0)
@@ -154,6 +156,10 @@ typedef struct {
 #define SLL_PushBack_N_nil(f, l, n, next, nil) SLL_Insert_N_nil(f, l, l, n, next, nil)
 #define SLL_PushBack_nil(f, l, n, nil) SLL_PushBack_N_nil(f, l, n, next, nil)
 #define SLL_PushBack(f, l, n) SLL_PushBack_nil(f, l, n, 0)
+
+#define SLL_PushFront_N_nil(f, l, n, next, nil) SLL_Insert_N_nil(f, l, nil, n, next, nil)
+#define SLL_PushFront_nil(f, l, n, nil) SLL_PushFront_N_nil(f, l, n, next, nil)
+#define SLL_PushFront(f, l, n) SLL_PushFront_nil(f, l, n, 0)
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): DeferLoop
