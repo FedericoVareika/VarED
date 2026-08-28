@@ -61,9 +61,9 @@ internal void arena_clear(Arena *arena) {
     assert(arena->commited >= arena->commit_size);
     assert(arena->commited % arena->commit_size == 0);
 
-    u64 decommit_size = arena->commited - arena->commit_size;
-    assert(mem_decommit(arena->base + arena->commit_size, decommit_size));
-    arena->commited = arena->commit_size;
+    // u64 decommit_size = arena->commited - arena->commit_size;
+    // assert(mem_decommit(arena->base + arena->commit_size, decommit_size));
+    // arena->commited = arena->commit_size;
     arena->pos = ARENA_HEADER_SIZE;
 
     mem_zero(arena->base + arena_pos(arena), arena->commited - arena_pos(arena));

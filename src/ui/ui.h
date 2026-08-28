@@ -76,7 +76,7 @@ struct UI_Box {
     String8 string;
 
     String8 display_string;
-    FC_GlyphRun *display_run;
+    FC_GlyphRun *display_run_;
 
     R_Bucket *r_bucket;
 
@@ -138,6 +138,7 @@ struct UI_State {
     
     UI_Box *first_free_box;
 
+    u32 n_boxes;
     u32 box_table_size;
     UI_BoxHashSlot *box_table;
 
@@ -212,6 +213,7 @@ internal inline v4 ui_darken_color(v4 color, f32 t);
 internal inline v4 ui_lighten_color(v4 color, f32 t);
 
 // Font 
+internal inline FC_GlyphRun *ui_get_box_display_run(UI_Box *box);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Common widgets

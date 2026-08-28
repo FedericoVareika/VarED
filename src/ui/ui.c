@@ -6,10 +6,10 @@ global UI_State *ui_state = 0;
 #undef MACROS_C
 
 internal void ui_init(void) {
-    Arena *arena = arena_alloc();
+    Arena *arena = arena_alloc(.commit_size=megabytes(1));
     ui_state = push_struct(arena, UI_State);
     ui_state->arena = arena;
-    ui_state->build_arena = arena_alloc();
+    ui_state->build_arena = arena_alloc(.commit_size=megabytes(1));
 
     ui_state->frame_idx = 0;
 
@@ -132,6 +132,8 @@ internal UI_Box *ui_box_from_key(UI_BoxFlags flags, UI_Key key) {
         DLL_PushBack_nil(result->parent->first, result->parent->last, result, &ui_nil_box);
     }
 
+    ui_state->n_boxes++;
+
     return result;
 } 
 
@@ -172,10 +174,7 @@ internal void ui_box_equip_string(UI_Box *box, String8 string) {
 
     if (!!(box->flags & UI_BoxFlag_DrawText)) {
         box->display_string = ui_display_string(string);
-        box->display_run = fc_get_string_glyph_run(
-                box->font_handle,
-                box->display_string,
-                box->font_size);
+        ui_get_box_display_run(box);
     }
 }
 
@@ -296,6 +295,7 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
 
 internal void ui_begin_build(v2 window_dim, WMEventList *events, f32 dt) {
     arena_clear(ui_state->build_arena);
+    ui_state->n_boxes = 0;
 
     ui_state->frame_idx++;
     ui_state->dt = dt;
@@ -396,11 +396,8 @@ internal void ui_layout_independent(UI_Box *box, UI_Axis2 axis) {
 
     } else if (size.kind == UI_SizeKind_TextContent) {
         assert(axis == UI_Axis2_X);
-        box->display_run = fc_get_string_glyph_run(
-                box->font_handle,
-                box->display_string,
-                box->font_size);
-        box->computed_size[axis] = box->display_run->advance + size.value * 2;
+        FC_GlyphRun *display_run = ui_get_box_display_run(box);
+        box->computed_size[axis] = display_run->advance + size.value * 2;
     }
 
     ui_layout_independent(box->next, axis);
@@ -449,7 +446,6 @@ internal void ui_layout_descendant_dependant(UI_Box *box, UI_Axis2 axis) {
     ui_layout_descendant_dependant(box->next, axis);
 }
 
-// TODO
 internal void ui_layout_resolve_conflicts(UI_Box *box, UI_Axis2 axis) {
     if (ui_box_is_nil(box))
         return;
@@ -626,24 +622,27 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     }
 
     if (!!(box->flags & UI_BoxFlag_DrawText)) {
+        // TimeBlock(S8("UI render text"));
+
         // TODO(fede): Text alignment, for now, left aligned.
+        FC_GlyphRun *display_run = ui_get_box_display_run(box);
 
         FP_FontMetrics metrics = fp_get_font_metrics(box->font_handle, box->font_size);
 
         v2 center = (v2) {
-            .x = box->rect.min.x + box->display_run->advance / 2,
+            .x = box->rect.min.x + display_run->advance / 2,
             .y = (box->rect.min.y + box->rect.max.y) / 2,
         };
 
         Rect2 text_rect = rect2_center_dim(
                 center,
-                (v2){ box->display_run->advance, metrics.height });
+                (v2){ display_run->advance, metrics.height });
         v2 text_pos = text_rect.min;
         text_pos.x += box->semantic_size[UI_Axis2_X].value;
         text_pos.y += metrics.ascender;
 
         // TODO font runs do not work anymore when changing font and stuff?
-        for (FC_GlyphPtrNode *glyph_ptr_n = box->display_run->first;
+        for (FC_GlyphPtrNode *glyph_ptr_n = display_run->first;
                 glyph_ptr_n != 0;
                 glyph_ptr_n = glyph_ptr_n->next) {
 
@@ -689,13 +688,14 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
 }
 
 internal void ui_render(void) {
-    TimeFunction;
+    TimeFunctionBandwidth(ui_state->n_boxes * sizeof(UI_Box));
     ui_render_boxes(ui_state->root, R2_INF);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Helpers
 
+// Size
 internal inline f32 ui_get_em(f32 v, f32 font_size) {
     u32 one_em = (u32)((96.0f / 72.0f) * font_size);
     return v * one_em;
@@ -719,6 +719,17 @@ internal inline v4 ui_darken_color(v4 color, f32 t) {
 
 internal inline v4 ui_lighten_color(v4 color, f32 t) {
     return ui_blend_colors(color, RGBA(1, 1, 1, 1), t);
+}
+
+// Font 
+internal inline FC_GlyphRun *ui_get_box_display_run(UI_Box *box) {
+    FC_GlyphRun *result = fc_get_string_glyph_run(
+            box->font_handle,
+            box->display_string,
+            box->font_size);
+    box->display_run_ = result;
+
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////
@@ -815,12 +826,21 @@ internal UI_Comm ui_checkbox(bool *val, String8 str) {
 
             UI_ChildLayoutAxis(UI_Axis2_X)
             UI_PrefHeight(ui_em(1, 1))
-            UI_BackgroundColor(RGBA(0.4, 0.5, 0.5, 1))
         {
+            if (*val) {
+                ui_push_background_color(RGBA(0.4, 0.5, 0.5, 1));
+            }
+
             comm = ui_comm_from_box(ui_box_makef(
                         UI_BoxFlag_Clickable |
                         UI_BoxFlag_DrawBorder |
+                        UI_BoxFlag_HotAnimation |
+                        UI_BoxFlag_ActiveAnimation |
                         (*val ? UI_BoxFlag_DrawBackground : 0), "checkbox"));
+
+            if (*val) {
+                ui_pop_background_color();
+            }
             if (comm.clicked) {
                 *val = !(*val);
             }

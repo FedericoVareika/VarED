@@ -31,7 +31,7 @@ void editor_init(EditorParams *params) {
     *params->memory = state;
 
     // STUDY(fede): change commit/reserve sizes for this
-    state->frame_arena = arena_alloc();
+    state->frame_arena = arena_alloc(.commit_size=megabytes(1));
 
     state->text_arena = arena_alloc();
     state->text = push_struct(state->text_arena, TXT_Text);
@@ -46,6 +46,7 @@ void editor_init(EditorParams *params) {
     ui_init();
 
     state->show_profiler = true;
+    state->cull_lines = true;
 }
 
 void editor_update_and_render(EditorParams *params) {
@@ -275,7 +276,7 @@ void editor_update_and_render(EditorParams *params) {
 
                     if (state->show_profiler) {
                         UI_PrefWidth(ui_pct(1, 1))
-                            UI_PrefHeight(ui_cs(0))
+                            UI_PrefHeight(ui_cs(1))
                         {
                             P_FrameState *p_prev = p_previous_state();
                             u64 total_time = p_prev->end_time - p_prev->start_time;
@@ -286,8 +287,7 @@ void editor_update_and_render(EditorParams *params) {
                             f64 added_pct = 0;
 
                             UI_NamedColumn(S8("__anchors__"))
-                                UI_PrefHeight(ui_em(1, 1))
-                                UI_PrefWidth(ui_pct(total_time_frame_pct, 0.5))
+                                UI_PrefHeight(ui_em(1.2, 1))
                             for (u32 i = 1; i <= p_prev->last_anchor_idx; i++) {
                                 P_Anchor *anchor = &p_prev->anchors[i];
                                 f64 pct = (f64)anchor->exclusive_elapsed_time / (f64)total_time;
@@ -302,13 +302,25 @@ void editor_update_and_render(EditorParams *params) {
                                         UI_Parent(ui_box_makef(UI_BoxFlag_ClipChildren, ""))
                                         ui_box_make(UI_BoxFlag_DrawText, anchor->label);
 
-                                    UI_PrefWidth(ui_em(5, 0))
+                                    UI_PrefWidth(ui_em(5, 1))
                                         ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(state->frame_arena, (u32)(pct * 100)));
 
                                     UI_CornerRadius(0)
                                         UI_BackgroundColor(RGBA(red, !red, 0, 1))
                                         UI_PrefWidth(ui_pct(pct / 2, 1))
                                         ui_box_make(UI_BoxFlag_DrawBackground, S8(""));
+
+                                    if (anchor->processed_byte_count) {
+                                        // f64 seconds = (f64)anchor->inclusive_elapsed_time / (f64)timer_freq;
+                                        // f64 bytes_per_second = (f64)anchor->processed_byte_count / seconds;
+                                        f64 kilobytes = (f64)anchor->processed_byte_count / (f64)kilobytes(1);
+                                        // f64 kilobytes_per_second = bytes_per_second / kilobytes(1);
+
+                                        ui_spacer(ui_pct(1, 0));
+
+                                        UI_PrefWidth(ui_em(5, 0))
+                                            ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(state->frame_arena, (u32)(kilobytes)));
+                                    }
                                 }
                             }
 
@@ -387,7 +399,7 @@ void editor_update_and_render(EditorParams *params) {
                                 if (state->cursor_row == line_idx) {
                                     f32 advance = 0; 
                                     if (display_string.size) {
-                                        FC_GlyphRun *glyph_run = line_box->display_run;
+                                        FC_GlyphRun *glyph_run = ui_get_box_display_run(line_box);
                                         u32 bytes_consumed = 0;
                                         for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
                                                 glyph_ptr_n != 0 && bytes_consumed < state->cursor_col_bytes;

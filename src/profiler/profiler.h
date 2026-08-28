@@ -91,12 +91,14 @@ internal P_FrameState *p_previous_state(void);
         p_construct_block(anchor_label, __COUNTER__ + 1, byte_count);
 #define TimeBlock(anchor_label) TimeBandwidth(anchor_label, 0)
 #define TimeFunction TimeBlock(S8(__func__))
+#define TimeFunctionBandwidth(byte_count) TimeBandwidth(S8(__func__), byte_count)
 
 #else
 
 #define TimeBandwidth(...)
 #define TimeBlock(...)
 #define TimeFunction
+#define TimeFunctionBandwidth(...)
 #define ProfilerClear
 #define ProfilerBegin
 #define ProfilerEnd
