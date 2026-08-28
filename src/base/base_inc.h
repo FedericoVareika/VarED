@@ -5,6 +5,7 @@
 #include "base_math.h"
 #include "base_string.h"
 #include "base_bitmap.h"
+#include "base_perf.h"
 
 #if OS_LINUX
 #include "linux_base_memory.h"

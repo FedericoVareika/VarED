@@ -19,11 +19,11 @@
 #define WINDOW_HEIGHT 1080
 
 global bool global_editor_running = true;
-global u64 performance_frequency;
+global u64 sdl_performance_frequency;
 
 internal inline f64 sdl_get_seconds_elapsed(u64 start_counter,
                                             u64 end_counter) {
-    return (f64)(end_counter - start_counter) / performance_frequency;
+    return (f64)(end_counter - start_counter) / sdl_performance_frequency;
 }
 
 internal void linux_sleep_to_target(u64 last_counter, f64 target_seconds) {
@@ -442,7 +442,7 @@ int main(void) {
     SDL_DisplayMode mode = {0};
     SDL_GetDisplayMode(display_index, 0, &mode); // highest
 
-    performance_frequency = SDL_GetPerformanceFrequency();
+    sdl_performance_frequency = SDL_GetPerformanceFrequency();
 
     /*
     * STUDY(fede): This is 144hz for my machine and probably a lot more.
@@ -490,6 +490,12 @@ int main(void) {
     editor_init(&editor_params);
 
     while (global_editor_running) {
+        // TODO(fede): Should be done in editor code.
+        p_tick();
+        p_begin();
+
+        TimeBlock(S8("Whole Frame"));
+
         WMEventList *event_list = push_struct(event_arena, WMEventList);
         SDL_Event event = {0};
 
@@ -514,22 +520,23 @@ int main(void) {
                 } break;
                 }
             } break;
-            // case SDL_KEYUP:
+            case SDL_KEYUP:
             case SDL_KEYDOWN: {
                 SDL_KeyboardEvent key_event = event.key;
                 // PrintKeyInfo(&key_event);
                 SDL_Keymod mod = key_event.keysym.mod;
 
-                WMEventNode *event_n = push_struct(event_arena, WMEventNode);
-                SLL_PushBack(event_list->first, event_list->last, event_n);
+                WMEventNode *wm_event_n = push_struct(event_arena, WMEventNode);
+                SLL_PushBack(event_list->first, event_list->last, wm_event_n);
                 event_list->count++;
 
-                WMEvent *event = &event_n->v;
+                WMEvent *wm_event = &wm_event_n->v;
 
-                event->kind = WMEventKind_Press;
-                event->key = sdl_get_wm_key(key_event.keysym.sym);
-                event->modifiers = sdl_get_wm_modifiers(mod);
-                event->repeat = key_event.repeat;
+                wm_event->kind = event.type == SDL_KEYDOWN ?
+                    WMEventKind_Press : WMEventKind_Release;
+                wm_event->key = sdl_get_wm_key(key_event.keysym.sym);
+                wm_event->modifiers = sdl_get_wm_modifiers(mod);
+                wm_event->repeat = key_event.repeat;
             } break;
             case SDL_TEXTINPUT: {
                 u8 *text = (u8 *)event.text.text;
@@ -597,8 +604,11 @@ int main(void) {
 
         r_end_frame();
 
+#if 1
         {
-            u64 end_counter = SDL_GetPerformanceCounter();
+            TimeBlock(S8("Sleeping"));
+            // u64 end_counter = SDL_GetPerformanceCounter();
+            u64 end_counter = performance_counter();
 
             f64 work_seconds_elapsed =
                 sdl_get_seconds_elapsed(last_counter, end_counter);
@@ -615,14 +625,18 @@ int main(void) {
             f64 ms_per_frame = seconds_elapsed_for_frame * 1000;
             f64 fps = 1000.0f / ms_per_frame;
 
-            printf("%.02fms/f, %.02ffps \n", ms_per_frame, fps);
+            printf("target: %.02fms/f, actual: %.02fms/f, %.02ffps \n", target_seconds_per_frame * 1000, ms_per_frame, fps);
 #endif
         }
+#endif
 
         arena_clear(event_arena);
+
+        p_end();
     }
 
     SDL_DestroyWindow(window);
     SDL_Quit();
+
     return 0;
 }

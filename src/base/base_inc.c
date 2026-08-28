@@ -4,4 +4,5 @@
 
 #if OS_LINUX
 #include "linux_base_memory.c"
+#include "linux_base_perf.c"
 #endif

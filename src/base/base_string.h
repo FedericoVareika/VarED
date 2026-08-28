@@ -31,6 +31,12 @@ internal String8 str8_strip(String8 v);
 internal u64 cstr_len(char *cstr);
 internal char *cstr_from_str8(Arena *arena, String8 str);
 internal String8 str8_from_cstr(char *cstr);
+internal String8 str8_from_u32(Arena *arena, u32 v);
+internal String8 str8_from_u64(Arena *arena, u64 v);
+
+// TODO
+internal String8 str8_from_f32(Arena *arena, f32 v);
+internal String8 str8_from_f64(Arena *arena, f64 v);
 
 ////////////////////////////////////////////////////////////////////////////////
 // NOTE(fede): UTF-8

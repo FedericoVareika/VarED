@@ -68,11 +68,11 @@ internal String8 str8_from_u32(Arena *arena, u32 v) {
     result.str = push_size(arena, size);
 
     scratch = v;
-    u64 idx = 0;
+    u64 idx = size - 1;
     do {
         *(result.str + idx) = '0' + (scratch % 10);
         scratch /= 10;
-        idx++;
+        idx--;
     } while (scratch > 0);
 
     return result;
@@ -94,11 +94,11 @@ internal String8 str8_from_u64(Arena *arena, u64 v) {
     result.str = push_size(arena, size);
 
     scratch = v;
-    u64 idx = 0;
+    u64 idx = size - 1;
     do {
         *(result.str + idx) = '0' + (scratch % 10);
         scratch /= 10;
-        idx++;
+        idx--;
     } while (scratch > 0);
 
     return result;
@@ -227,9 +227,7 @@ internal UnicodeCodepoint utf8_decode(u8 *base, u64 max_size) {
 }
 
 internal u32 utf8_encode(u32 character, u8 *dst) {
-#if VARED_SLOW
     u8 *original_dst = dst;
-#endif // VARED_SLOW
 
     u32 bytes_to_write = 0;
 

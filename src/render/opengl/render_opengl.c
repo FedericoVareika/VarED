@@ -379,6 +379,8 @@ internal void r_consume_passes(R_PassList *passes) {
 
 // NOTE(fede): Consume hook 
 internal void r_consume_all(void) {
+    TimeFunction;
+
     glClearColor(0x0, 0x0, 0x0, 0xFF);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -394,6 +396,8 @@ internal void r_consume_all(void) {
 }
 
 internal void r_end_frame(void) {
+    TimeFunction;
+
     for (R_OpenGL_BufferNode *buffer_n = r_ogl_state->buffers.first;
             buffer_n;
             buffer_n = buffer_n->next) {

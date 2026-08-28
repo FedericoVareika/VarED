@@ -22,6 +22,8 @@ internal void fc_init(void) {
 }
 
 internal void fc_tick(void) {
+    TimeFunction;
+
     arena_clear(fc_state->frame_arena);
 
     for (u32 i = 0; i < fc_state->glyph_table_size; i++) {

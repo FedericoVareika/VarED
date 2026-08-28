@@ -13,6 +13,7 @@ enum {
     UI_BoxFlag_Clickable       = (1 << 0), 
     UI_BoxFlag_DrawText        = (1 << 1),
     UI_BoxFlag_Draggable       = (1 << 2),
+    // TODO: Hoverable
 
     UI_BoxFlag_DrawBackground  = (1 << 3),
     UI_BoxFlag_DrawBorder      = (1 << 4),
@@ -198,6 +199,7 @@ internal void ui_render(void);
 /// NOTE(fede): Helpers
 
 /// Size
+internal inline f32 ui_get_em(f32 v, f32 font_size);
 internal inline UI_Size ui_size(UI_SizeKind kind, f32 val, f32 strictness);
 #define ui_pct(v, s) ui_size(UI_SizeKind_PercentOfParent, (v), (s))
 #define ui_px(v, s)  ui_size(UI_SizeKind_Pixels         , (v), (s))

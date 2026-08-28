@@ -47,10 +47,9 @@ typedef struct {
     u32 cursor_col_bytes;   // in bytes
 
     bool is_opening_file;
+    bool show_profiler;
 
-    bool bval;
-    f32 val1;
-    f32 val2;
+    bool cull_lines;
 } EditorState;
 
 #endif // VARED_H

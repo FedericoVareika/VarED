@@ -458,6 +458,8 @@ internal String8 txt_get_buffer_substr(
 
 // NOTE(fede): Ends with \n if its not the end of text
 internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
+    TimeFunction;
+
     u64 line_idx = 0;
     TXT_PieceNode *piece_n = text->first;
 

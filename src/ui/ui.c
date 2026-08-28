@@ -16,7 +16,7 @@ internal void ui_init(void) {
     ui_state->root = &ui_nil_box;
     // ui_state->parent = &ui_nil_box;
 
-    ui_state->box_table_size = 100;
+    ui_state->box_table_size = 4096;
     ui_state->box_table = push_array(arena, UI_BoxHashSlot, ui_state->box_table_size);
 }
 
@@ -354,7 +354,7 @@ internal void ui_end_build(void) {
 
         for (UI_Box *box = slot->hash_first;
                 !ui_box_is_nil(box);) {
-            UI_Box *next_box = box->next;
+            UI_Box *next_box = box->hash_next;
 
             if (box->last_frame_touched_idx != ui_state->frame_idx) {
                 DLL_Remove_NP_nil(
@@ -372,7 +372,6 @@ internal void ui_end_build(void) {
             box = next_box;
         }
     }
-    // printf("n_freed: %u\n", n_freed);
 }
 
 /*
@@ -393,8 +392,7 @@ internal void ui_layout_independent(UI_Box *box, UI_Axis2 axis) {
         box->computed_size[axis] = size.value; 
     } else if (size.kind == UI_SizeKind_EM) {
         // STUDY(fede): Is this correct?
-        u32 one_em = (u32)((96.0f / 72.0f) * box->font_size);
-        box->computed_size[axis] = size.value * (f32)one_em;
+        box->computed_size[axis] = ui_get_em(size.value, box->font_size);
 
     } else if (size.kind == UI_SizeKind_TextContent) {
         assert(axis == UI_Axis2_X);
@@ -438,7 +436,11 @@ internal void ui_layout_descendant_dependant(UI_Box *box, UI_Axis2 axis) {
                 !ui_box_is_nil(child);
                 child = child->next) {
             // STUDY(fede): Compare against child_layout_axis?
-            children_sum += child->computed_size[axis];
+            if (box->child_layout_axis == axis) {
+                children_sum += child->computed_size[axis];
+            } else {
+                children_sum = max(children_sum, child->computed_size[axis]);
+            }
         }
 
         box->computed_size[axis] = children_sum;
@@ -516,6 +518,7 @@ internal void ui_layout_end_calc(UI_Box *box, UI_Axis2 axis, f32 layout_pos) {
 }
 
 internal void ui_layout(void) {
+    TimeFunction;
     UI_Box *root = ui_state->root;
     for (int axis = 0; axis < UI_Axis2_Count; axis++) {
         ui_layout_independent(root, axis);
@@ -685,14 +688,17 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
 }
 
 internal void ui_render(void) {
+    TimeFunction;
     ui_render_boxes(ui_state->root, R2_INF);
-
-    Rect2 mouse_rect = rect2_center_dim(ui_state->mouse_pos, (v2){5, 5});
-    r_push_rect2(.pos = mouse_rect);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Helpers
+
+internal inline f32 ui_get_em(f32 v, f32 font_size) {
+    u32 one_em = (u32)((96.0f / 72.0f) * font_size);
+    return v * one_em;
+}
 
 internal inline UI_Size ui_size(UI_SizeKind kind, f32 val, f32 strictness) {
     UI_Size result = {0}; 
@@ -793,7 +799,7 @@ internal UI_Comm ui_checkbox(bool *val, String8 str) {
     UI_Comm comm = {0};
 
     UI_ChildLayoutAxis(UI_Axis2_X)
-        UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder, "checkbox box"))
+        UI_Parent(ui_box_makef(UI_BoxFlag_DrawBorder, ""))
     {
         UI_Padding(ui_em(1, 0))
             UI_PrefWidth(ui_tc(0, 1)) 
