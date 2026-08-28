@@ -3,7 +3,7 @@
 ignore_warning_flags="-Wno-missing-field-initializers -Wno-override-init -Wno-override-init-side-effects"
 
 common_flags_internal="-DVARED_SLOW=1 -DVARED_INTERNAL=1 -ffile-prefix-map=old=new -g -W -pipe" # -fsanitize=address"
-common_flags_external="-DVARED_SLOW=0 -DVARED_INTERNAL=0 -ffile-prefix-map=old=new -g -W -O3"
+common_flags_external="-DVARED_SLOW=0 -DVARED_INTERNAL=0 -ffile-prefix-map=old=new -g -W -pipe -O3"
 
 pkgs="sdl2 freetype2"
 linker_flags="-lm -ldl"

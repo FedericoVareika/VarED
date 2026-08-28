@@ -642,6 +642,7 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
         text_pos.x += box->semantic_size[UI_Axis2_X].value;
         text_pos.y += metrics.ascender;
 
+        // TODO font runs do not work anymore when changing font and stuff?
         for (FC_GlyphPtrNode *glyph_ptr_n = box->display_run->first;
                 glyph_ptr_n != 0;
                 glyph_ptr_n = glyph_ptr_n->next) {
