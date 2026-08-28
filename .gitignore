@@ -4,3 +4,5 @@ data/fonts
 captures
 tags
 .direnv
+!data/fonts/GoogleSans-Regular.ttf
+!data/fonts/IosevkaTermNerdFontMono-Light.ttf
