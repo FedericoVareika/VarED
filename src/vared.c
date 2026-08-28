@@ -343,7 +343,7 @@ void editor_update_and_render(EditorParams *params) {
 
                     UI_PrefWidth(ui_pct(1, 1)) 
                     {
-                        ui_slider(&state->font_size, 6, 20, S8("Slider 1"));
+                        ui_slider(&state->font_size, 6, 20, S8("Font size"));
                         state->font_size = (f32)ceil_f32_to_int(state->font_size);
                     }
 
