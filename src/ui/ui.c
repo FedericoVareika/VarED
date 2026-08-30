@@ -6,10 +6,10 @@ global UI_State *ui_state = 0;
 #undef MACROS_C
 
 internal void ui_init(void) {
-    Arena *arena = arena_alloc(.commit_size=megabytes(1));
+    Arena *arena = arena_alloc();
     ui_state = push_struct(arena, UI_State);
     ui_state->arena = arena;
-    ui_state->build_arena = arena_alloc(.commit_size=megabytes(1));
+    ui_state->build_arena = arena_alloc();
 
     ui_state->frame_idx = 0;
 
