@@ -502,7 +502,7 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
 
 
     // NOTE(fede): Do the string cats
-    Temp scratch = scratch_begin(0, 0);
+    Temp scratch = scratch_begin(&arena, 1);
     String8 result = S("");
     {
         TXT_Piece *piece = &piece_n->v;

@@ -76,12 +76,12 @@ typedef struct {
 internal inline FindBitResult find_least_significant_set_bit(u32 mask) {
     FindBitResult result = {0};
 
-#if defined(COMPILER_GCC)
+#if COMPILER_GCC
     if (mask != 0) {
         result.index = __builtin_ctzll(mask);
         result.found = true;
     }
-#elif defined(COMPILER_CLANG)
+#elif COMPILER_CLANG
     // TODO(fede): do not know the clang intrinsic for this yet.
     while (result.index < 32) {
         if ((mask & (0x1 << result.index)) != 0) {

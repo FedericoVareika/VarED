@@ -6,9 +6,9 @@
 */
 #ifdef __GNUC__
     #ifndef __clang__
-        #define COMPILER_GCC
+        #define COMPILER_GCC 1
     #else
-        #define COMPILER_CLANG
+        #define COMPILER_CLANG 1
     #endif //__clang__
 #endif //__GNUC__
 
@@ -29,13 +29,13 @@
 #define global static
 #define local_persist static
 
-// #if COMPILER_MSVC
-// # define thread_static __declspec(thread)
-// #elif COMPILER_CLANG || COMPILER_GCC
-// # define thread_static __thread
-// #else
-// # error thread_static not defined for this compiler.
-// #endif
+#if COMPILER_MSVC
+# define thread_static __declspec(thread)
+#elif COMPILER_CLANG || COMPILER_GCC
+# define thread_static __thread
+#else
+# error thread_static not defined for this compiler.
+#endif
 
 
 typedef uint8_t u8;

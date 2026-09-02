@@ -1,5 +1,5 @@
 
-global T_Context *t_context = 0;
+thread_static T_Context *t_context = 0;
 
 internal void t_context_init(void) {
     Arena *arena_0 = arena_alloc();
