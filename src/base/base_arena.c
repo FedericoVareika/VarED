@@ -56,15 +56,39 @@ internal void arena_release(Arena *arena) {
     arena->commited = 0;
 }
 
-// TODO(fede): Change to arena_pop_to(arena, 0);
-internal void arena_clear(Arena *arena) {
+internal void arena_pop_to(Arena *arena, u64 to) {
+    assert(arena);
+
+    to = max(to, ARENA_HEADER_SIZE);
+
+    assert(arena_pos(arena) >= to);
+
     assert(arena->commited >= arena->commit_size);
     assert(arena->commited % arena->commit_size == 0);
 
-    // u64 decommit_size = arena->commited - arena->commit_size;
-    // assert(mem_decommit(arena->base + arena->commit_size, decommit_size));
-    // arena->commited = arena->commit_size;
-    arena->pos = ARENA_HEADER_SIZE;
+    u64 new_commit_amount = (to + arena->commit_size - 1) / arena->commit_size;
+    new_commit_amount *= arena->commit_size;
+    
+    u64 decommit_size = arena->commited - new_commit_amount;
+    assert(mem_decommit(arena->base + new_commit_amount, decommit_size));
+    arena->commited = new_commit_amount;
 
+    arena->pos = to;
+}
+
+internal void arena_clear(Arena *arena) {
+    arena_pop_to(arena, 0);
     mem_zero(arena->base + arena_pos(arena), arena->commited - arena_pos(arena));
+}
+
+internal Temp temp_begin(Arena *arena) {
+    assert(arena);
+    return (Temp) {
+        .arena = arena,
+        .pos = arena->pos,
+    };
+}
+
+internal void temp_end(Temp temp) {
+    arena_pop_to(temp.arena, temp.pos);
 }

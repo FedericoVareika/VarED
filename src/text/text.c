@@ -369,7 +369,7 @@ internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
     }
 
     /*
-     * TODO(fede): I have a brute approx, now i have to increase the result by 
+     * NOTE(fede): I have a brute approx, now i have to increase the result by 
      *      the internal piece offset to the line i want to get.
      *
      *              pn.start          row     pn.end
@@ -502,12 +502,12 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
 
 
     // NOTE(fede): Do the string cats
+    Temp scratch = scratch_begin(0, 0);
     String8 result = S("");
     {
         TXT_Piece *piece = &piece_n->v;
         TXT_Buffer *buffer = piece->buffer;
 
-        // TODO(fede): Use scratch arena and implement pop
         while (true) {
             TXT_LinePos line_end_pos = piece->end;
             if (line_start_pos.line_idx < line_end_pos.line_idx) {
@@ -520,7 +520,7 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
             String8 buf_substr = 
                 txt_get_buffer_substr(buffer, line_start_pos, line_end_pos);
 
-            result = str8_cat(arena, result, buf_substr);
+            result = str8_cat(scratch.arena, result, buf_substr);
 
             if (txt_line_pos_is_end_of_line(buffer, line_end_pos)) {
                 break;
@@ -536,6 +536,9 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
             buffer = piece->buffer;
         }
     }
+    
+    result = str8_copy(arena, result);
+    scratch_end(scratch);
 
     return result;
 }

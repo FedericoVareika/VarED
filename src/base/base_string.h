@@ -21,6 +21,7 @@ internal String8 str8(u8 *str, u64 size);
 
 internal String8 str8_skip(String8 str, u64 n);
 internal String8 str8_cat(Arena *arena, String8 a, String8 b);
+internal String8 str8_copy(Arena *arena, String8 str);
 internal String8 str8_strip_left(String8 v);
 internal String8 str8_strip_right(String8 v);
 internal String8 str8_strip(String8 v);

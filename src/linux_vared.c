@@ -412,6 +412,8 @@ void PrintKeyInfo( SDL_KeyboardEvent *key ){
 }
 
 int main(void) {
+    t_context_init();
+
     LinuxState state = {0};
 
 #if VARED_INTERNAL

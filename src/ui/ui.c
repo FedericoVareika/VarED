@@ -722,6 +722,8 @@ internal inline v4 ui_lighten_color(v4 color, f32 t) {
 }
 
 // Font 
+// TODO(fede): STUDY If the display string is too large, it will crash the app, do 
+//      something about it.
 internal inline FC_GlyphRun *ui_get_box_display_run(UI_Box *box) {
     FC_GlyphRun *result = fc_get_string_glyph_run(
             box->font_handle,

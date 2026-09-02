@@ -30,6 +30,16 @@ internal String8 str8_cat(Arena *arena, String8 a, String8 b) {
     return result;
 }
 
+internal String8 str8_copy(Arena *arena, String8 str) {
+    String8 result = {0};
+    result.size = str.size;
+    result.str = push_array(arena, u8, result.size);
+
+    mem_copy(result.str, str.str, result.size);
+
+    return result;
+}
+
 internal String8 str8_strip_left(String8 v) {
     u32 i = 0; 
     while (i < v.size && u8_is_whitespace(v.str[i])) {

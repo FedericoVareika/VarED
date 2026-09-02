@@ -16,7 +16,7 @@ internal void fc_init(void) {
     fc_state->glyph_table_size = 100;
     fc_state->glyph_table = push_array(fc_state->caching_arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
 
-    fc_state->run_hash_arena = arena_alloc();
+    fc_state->run_hash_arena = arena_alloc(.reserve_size=gigabytes(1));
     fc_state->run_table_size = 100;
     fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
 }
@@ -183,6 +183,9 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
     //      touched the previous frame, such that the glyph nodes would already 
     //      be cleaned up. I do not think this is appropiate, and it is a 
     //      workaround mostly for font increasing/decreasing.
+    //
+    //      Also, with long lines, i am storing each line in a glyph_run, meaning 
+    //      that it crashes on long lines. (arena exceded size)
     if (run->last_frame_touched_idx + 1 < fc_state->frame_idx) {
         u32 prev_glyph = 0;
         run->count = 0;

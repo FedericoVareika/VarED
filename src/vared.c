@@ -1,6 +1,9 @@
 #include "base/base_inc.h"
 #include "base/base_inc.c"
 
+#include "thread_context/thread_context.h"
+#include "thread_context/thread_context.c"
+
 #define PROFILER 1
 #include "profiler/profiler.h"
 #include "profiler/profiler.c"
@@ -60,7 +63,7 @@ void editor_update_and_render(EditorParams *params) {
     fc_tick();
 
     WMEventList *events = params->events;
-
+    
     {
         TimeBlock(S8("Event consume"));
         for (WMEventNode *event_n = events->first; event_n; event_n = event_n->next) {
@@ -79,10 +82,13 @@ void editor_update_and_render(EditorParams *params) {
                 } break;
 
                 case WMKey_BACKSPACE: {
-                    String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
                     u64 n = 0;
                     if (state->cursor_row == 0 && state->cursor_col_bytes == 0)
                         break;
+
+                    Temp scratch = scratch_begin(0, 0);
+
+                    String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
                     do {
                         if (state->cursor_col_bytes > 0) {
                             state->cursor_col_bytes--;
@@ -90,7 +96,7 @@ void editor_update_and_render(EditorParams *params) {
                             if (state->cursor_row)
                                 state->cursor_row--;
 
-                            line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                            line = txt_get_line(scratch.arena, state->text, state->cursor_row);
                             state->cursor_col_bytes = line.size - 1; // before the \n
                         }
                         n++;
@@ -99,13 +105,16 @@ void editor_update_and_render(EditorParams *params) {
                     u64 at = txt_get_line_offset(state->text, state->cursor_row);
                     at += state->cursor_col_bytes;
                     txt_delete(state->text_arena, state->text, at, n);
+
+                    scratch_end(scratch);
                 } break;
 
                 case WMKey_LEFT: {
-                    // TODO(fede): Scratch arena.
-                    String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
                     if (state->cursor_row == 0 && state->cursor_col_bytes == 0)
                         break;
+
+                    Temp scratch = scratch_begin(0, 0);
+                    String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
                     do {
                         if (state->cursor_col_bytes > 0) {
                             state->cursor_col_bytes--;
@@ -113,17 +122,19 @@ void editor_update_and_render(EditorParams *params) {
                             if (state->cursor_row)
                                 state->cursor_row--;
 
-                            line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                            line = txt_get_line(scratch.arena, state->text, state->cursor_row);
                             state->cursor_col_bytes = line.size - 1; // before the \n
                         }
                     } while (!utf8_byte_is_header(line.str[state->cursor_col_bytes]));
+
+                    scratch_end(scratch);
                 } break;
                 case WMKey_RIGHT: {
                     u32 new_cursor_col_bytes = state->cursor_col_bytes; 
                     u32 new_cursor_row = state->cursor_row; 
 
-                    // TODO(fede): Scratch arena.
-                    String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                    Temp scratch = scratch_begin(0, 0);
+                    String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
                     
                     if (new_cursor_col_bytes + 1 == line.size && line.str[new_cursor_col_bytes] == '\n')
                         new_cursor_col_bytes++;
@@ -139,7 +150,7 @@ void editor_update_and_render(EditorParams *params) {
                             }
 
                             new_cursor_row++;
-                            line = txt_get_line(state->frame_arena, state->text, new_cursor_row);
+                            line = txt_get_line(scratch.arena, state->text, new_cursor_row);
                             new_cursor_col_bytes = 0;
                             break;
                         }
@@ -147,18 +158,21 @@ void editor_update_and_render(EditorParams *params) {
 
                     state->cursor_col_bytes = new_cursor_col_bytes;
                     state->cursor_row = new_cursor_row;
+                    scratch_end(scratch);
                 } break;
                 case WMKey_UP: {
                     if (state->cursor_row > 0) {
                         state->cursor_row--;
 
                         // TODO(fede): Do optically aligned, instead of byte aligned.
-                        String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                        Temp scratch = scratch_begin(0, 0);
+                        String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
                         state->cursor_col_bytes = min(line.size - 1, state->cursor_col_bytes);
 
                         while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
                             state->cursor_col_bytes--;
                         }
+                        scratch_end(scratch);
                     }
                 } break;
                 case WMKey_DOWN: {
@@ -166,12 +180,14 @@ void editor_update_and_render(EditorParams *params) {
                         state->cursor_row++;
 
                         // TODO(fede): Do optically aligned, instead of byte aligned.
-                        String8 line = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                        Temp scratch = scratch_begin(0, 0);
+                        String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
                         state->cursor_col_bytes = min(line.size - 1, state->cursor_col_bytes);
 
                         while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
                             state->cursor_col_bytes--;
                         }
+                        scratch_end(scratch);
                     }
                 } break;
 
@@ -179,12 +195,11 @@ void editor_update_and_render(EditorParams *params) {
                     if ((event.modifiers & WMModifier_ctrl) && 
                         !(event.modifiers & WMModifier_shift) &&
                         !(event.modifiers & WMModifier_alt)) {
-                        // TODO(fede): Use scratch arena and implement pop
-                        String8 path = txt_get_line(state->frame_arena, state->text, state->cursor_row);
+                        Temp scratch = scratch_begin(0, 0);
+                        String8 path = txt_get_line(scratch.arena, state->text, state->cursor_row);
                         path = str8_strip(path);
 
-                        // TODO(fede): Use scratch arena and implement pop
-                        char *path_cstr = cstr_from_str8(frame_arena, path);
+                        char *path_cstr = cstr_from_str8(scratch.arena, path);
                         DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
 
                         if (!file.memory) {
@@ -197,6 +212,7 @@ void editor_update_and_render(EditorParams *params) {
                         txt_insert(state->text_arena, state->text, str8(file.memory, file.size), at);
 
                         debug_platform_free_file_memory(0, file);
+                        scratch_end(scratch);
                     }
                 } break;
 
@@ -293,7 +309,9 @@ void editor_update_and_render(EditorParams *params) {
                                 f64 pct = (f64)anchor->exclusive_elapsed_time / (f64)total_time;
                                 added_pct += pct;
 
-                                String8 parent_label = str8_cat(state->frame_arena, S8("__anchor__"), str8_from_u64(state->frame_arena, i));
+                                Temp scratch = scratch_begin(0, 0);
+
+                                String8 parent_label = str8_cat(frame_arena, S8("__anchor__"), str8_from_u64(frame_arena, i));
                                 UI_ChildLayoutAxis(UI_Axis2_X)
                                     UI_PrefWidth(ui_pct(1, 1))
                                     UI_Parent(ui_box_make(UI_BoxFlag_ClipChildren, parent_label))
@@ -303,7 +321,7 @@ void editor_update_and_render(EditorParams *params) {
                                         ui_box_make(UI_BoxFlag_DrawText, anchor->label);
 
                                     UI_PrefWidth(ui_em(5, 1))
-                                        ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(state->frame_arena, (u32)(pct * 100)));
+                                        ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(frame_arena, (u32)(pct * 100)));
 
                                     UI_CornerRadius(0)
                                         UI_BackgroundColor(RGBA(red, !red, 0, 1))
@@ -311,20 +329,17 @@ void editor_update_and_render(EditorParams *params) {
                                         ui_box_make(UI_BoxFlag_DrawBackground, S8(""));
 
                                     if (anchor->processed_byte_count) {
-                                        // f64 seconds = (f64)anchor->inclusive_elapsed_time / (f64)timer_freq;
-                                        // f64 bytes_per_second = (f64)anchor->processed_byte_count / seconds;
                                         f64 kilobytes = (f64)anchor->processed_byte_count / (f64)kilobytes(1);
-                                        // f64 kilobytes_per_second = bytes_per_second / kilobytes(1);
 
                                         ui_spacer(ui_pct(1, 0));
 
                                         UI_PrefWidth(ui_em(5, 0))
-                                            ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(state->frame_arena, (u32)(kilobytes)));
+                                            ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(frame_arena, (u32)(kilobytes)));
                                     }
                                 }
-                            }
 
-                            // printf("Added pct: %f\n", added_pct);
+                                scratch_end(scratch);
+                            }
                         }
                     }
                     
@@ -385,7 +400,7 @@ void editor_update_and_render(EditorParams *params) {
                                     break;
                                 }
 
-                                String8 display_string = txt_get_line(state->frame_arena, state->text, line_idx);
+                                String8 display_string = txt_get_line(frame_arena, state->text, line_idx);
                                 String8 key_string = str8_cat(
                                         frame_arena,
                                         S8("line"),
@@ -449,3 +464,4 @@ void editor_update_and_render(EditorParams *params) {
 
     events->first = events->last = 0;
 }
+

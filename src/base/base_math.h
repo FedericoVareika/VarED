@@ -20,6 +20,15 @@ typedef struct {
     };
 } v2u;
 
+typedef struct {
+    union {
+        struct {
+            u64 x, y;
+        };
+        u64 e[2];
+    };
+} v2u64;
+
 #define V3(x, y, z) ((v3){(x), (y), (z)})
 #define expand_v3(v) (v).x, (v).y, (v).z
 typedef struct {

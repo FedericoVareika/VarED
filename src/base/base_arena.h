@@ -7,7 +7,8 @@
 
 #define ARENA_HEADER_SIZE 128
 
-typedef struct {
+typedef struct Arena Arena;
+struct Arena {
     u64 reserve_size;
     u64 commit_size;
     u64 commited;
@@ -15,21 +16,32 @@ typedef struct {
     u64 base_pos;
     u64 pos;
     u8 *base;
-} Arena;
+};
 
 global u64 arena_default_reserve_size = megabytes(64);
 global u64 arena_default_commit_size  = kilobytes(64);
 
-typedef struct {
+typedef struct ArenaParams ArenaParams;
+struct ArenaParams {
     u64 reserve_size;
     u64 commit_size;
-} ArenaParams;
+};
+
+typedef struct Temp Temp;
+struct Temp {
+    Arena *arena;
+    u64 pos;
+};
 
 #define arena_alloc(...) arena_alloc_((ArenaParams){.reserve_size = arena_default_reserve_size, .commit_size = arena_default_commit_size, __VA_ARGS__})
 internal Arena *arena_alloc_(ArenaParams params);
 
 internal void arena_release(Arena *arena);
+internal void arena_pop_to(Arena *arena, u64 to);
 internal void arena_clear(Arena *arena);
+
+internal Temp temp_begin(Arena *arena);
+internal void temp_end(Temp temp);
 
 /* STUDY(fede):
  *
