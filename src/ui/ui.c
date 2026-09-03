@@ -563,9 +563,11 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     bool mouse_interactable = box->flags & UI_BoxFlag_Clickable || 
         box->flags & UI_BoxFlag_Draggable;
 
-    {
-        bool hot = mouse_interactable && ui_key_match(ui_state->hot, box->key);
-        bool active = mouse_interactable && ui_key_match(ui_state->active, box->key);
+    bool hot = mouse_interactable && ui_key_match(ui_state->hot, box->key);
+    bool active = mouse_interactable && ui_key_match(ui_state->active, box->key);
+
+    if (hot && box->flags & UI_BoxFlag_DrawHotEffects ||
+        active && box->flags & UI_BoxFlag_DrawActiveEffects) {
 
         bool hot_anim = !!(box->flags & UI_BoxFlag_HotAnimation);
         bool active_anim = !!(box->flags & UI_BoxFlag_ActiveAnimation);
@@ -653,6 +655,9 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
                     glyph->metrics.bearing_x,
                     -glyph->metrics.bearing_y,
                 });
+
+                pos.x = round_f32_to_int(pos.x);
+                pos.y = round_f32_to_int(pos.y);
 
                 v2 dim = {
                     glyph->metrics.width,
@@ -743,6 +748,8 @@ internal UI_Comm ui_button(String8 str) {
             UI_BoxFlag_DrawText |
             UI_BoxFlag_DrawBorder | 
             UI_BoxFlag_DrawBackground |
+            UI_BoxFlag_DrawHotEffects |
+            UI_BoxFlag_DrawActiveEffects |
             UI_BoxFlag_ActiveAnimation |
             UI_BoxFlag_HotAnimation,
             str);
@@ -850,3 +857,88 @@ internal UI_Comm ui_checkbox(bool *val, String8 str) {
     }
 }
 
+internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 text_padding_px, bool selected) {
+    UI_Comm result = {0};
+
+    TXT_Text *text = view->text;
+
+    ui_push_child_layout_axis(UI_Axis2_Y);
+    UI_Box *text_box = ui_box_make(
+            UI_BoxFlag_DrawBorder |
+            UI_BoxFlag_Clickable |
+            UI_BoxFlag_OverflowY |
+            UI_BoxFlag_ClipChildren, label);
+
+    result = ui_comm_from_box(text_box);
+
+    f32 line_height = 1.2;
+
+    f32 estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
+    estimated_lines_in_box /= ui_get_em(line_height, text_box->font_size);
+    estimated_lines_in_box += 2;
+
+    UI_Parent(text_box)
+        UI_PrefHeight(ui_em(line_height, 1))
+        UI_PrefWidth(ui_tc(text_padding_px, 0))
+    {
+        TimeBlock(S8("UI Build Text"));
+
+        ui_spacer(ui_em(0.4, 0));
+
+        for (u32 line_idx = 0; 
+                line_idx < txt_get_n_lines(text);
+                line_idx++) {
+            if (line_idx > estimated_lines_in_box) {
+                break;
+            }
+
+            String8 display_string = txt_get_line(arena, text, line_idx);
+            String8 key_string = str8_cat(
+                    arena,
+                    S8("line"),
+                    str8_from_u32(arena, line_idx));
+
+            UI_Box *line_box = ui_box_make(
+                    UI_BoxFlag_DrawText,
+                    key_string); 
+            ui_box_equip_string(line_box, display_string);
+
+            if (selected && view->cursor_row == line_idx) {
+                f32 advance = 0; 
+                if (display_string.size) {
+                    FC_GlyphRun *glyph_run = ui_get_box_display_run(line_box);
+                    u32 bytes_consumed = 0;
+                    for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
+                            glyph_ptr_n != 0 && bytes_consumed < view->cursor_col;
+                            glyph_ptr_n = glyph_ptr_n->next) {
+                        FC_Glyph *glyph = glyph_ptr_n->v;
+                        bytes_consumed += utf8_encode(glyph->codepoint, 0);
+                        advance += glyph->metrics.advance;
+                    }
+                }
+
+                R_Bucket *line_bucket = r_get_new_bucket();
+                ui_box_equip_r_bucket(line_box, line_bucket);
+                line_box->r_bucket = line_bucket;
+                r_push_bucket(line_bucket);
+                {
+                    f32 cursor_width = ui_top_font_size() / 10;
+                    Rect2 cursor_rect = (Rect2){
+                        .V4 = V4(
+                                line_box->rect.min.x + advance + text_padding_px,
+                                line_box->rect.min.y,
+                                line_box->rect.min.x + advance + cursor_width + text_padding_px,
+                                line_box->rect.max.y),
+                    };
+
+                    r_push_rect2(.pos = cursor_rect);
+                }
+                r_pop_bucket();
+            }
+        }
+    }
+
+    ui_pop_child_layout_axis();
+
+    return result;
+}

@@ -20,8 +20,7 @@
 #include "ui/ui.h"
 #include "ui/ui.c"
 
-#include "text/text.h"
-#include "text/text.c"
+#include "text/text_inc.c"
 
 #include "vared.h"
 
@@ -34,10 +33,15 @@ void editor_init(EditorParams *params) {
     *params->memory = state;
 
     // STUDY(fede): change commit/reserve sizes for this
-    state->frame_arena = arena_alloc(.commit_size=megabytes(1));
+    state->frame_arena = arena_alloc();
 
-    state->text_arena = arena_alloc();
-    state->text = push_struct(state->text_arena, TXT_Text);
+    {
+        state->input_view_n = push_struct(arena, TXT_ViewNode);
+        TXT_View *view = &state->input_view_n->v;
+        view->text_arena = arena_alloc();
+        view->text = push_struct(view->text_arena, TXT_Text);
+        view->single_line = true;
+    }
 
     p_init();
 
@@ -48,8 +52,7 @@ void editor_init(EditorParams *params) {
 
     ui_init();
 
-    state->show_profiler = true;
-    state->cull_lines = true;
+    state->show_profiler = false;
 }
 
 void editor_update_and_render(EditorParams *params) {
@@ -74,144 +77,152 @@ void editor_update_and_render(EditorParams *params) {
                 switch (event.key) {
 
                 case WMKey_RETURN: {
-                    u64 at = txt_get_line_offset(state->text, state->cursor_row);
-                    at += state->cursor_col_bytes;
-                    txt_insert(state->text_arena, state->text, S8("\n"), at);
-                    state->cursor_col_bytes = 0;
-                    state->cursor_row++;
+                    if (!state->general_selected_view_n)
+                        break;
+                    TXT_View *view = &state->general_selected_view_n->v;
+
+                    if (view->single_line)
+                        break;
+
+                    u64 at = txt_get_line_offset(view->text, view->cursor_row);
+                    at += view->cursor_col;
+                    txt_insert(view->text_arena, view->text, S8("\n"), at);
+                    view->cursor_col = 0;
+                    view->cursor_row++;
                 } break;
 
                 case WMKey_BACKSPACE: {
+                    if (!state->general_selected_view_n)
+                        break;
+                    TXT_View *view = &state->general_selected_view_n->v;
+
                     u64 n = 0;
-                    if (state->cursor_row == 0 && state->cursor_col_bytes == 0)
+                    if (view->cursor_row == 0 && view->cursor_col == 0)
                         break;
 
                     Temp scratch = scratch_begin(0, 0);
 
-                    String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
+                    String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
                     do {
-                        if (state->cursor_col_bytes > 0) {
-                            state->cursor_col_bytes--;
+                        if (view->cursor_col > 0) {
+                            view->cursor_col--;
                         } else {
-                            if (state->cursor_row)
-                                state->cursor_row--;
+                            if (view->cursor_row)
+                                view->cursor_row--;
 
-                            line = txt_get_line(scratch.arena, state->text, state->cursor_row);
-                            state->cursor_col_bytes = line.size - 1; // before the \n
+                            line = txt_get_line(scratch.arena, view->text, view->cursor_row);
+                            view->cursor_col = line.size - 1; // before the \n
                         }
                         n++;
-                    } while (!utf8_byte_is_header(line.str[state->cursor_col_bytes]));
+                    } while (!utf8_byte_is_header(line.str[view->cursor_col]));
 
-                    u64 at = txt_get_line_offset(state->text, state->cursor_row);
-                    at += state->cursor_col_bytes;
-                    txt_delete(state->text_arena, state->text, at, n);
+                    u64 at = txt_get_line_offset(view->text, view->cursor_row);
+                    at += view->cursor_col;
+                    txt_delete(view->text_arena, view->text, at, n);
 
                     scratch_end(scratch);
                 } break;
 
                 case WMKey_LEFT: {
-                    if (state->cursor_row == 0 && state->cursor_col_bytes == 0)
+                    if (!state->general_selected_view_n)
+                        break;
+                    TXT_View *view = &state->general_selected_view_n->v;
+
+                    if (view->cursor_row == 0 && view->cursor_col == 0)
                         break;
 
                     Temp scratch = scratch_begin(0, 0);
-                    String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
+                    String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
                     do {
-                        if (state->cursor_col_bytes > 0) {
-                            state->cursor_col_bytes--;
+                        if (view->cursor_col > 0) {
+                            view->cursor_col--;
                         } else {
-                            if (state->cursor_row)
-                                state->cursor_row--;
+                            if (view->cursor_row)
+                                view->cursor_row--;
 
-                            line = txt_get_line(scratch.arena, state->text, state->cursor_row);
-                            state->cursor_col_bytes = line.size - 1; // before the \n
+                            line = txt_get_line(scratch.arena, view->text, view->cursor_row);
+                            view->cursor_col = line.size - 1; // before the \n
                         }
-                    } while (!utf8_byte_is_header(line.str[state->cursor_col_bytes]));
+                    } while (!utf8_byte_is_header(line.str[view->cursor_col]));
 
                     scratch_end(scratch);
                 } break;
                 case WMKey_RIGHT: {
-                    u32 new_cursor_col_bytes = state->cursor_col_bytes; 
-                    u32 new_cursor_row = state->cursor_row; 
+                    if (!state->general_selected_view_n)
+                        break;
+                    TXT_View *view = &state->general_selected_view_n->v;
+
+                    u32 new_cursor_col = view->cursor_col; 
+                    u32 new_cursor_row = view->cursor_row; 
 
                     Temp scratch = scratch_begin(0, 0);
-                    String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
+                    String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
                     
-                    if (new_cursor_col_bytes + 1 == line.size && line.str[new_cursor_col_bytes] == '\n')
-                        new_cursor_col_bytes++;
+                    if (new_cursor_col + 1 == line.size && line.str[new_cursor_col] == '\n')
+                        new_cursor_col++;
 
                     do {
-                        if (new_cursor_col_bytes < line.size) {
-                            new_cursor_col_bytes++;
-                        } else if (new_cursor_col_bytes == line.size) {
-                            if (txt_get_n_lines(state->text) <= new_cursor_row + 1) {
-                                new_cursor_col_bytes = state->cursor_col_bytes;
-                                new_cursor_row = state->cursor_row;
+                        if (new_cursor_col < line.size) {
+                            new_cursor_col++;
+                        } else if (new_cursor_col == line.size) {
+                            if (txt_get_n_lines(view->text) <= new_cursor_row + 1) {
+                                new_cursor_col = view->cursor_col;
+                                new_cursor_row = view->cursor_row;
                                 break;
                             }
 
                             new_cursor_row++;
-                            line = txt_get_line(scratch.arena, state->text, new_cursor_row);
-                            new_cursor_col_bytes = 0;
+                            line = txt_get_line(scratch.arena, view->text, new_cursor_row);
+                            new_cursor_col = 0;
                             break;
                         }
-                    } while (!utf8_byte_is_header(line.str[new_cursor_col_bytes]));
+                    } while (!utf8_byte_is_header(line.str[new_cursor_col]));
 
-                    state->cursor_col_bytes = new_cursor_col_bytes;
-                    state->cursor_row = new_cursor_row;
+                    view->cursor_col = new_cursor_col;
+                    view->cursor_row = new_cursor_row;
                     scratch_end(scratch);
                 } break;
                 case WMKey_UP: {
-                    if (state->cursor_row > 0) {
-                        state->cursor_row--;
+                    if (!state->general_selected_view_n)
+                        break;
+                    TXT_View *view = &state->general_selected_view_n->v;
+
+                    if (view->single_line)
+                        break;
+
+                    if (view->cursor_row > 0) {
+                        view->cursor_row--;
 
                         // TODO(fede): Do optically aligned, instead of byte aligned.
                         Temp scratch = scratch_begin(0, 0);
-                        String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
-                        state->cursor_col_bytes = min(line.size - 1, state->cursor_col_bytes);
+                        String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
+                        view->cursor_col = min(line.size - 1, view->cursor_col);
 
-                        while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
-                            state->cursor_col_bytes--;
+                        while (!utf8_byte_is_header(line.str[view->cursor_col])) {
+                            view->cursor_col--;
                         }
                         scratch_end(scratch);
                     }
                 } break;
                 case WMKey_DOWN: {
-                    if (state->cursor_row + 1 < txt_get_n_lines(state->text)) {
-                        state->cursor_row++;
+                    if (!state->general_selected_view_n)
+                        break;
+                    TXT_View *view = &state->general_selected_view_n->v;
+
+                    if (view->single_line)
+                        break;
+
+                    if (view->cursor_row + 1 < txt_get_n_lines(view->text)) {
+                        view->cursor_row++;
 
                         // TODO(fede): Do optically aligned, instead of byte aligned.
                         Temp scratch = scratch_begin(0, 0);
-                        String8 line = txt_get_line(scratch.arena, state->text, state->cursor_row);
-                        state->cursor_col_bytes = min(line.size - 1, state->cursor_col_bytes);
+                        String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
+                        view->cursor_col = min(line.size - 1, view->cursor_col);
 
-                        while (!utf8_byte_is_header(line.str[state->cursor_col_bytes])) {
-                            state->cursor_col_bytes--;
+                        while (!utf8_byte_is_header(line.str[view->cursor_col])) {
+                            view->cursor_col--;
                         }
-                        scratch_end(scratch);
-                    }
-                } break;
-
-                case WMKey_o: {
-                    if ((event.modifiers & WMModifier_ctrl) && 
-                        !(event.modifiers & WMModifier_shift) &&
-                        !(event.modifiers & WMModifier_alt)) {
-                        Temp scratch = scratch_begin(0, 0);
-                        String8 path = txt_get_line(scratch.arena, state->text, state->cursor_row);
-                        path = str8_strip(path);
-
-                        char *path_cstr = cstr_from_str8(scratch.arena, path);
-                        DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
-
-                        if (!file.memory) {
-                            printf("Could not open file: %s\n", path_cstr);
-                            break;
-                        }
-
-                        u64 at = txt_get_line_offset(state->text, state->cursor_row);
-                        at += state->cursor_col_bytes;
-                        txt_insert(state->text_arena, state->text, str8(file.memory, file.size), at);
-
-                        debug_platform_free_file_memory(0, file);
                         scratch_end(scratch);
                     }
                 } break;
@@ -238,14 +249,18 @@ void editor_update_and_render(EditorParams *params) {
                 } break;
 
                 default: {
+                    if (!state->general_selected_view_n)
+                        break;
+                    TXT_View *view = &state->general_selected_view_n->v;
+
                     if (event.character) {
                         u8 insert_chars[4] = {0};
                         u32 codepoint_byte_size = utf8_encode(event.character, (u8 *)insert_chars);
 
-                        u64 at = txt_get_line_offset(state->text, state->cursor_row);
-                        at += state->cursor_col_bytes;
-                        txt_insert(state->text_arena, state->text, str8((u8 *)&insert_chars, codepoint_byte_size), at);
-                        state->cursor_col_bytes += codepoint_byte_size;
+                        u64 at = txt_get_line_offset(view->text, view->cursor_row);
+                        at += view->cursor_col;
+                        txt_insert(view->text_arena, view->text, str8((u8 *)&insert_chars, codepoint_byte_size), at);
+                        view->cursor_col += codepoint_byte_size;
                     }
                 } break; 
                 }
@@ -280,12 +295,14 @@ void editor_update_and_render(EditorParams *params) {
                 UI_BorderColor(RGBA(0.4, 0.5, 0.5, 1))
             {
                 UI_Row
-                    UI_Padding(ui_em(5, 0))
+                    UI_Padding(ui_em(1, 0))
                     UI_ChildLayoutAxis(UI_Axis2_Y)
                     UI_PrefWidth(ui_pct(1, 0))
                     UI_Parent(ui_box_makef(0, "panel 1"))
-                    UI_PrefWidth(ui_tc(10, 0)) UI_PrefHeight(ui_em(2, 1))
+                    UI_PrefHeight(ui_em(2, 1)) UI_PrefWidth(ui_tc(10, 0))
                 {
+                    ui_spacer(ui_em(1, 0));
+
                     if (ui_button(S8("Profiler")).clicked) {
                         state->show_profiler = !state->show_profiler;
                     }
@@ -342,19 +359,31 @@ void editor_update_and_render(EditorParams *params) {
                             }
                         }
                     }
+
+                    ui_spacer(ui_em(0.5, 0));
                     
-                    if (ui_button(S8("Use Iosevka")).clicked) {
-                        fp_close_font(state->font);
-                        fc_flush();
-                        state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
-                        printf("Using Iosevka\n");
+                    UI_PrefWidth(ui_pct(1, 0))
+                        UI_Row 
+                        UI_PrefWidth(ui_tc(10, 0))
+                    {
+                        if (ui_button(S8("Use Iosevka")).clicked) {
+                            fp_close_font(state->font);
+                            fc_flush();
+                            state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
+                            printf("Using Iosevka\n");
+                        }
+
+                        ui_spacer(ui_em(1, 0));
+
+                        if (ui_button(S8("Use Google Sans")).clicked) {
+                            fp_close_font(state->font);
+                            fc_flush();
+                            state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
+                            printf("Using Google Sans\n");
+                        }
                     }
-                    if (ui_button(S8("Use Google Sans")).clicked) {
-                        fp_close_font(state->font);
-                        fc_flush();
-                        state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
-                        printf("Using Google Sans\n");
-                    }
+
+                    ui_spacer(ui_em(0.5, 0));
 
                     UI_PrefWidth(ui_pct(1, 1)) 
                     {
@@ -362,87 +391,120 @@ void editor_update_and_render(EditorParams *params) {
                         state->font_size = (f32)ceil_f32_to_int(state->font_size);
                     }
 
-                    UI_PrefWidth(ui_cs(1))
-                        ui_checkbox(&state->cull_lines, S8("Cull Lines"));
-
                     ui_spacer(ui_em(1, 0));
 
                     f32 text_padding_px = 5;
-
-                    UI_PrefWidth(ui_pct(1, 1)) UI_PrefHeight(ui_pct(0.5, 0))
-                        UI_ChildLayoutAxis(UI_Axis2_Y)
+                    UI_PrefWidth(ui_pct(1, 1)) 
+                        UI_Row
                     {
-                        UI_Box *text_box = ui_box_makef(
-                                UI_BoxFlag_DrawBorder |
-                                UI_BoxFlag_Clickable |
-                                UI_BoxFlag_OverflowY |
-                                UI_BoxFlag_ClipChildren, "text");
-
-                        f32 line_height = 1.2;
-
-                        f32 estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
-                        estimated_lines_in_box /= ui_get_em(line_height, text_box->font_size);
-                        estimated_lines_in_box += 2;
-
-                        UI_Parent(text_box)
-                            UI_PrefHeight(ui_em(line_height, 1))
-                            UI_PrefWidth(ui_tc(text_padding_px, 0))
+                        UI_PrefWidth(ui_pct(1, 0))
                         {
-                            TimeBlock(S8("UI Build Text"));
+                            bool selected = state->general_selected_view_n == state->input_view_n;
+                            UI_Comm text_view_comm = ui_text_view(
+                                    frame_arena,
+                                    &state->input_view_n->v,
+                                    S8("input_text"),
+                                    text_padding_px, selected);
+                            if (text_view_comm.clicked) {
+                                state->general_selected_view_n = state->input_view_n;
+                            }
+                        }
 
-                            ui_spacer(ui_em(1, 0));
+                        ui_spacer(ui_em(1, 0));
 
-                            for (u32 line_idx = 0; 
-                                    line_idx < txt_get_n_lines(state->text);
-                                    line_idx++) {
+                        UI_PrefWidth(ui_tc(10, 1))
+                        {
+                            if (ui_button(S8("Open")).clicked) {
+                                // TODO: open file command
+                                TXT_View *input_view = &state->input_view_n->v;
 
-                                if (state->cull_lines && line_idx > estimated_lines_in_box) {
+                                TXT_ViewNode *view_n = push_struct(state->arena, TXT_ViewNode);
+                                TXT_View *view = &view_n->v;
+                                view->text_arena = arena_alloc();
+                                view->text = push_struct(view->text_arena, TXT_Text);
+
+                                DLL_PushBack(state->first_view, state->last_view, view_n);
+                                
+                                Temp scratch = scratch_begin(0, 0);
+                                String8 path = txt_get_line(scratch.arena, input_view->text, input_view->cursor_row);
+                                path = str8_strip(path);
+
+                                view->label = str8_copy(state->arena, path);
+
+                                char *path_cstr = cstr_from_str8(scratch.arena, path);
+                                DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
+
+                                if (!file.memory) {
+                                    printf("Could not open file: %s\n", path_cstr);
                                     break;
                                 }
 
-                                String8 display_string = txt_get_line(frame_arena, state->text, line_idx);
-                                String8 key_string = str8_cat(
-                                        frame_arena,
-                                        S8("line"),
-                                        str8_from_u32(frame_arena, line_idx));
+                                arena_clear(view->text_arena);
+                                view->text = push_struct(view->text_arena, TXT_Text);
+                                view->cursor_row = 0;
+                                view->cursor_col = 0;
 
-                                UI_Box *line_box = ui_box_make(
-                                        UI_BoxFlag_DrawText,
-                                        key_string); 
-                                ui_box_equip_string(line_box, display_string);
+                                txt_insert(view->text_arena, view->text, str8(file.memory, file.size), 0);
 
-                                if (state->cursor_row == line_idx) {
-                                    f32 advance = 0; 
-                                    if (display_string.size) {
-                                        FC_GlyphRun *glyph_run = ui_get_box_display_run(line_box);
-                                        u32 bytes_consumed = 0;
-                                        for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
-                                                glyph_ptr_n != 0 && bytes_consumed < state->cursor_col_bytes;
-                                                glyph_ptr_n = glyph_ptr_n->next) {
-                                            FC_Glyph *glyph = glyph_ptr_n->v;
-                                            bytes_consumed += utf8_encode(glyph->codepoint, 0);
-                                            advance += glyph->metrics.advance;
-                                        }
-                                    }
+                                debug_platform_free_file_memory(0, file);
+                                scratch_end(scratch);
+                            }
 
-                                    R_Bucket *line_bucket = r_get_new_bucket();
-                                    ui_box_equip_r_bucket(line_box, line_bucket);
-                                    line_box->r_bucket = line_bucket;
-                                    r_push_bucket(line_bucket);
-                                    {
-                                        f32 cursor_width = ui_top_font_size() / 10;
-                                        Rect2 cursor_rect = (Rect2){
-                                            .V4 = V4(
-                                                line_box->rect.min.x + advance + text_padding_px,
-                                                line_box->rect.min.y,
-                                                line_box->rect.min.x + advance + cursor_width + text_padding_px,
-                                                line_box->rect.max.y),
-                                        };
+                        }
+                    }
 
-                                        r_push_rect2(.pos = cursor_rect);
-                                    }
-                                    r_pop_bucket();
-                                }
+                    bool draw_view = false;
+                    UI_PrefWidth(ui_pct(1, 1)) 
+                        UI_Row
+                        UI_PrefWidth(ui_em(10, 0))
+                        // UI_ChildLayoutAxis(UI_Axis2_Y)
+                    {
+                        u32 i = 0;
+                        for (TXT_ViewNode *view_n = state->first_view;
+                                view_n != 0; 
+                                view_n = view_n->next, i++) {
+                            TXT_View *view = &view_n->v;
+
+                            bool main_selected = view_n == state->main_selected_view_n;
+                            bool general_selected = view_n == state->general_selected_view_n;
+
+                            if (general_selected)
+                                ui_push_border_color(RGBA(1, 0, 0, 1));
+                            else 
+                                ui_push_border_color(RGBA(0, 0, 1, 1));
+
+                            draw_view = draw_view || main_selected;
+
+                            String8 text_box_label = S8("##text");
+                            text_box_label = str8_cat(frame_arena, text_box_label, str8_from_u32(frame_arena, i));
+
+                            UI_Box *view_tab_box = ui_box_make(
+                                    UI_BoxFlag_DrawText |
+                                    UI_BoxFlag_DrawBorder |
+                                    UI_BoxFlag_DrawHotEffects |
+                                    UI_BoxFlag_DrawActiveEffects |
+                                    UI_BoxFlag_Clickable, 
+                                    text_box_label);
+                            ui_box_equip_string(view_tab_box, view->label);
+
+                            if (ui_comm_from_box(view_tab_box).clicked) {
+                                state->general_selected_view_n = view_n;
+                                state->main_selected_view_n = view_n;
+                                draw_view = true;
+                            }
+
+                            ui_pop_border_color();
+                        }
+                    }
+
+                    if (draw_view) {
+                        UI_PrefWidth(ui_pct(1, 0)) UI_PrefHeight(ui_pct(0.75, 0))
+                        {
+                            TXT_ViewNode *view_n = state->main_selected_view_n;
+                            TXT_View *view = &view_n->v;
+
+                            if (ui_text_view(frame_arena, view, S8("##text_box"), text_padding_px, view_n == state->general_selected_view_n).clicked) {
+                                state->general_selected_view_n = view_n;
                             }
                         }
                     }

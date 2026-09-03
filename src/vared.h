@@ -17,7 +17,7 @@
 #include "base/base_inc.h"
 #include "render/render_inc.h"
 #include "font_provider/font_provider_inc.h"
-#include "text/text.h"
+#include "text/text_inc.h"
 
 #include "vared_platform.h"
 
@@ -37,19 +37,19 @@ typedef struct {
     Arena *arena;
     Arena *frame_arena;
 
+    TXT_ViewNode *input_view_n;
+
+    TXT_ViewNode *first_view;
+    TXT_ViewNode *last_view;
+
+    TXT_ViewNode *main_selected_view_n;
+    TXT_ViewNode *general_selected_view_n;
+
     f32 font_size;
     FP_Handle font;
 
-    Arena *text_arena;
-    TXT_Text *text;
-    u32 cursor_row;
-    u32 cursor_col;         // in characters (utf-8)
-    u32 cursor_col_bytes;   // in bytes
-
     bool is_opening_file;
     bool show_profiler;
-
-    bool cull_lines;
 } EditorState;
 
 #endif // VARED_H

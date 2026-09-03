@@ -27,10 +27,13 @@ enum {
     UI_BoxFlag_OverflowX       = (1 << 8),
     UI_BoxFlag_OverflowY       = (1 << 9),
 
-    UI_BoxFlag_HotAnimation    = (1 << 10),
-    UI_BoxFlag_ActiveAnimation = (1 << 11),
+    UI_BoxFlag_DrawHotEffects    = (1 << 10),
+    UI_BoxFlag_DrawActiveEffects = (1 << 11),
 
-    UI_BoxFlag_RenderBucket    = (1 << 12),
+    UI_BoxFlag_HotAnimation    = (1 << 12),
+    UI_BoxFlag_ActiveAnimation = (1 << 13),
+
+    UI_BoxFlag_RenderBucket    = (1 << 14),
 };
 
 typedef struct UI_Key UI_Key; 
@@ -222,6 +225,8 @@ internal UI_Comm ui_button(String8 str);
 internal void ui_spacer(UI_Size size);
 internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str);
 internal UI_Comm ui_f32_slider(f32 *val, f32 min, f32 max, String8 str);
+
+internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 text_padding_px, bool selected);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Style stack DeferLoops
