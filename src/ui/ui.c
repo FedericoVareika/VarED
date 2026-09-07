@@ -190,6 +190,7 @@ internal void ui_box_equip_child_layout_axis(UI_Box *box, UI_Axis2 axis) {
 internal UI_Comm ui_comm_from_box(UI_Box *box) {
     UI_Comm comm = { .box = box };
     comm.mouse_pos = ui_state->mouse_pos;
+    comm.rel_mouse_pos = v2_sub(comm.mouse_pos, box->rect.min);
 
     bool mouse_interactable = box->flags & UI_BoxFlag_Clickable || 
         box->flags & UI_BoxFlag_Draggable;
@@ -624,8 +625,6 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     }
 
     if (!!(box->flags & UI_BoxFlag_DrawText)) {
-        // TimeBlock(S8("UI render text"));
-
         // TODO(fede): Text alignment, for now, left aligned.
         FC_GlyphRun *display_run = ui_get_box_display_run(box);
 
@@ -640,7 +639,9 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
                 center,
                 (v2){ display_run->advance, metrics.height });
         v2 text_pos = text_rect.min;
-        text_pos.x += box->semantic_size[UI_Axis2_X].value;
+
+        if (box->semantic_size[UI_Axis2_X].kind == UI_SizeKind_TextContent)
+            text_pos.x += box->semantic_size[UI_Axis2_X].value;
         text_pos.y += metrics.ascender;
 
         // TODO font runs do not work anymore when changing font and stuff?
@@ -857,7 +858,13 @@ internal UI_Comm ui_checkbox(bool *val, String8 str) {
     }
 }
 
-internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 text_padding_px, bool selected) {
+internal UI_Comm ui_text_view(
+        Arena *arena,
+        TXT_View *view,
+        String8 label,
+        f32 text_padding_em,
+        bool selected,
+        f32 line_height) {
     UI_Comm result = {0};
 
     TXT_Text *text = view->text;
@@ -871,11 +878,16 @@ internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 t
 
     result = ui_comm_from_box(text_box);
 
-    f32 line_height = 1.2;
-
     f32 estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
     estimated_lines_in_box /= ui_get_em(line_height, text_box->font_size);
-    estimated_lines_in_box += 2;
+    estimated_lines_in_box += 1;
+
+    v2u64 line_range = {
+        .min = view->line_offset,
+        .max = view->line_offset + estimated_lines_in_box,
+    };
+
+    f32 text_padding_px = ui_get_em(text_padding_em, text_box->font_size);
 
     UI_Parent(text_box)
         UI_PrefHeight(ui_em(line_height, 1))
@@ -883,16 +895,13 @@ internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 t
     {
         TimeBlock(S8("UI Build Text"));
 
-        ui_spacer(ui_em(0.4, 0));
+        ui_spacer(ui_em(text_padding_em, 0));
 
-        for (u32 line_idx = 0; 
-                line_idx < txt_get_n_lines(text);
-                line_idx++) {
-            if (line_idx > estimated_lines_in_box) {
-                break;
-            }
-
-            String8 display_string = txt_get_line(arena, text, line_idx);
+        u32 line_idx = 0;
+        for (u32 line_num = line_range.min; 
+                line_num < line_range.max && line_idx < txt_get_n_lines(text);
+                line_num++, line_idx++) {
+            String8 display_string = txt_get_line(arena, text, line_num);
             String8 key_string = str8_cat(
                     arena,
                     S8("line"),
@@ -903,7 +912,9 @@ internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 t
                     key_string); 
             ui_box_equip_string(line_box, display_string);
 
-            if (selected && view->cursor_row == line_idx) {
+            UI_Comm line_comm = ui_comm_from_box(line_box);
+
+            if (selected && view->cursor_row == line_num) {
                 f32 advance = 0; 
                 if (display_string.size) {
                     FC_GlyphRun *glyph_run = ui_get_box_display_run(line_box);

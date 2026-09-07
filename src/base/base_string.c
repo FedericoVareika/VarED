@@ -292,7 +292,6 @@ internal u64 str8_djb2_u64_seed(String8 str, u64 seed) {
     return result;
 }
 
-#include "../third_party/xxHash/xxhash.c"
 internal u64 str8_xxh3_u64(String8 str, u64 seed) {
     XXH64_hash_t result = XXH64(str.str, str.size, (XXH64_hash_t)seed);
 

@@ -8,7 +8,10 @@ struct TXT_View {
     Arena *text_arena;
 
     bool single_line;
+    bool file_view;
+
     TXT_Text *text;
+    u64 line_offset;
 
     u32 cursor_row;
     u32 cursor_col;

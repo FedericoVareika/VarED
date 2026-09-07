@@ -37,6 +37,10 @@
 # error thread_static not defined for this compiler.
 #endif
 
+#include "../third_party/xxHash/xxhash.h"
+
+// #define STB_SPRINTF_STATIC
+// #include "../third_party/stb/stb_sprintf.h"
 
 typedef uint8_t u8;
 typedef uint16_t u16;

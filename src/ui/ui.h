@@ -110,6 +110,7 @@ struct UI_Comm {
     UI_Box *box;
 
     v2 mouse_pos;
+    v2 rel_mouse_pos;
     v2 drag_delta;
 
     bool clicked; 
@@ -226,7 +227,7 @@ internal void ui_spacer(UI_Size size);
 internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str);
 internal UI_Comm ui_f32_slider(f32 *val, f32 min, f32 max, String8 str);
 
-internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 text_padding_px, bool selected);
+internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 text_padding_px, bool selected, f32 line_height);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Style stack DeferLoops

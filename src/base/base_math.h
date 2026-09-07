@@ -25,6 +25,9 @@ typedef struct {
         struct {
             u64 x, y;
         };
+        struct {
+            u64 min, max;
+        };
         u64 e[2];
     };
 } v2u64;

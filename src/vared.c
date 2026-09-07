@@ -8,6 +8,9 @@
 #include "profiler/profiler.h"
 #include "profiler/profiler.c"
 
+#include "commands/commands.h"
+#include "commands/commands.c"
+
 #include "render/render_inc.h"
 #include "render/render_inc.c"
 
@@ -49,10 +52,62 @@ void editor_init(EditorParams *params) {
     fp_init();
     state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
     state->font_size = 14;
+    state->line_height = 1.2;
 
     ui_init();
+    cmd_init();
 
     state->show_profiler = false;
+}
+
+void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
+    TXT_View *view = &view_n->v;
+    f32 text_padding_em = 0.4;
+    UI_Comm view_comm = ui_text_view(state->frame_arena, view, label, text_padding_em, view_n == state->focused_view, state->line_height);
+
+    if (view_comm.clicked) {
+        Temp scratch = scratch_begin(0, 0);
+        {
+            CMD *cmd = cmd_push_name(S8("focus_view"));
+            cmd->view_n = view_n;
+        }
+
+        f32 text_padding_px = ui_get_em(text_padding_em, view_comm.box->font_size);
+
+        f32 mouse_line = (view_comm.rel_mouse_pos.y - text_padding_px) /
+            ui_get_em(state->line_height, state->font_size);
+        u32 new_cursor_row = (u32)mouse_line + view->line_offset;
+        new_cursor_row = min(new_cursor_row, txt_get_n_lines(view->text));
+
+        f32 mouse_advance = view_comm.rel_mouse_pos.x - text_padding_px;
+        u32 new_cursor_col = 0;
+        FC_GlyphRun *glyph_run = fc_get_string_glyph_run(
+                state->font,
+                txt_get_line(scratch.arena, view->text, new_cursor_row),
+                state->font_size);
+
+        for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
+                glyph_ptr_n != 0;
+                glyph_ptr_n = glyph_ptr_n->next) {
+            FC_Glyph *glyph = glyph_ptr_n->v;
+            if (glyph->codepoint == (u32)'\n') {
+                break;
+            }
+            if (mouse_advance < glyph->metrics.advance / 2) {
+                break;
+            }
+            mouse_advance -= glyph->metrics.advance;
+            new_cursor_col++;
+        }
+
+        {
+            CMD *cmd = cmd_push_name(S8("goto"));
+            cmd->cursor_row = new_cursor_row;
+            cmd->cursor_col = new_cursor_col;
+        }
+
+        scratch_end(scratch);
+    }
 }
 
 void editor_update_and_render(EditorParams *params) {
@@ -77,9 +132,9 @@ void editor_update_and_render(EditorParams *params) {
                 switch (event.key) {
 
                 case WMKey_RETURN: {
-                    if (!state->general_selected_view_n)
+                    if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->general_selected_view_n->v;
+                    TXT_View *view = &state->focused_view->v;
 
                     if (view->single_line)
                         break;
@@ -92,9 +147,9 @@ void editor_update_and_render(EditorParams *params) {
                 } break;
 
                 case WMKey_BACKSPACE: {
-                    if (!state->general_selected_view_n)
+                    if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->general_selected_view_n->v;
+                    TXT_View *view = &state->focused_view->v;
 
                     u64 n = 0;
                     if (view->cursor_row == 0 && view->cursor_col == 0)
@@ -124,9 +179,9 @@ void editor_update_and_render(EditorParams *params) {
                 } break;
 
                 case WMKey_LEFT: {
-                    if (!state->general_selected_view_n)
+                    if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->general_selected_view_n->v;
+                    TXT_View *view = &state->focused_view->v;
 
                     if (view->cursor_row == 0 && view->cursor_col == 0)
                         break;
@@ -148,9 +203,9 @@ void editor_update_and_render(EditorParams *params) {
                     scratch_end(scratch);
                 } break;
                 case WMKey_RIGHT: {
-                    if (!state->general_selected_view_n)
+                    if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->general_selected_view_n->v;
+                    TXT_View *view = &state->focused_view->v;
 
                     u32 new_cursor_col = view->cursor_col; 
                     u32 new_cursor_row = view->cursor_row; 
@@ -183,9 +238,9 @@ void editor_update_and_render(EditorParams *params) {
                     scratch_end(scratch);
                 } break;
                 case WMKey_UP: {
-                    if (!state->general_selected_view_n)
+                    if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->general_selected_view_n->v;
+                    TXT_View *view = &state->focused_view->v;
 
                     if (view->single_line)
                         break;
@@ -205,9 +260,9 @@ void editor_update_and_render(EditorParams *params) {
                     }
                 } break;
                 case WMKey_DOWN: {
-                    if (!state->general_selected_view_n)
+                    if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->general_selected_view_n->v;
+                    TXT_View *view = &state->focused_view->v;
 
                     if (view->single_line)
                         break;
@@ -249,9 +304,9 @@ void editor_update_and_render(EditorParams *params) {
                 } break;
 
                 default: {
-                    if (!state->general_selected_view_n)
+                    if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->general_selected_view_n->v;
+                    TXT_View *view = &state->focused_view->v;
 
                     if (event.character) {
                         u8 insert_chars[4] = {0};
@@ -273,10 +328,74 @@ void editor_update_and_render(EditorParams *params) {
         }
     }
 
+    CMD_List *commands = cmd_get_pending(); 
+    for (CMD_Node *cmd_n = commands->first; 
+            cmd_n != 0; 
+            cmd_n = cmd_n->next) {
+        CMD *cmd = &cmd_n->v;
+        CMD_Kind kind = cmd_kind_from_name(cmd->name);
+
+        switch (kind) {
+        case CMD_Kind_OpenFile: {
+            TXT_ViewNode *view_n = push_struct(state->arena, TXT_ViewNode);
+            TXT_View *view = &view_n->v;
+            view->text_arena = arena_alloc();
+            view->text = push_struct(view->text_arena, TXT_Text);
+
+            DLL_PushBack(state->first_view, state->last_view, view_n);
+            
+            Temp scratch = scratch_begin(0, 0);
+            view->label = str8_copy(state->arena, cmd->filepath);
+
+            char *path_cstr = cstr_from_str8(scratch.arena, cmd->filepath);
+            DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
+
+            if (!file.memory) {
+                printf("Could not open file: %s\n", path_cstr);
+                break;
+            }
+
+            arena_clear(view->text_arena);
+            view->text = push_struct(view->text_arena, TXT_Text);
+            view->file_view = true;
+            view->cursor_row = 0;
+            view->cursor_col = 0;
+
+            txt_insert(view->text_arena, view->text, str8(file.memory, file.size), 0);
+
+            debug_platform_free_file_memory(0, file);
+            scratch_end(scratch);
+        } break;
+
+        case CMD_Kind_FocusView: {
+            TXT_ViewNode *view_n = cmd->view_n;
+            state->focused_view = view_n;
+            if (view_n->v.file_view) {
+                state->selected_file_view = view_n;
+            }
+        } break;
+
+        case CMD_Kind_GoTo: {
+            TXT_ViewNode *view_n = state->focused_view;
+            TXT_View *view = &view_n->v;
+
+            u32 cursor_row = cmd->cursor_row;
+            u32 cursor_col = cmd->cursor_col;
+
+            view->cursor_row = cursor_row;
+            // TODO(fede): Do desired col
+            view->cursor_col = cursor_col;
+        } break;
+        }
+    }
+
+    cmd_tick();
+
     v2 window_dim = {
         .x = r_state->window_width,
         .y = r_state->window_height,
     };
+
     R_Bucket *main_bucket = r_get_new_bucket();
     r_push_bucket(main_bucket);
 
@@ -393,21 +512,12 @@ void editor_update_and_render(EditorParams *params) {
 
                     ui_spacer(ui_em(1, 0));
 
-                    f32 text_padding_px = 5;
                     UI_PrefWidth(ui_pct(1, 1)) 
                         UI_Row
                     {
                         UI_PrefWidth(ui_pct(1, 0))
                         {
-                            bool selected = state->general_selected_view_n == state->input_view_n;
-                            UI_Comm text_view_comm = ui_text_view(
-                                    frame_arena,
-                                    &state->input_view_n->v,
-                                    S8("input_text"),
-                                    text_padding_px, selected);
-                            if (text_view_comm.clicked) {
-                                state->general_selected_view_n = state->input_view_n;
-                            }
+                            text_view(state, state->input_view_n, S8("input_text"));
                         }
 
                         ui_spacer(ui_em(1, 0));
@@ -415,44 +525,18 @@ void editor_update_and_render(EditorParams *params) {
                         UI_PrefWidth(ui_tc(10, 1))
                         {
                             if (ui_button(S8("Open")).clicked) {
-                                // TODO: open file command
                                 TXT_View *input_view = &state->input_view_n->v;
-
-                                TXT_ViewNode *view_n = push_struct(state->arena, TXT_ViewNode);
-                                TXT_View *view = &view_n->v;
-                                view->text_arena = arena_alloc();
-                                view->text = push_struct(view->text_arena, TXT_Text);
-
-                                DLL_PushBack(state->first_view, state->last_view, view_n);
-                                
-                                Temp scratch = scratch_begin(0, 0);
-                                String8 path = txt_get_line(scratch.arena, input_view->text, input_view->cursor_row);
+                                String8 path = txt_get_line(cmd_frame_arena(), input_view->text, input_view->cursor_row);
                                 path = str8_strip(path);
 
-                                view->label = str8_copy(state->arena, path);
-
-                                char *path_cstr = cstr_from_str8(scratch.arena, path);
-                                DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
-
-                                if (!file.memory) {
-                                    printf("Could not open file: %s\n", path_cstr);
-                                    break;
-                                }
-
-                                arena_clear(view->text_arena);
-                                view->text = push_struct(view->text_arena, TXT_Text);
-                                view->cursor_row = 0;
-                                view->cursor_col = 0;
-
-                                txt_insert(view->text_arena, view->text, str8(file.memory, file.size), 0);
-
-                                debug_platform_free_file_memory(0, file);
-                                scratch_end(scratch);
+                                // TODO(fede): Command kind fast-paths.
+                                CMD *cmd = cmd_push_name(S8("open"));
+                                cmd->filepath = path;
                             }
-
                         }
                     }
 
+                    f32 text_padding_px = 5;
                     bool draw_view = false;
                     UI_PrefWidth(ui_pct(1, 1)) 
                         UI_Row
@@ -465,15 +549,15 @@ void editor_update_and_render(EditorParams *params) {
                                 view_n = view_n->next, i++) {
                             TXT_View *view = &view_n->v;
 
-                            bool main_selected = view_n == state->main_selected_view_n;
-                            bool general_selected = view_n == state->general_selected_view_n;
+                            bool focused = view_n == state->focused_view;
+                            bool selected = view_n == state->selected_file_view;
 
-                            if (general_selected)
+                            if (selected)
                                 ui_push_border_color(RGBA(1, 0, 0, 1));
                             else 
                                 ui_push_border_color(RGBA(0, 0, 1, 1));
 
-                            draw_view = draw_view || main_selected;
+                            draw_view = draw_view || selected;
 
                             String8 text_box_label = S8("##text");
                             text_box_label = str8_cat(frame_arena, text_box_label, str8_from_u32(frame_arena, i));
@@ -488,9 +572,8 @@ void editor_update_and_render(EditorParams *params) {
                             ui_box_equip_string(view_tab_box, view->label);
 
                             if (ui_comm_from_box(view_tab_box).clicked) {
-                                state->general_selected_view_n = view_n;
-                                state->main_selected_view_n = view_n;
-                                draw_view = true;
+                                CMD *cmd = cmd_push_name(S8("focus_view"));
+                                cmd->view_n = view_n;
                             }
 
                             ui_pop_border_color();
@@ -500,12 +583,7 @@ void editor_update_and_render(EditorParams *params) {
                     if (draw_view) {
                         UI_PrefWidth(ui_pct(1, 0)) UI_PrefHeight(ui_pct(0.75, 0))
                         {
-                            TXT_ViewNode *view_n = state->main_selected_view_n;
-                            TXT_View *view = &view_n->v;
-
-                            if (ui_text_view(frame_arena, view, S8("##text_box"), text_padding_px, view_n == state->general_selected_view_n).clicked) {
-                                state->general_selected_view_n = view_n;
-                            }
+                            text_view(state, state->selected_file_view, S8("##text_box"));
                         }
                     }
                 }
@@ -526,4 +604,3 @@ void editor_update_and_render(EditorParams *params) {
 
     events->first = events->last = 0;
 }
-
