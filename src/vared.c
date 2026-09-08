@@ -375,6 +375,9 @@ void editor_update_and_render(EditorParams *params) {
             }
         } break;
 
+        // TODO(fede): I need to figure out how to do text commands, because how 
+        //      do i scroll the text view when the cursor moves outside the line 
+        //      range?
         case CMD_Kind_GoTo: {
             TXT_ViewNode *view_n = state->focused_view;
             TXT_View *view = &view_n->v;
