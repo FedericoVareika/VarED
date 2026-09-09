@@ -99,6 +99,22 @@ internal inline bool rect2_overlap(Rect2 a, Rect2 b) {
         a.min.y < b.max.y && a.max.y > b.min.y;
 }
 
+internal inline Rng2u rng2u(v2u a, v2u b) {
+    v2u min, max;
+    if (a.y == b.y) {
+        min = a.x <  b.x ? a : b;
+        max = a.x >= b.x ? a : b;
+    } else {
+        min = a.y <  b.y ? a : b;
+        max = a.y >= b.y ? a : b;
+    }
+
+    return (Rng2u){
+        .min = min,
+        .max = max,
+    };
+}
+
 internal inline v2u v2u_add(v2u a, v2u b) {
     return (v2u){
         a.x + b.x,

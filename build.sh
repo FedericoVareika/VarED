@@ -51,6 +51,7 @@ mkdir -p build
 
 echo "Compiling..." 
 
+export NIX_HARDENING_ENABLE=""
 gcc -std=gnu11 \
     $common_flags_internal \
     $ignore_warning_flags \

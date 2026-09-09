@@ -883,7 +883,7 @@ internal UI_Comm ui_text_view(
     estimated_lines_in_box += 1;
 
     v2u64 line_range = {
-        .min = view->line_offset,
+        .min = view->line_offset + 1,
         .max = view->line_offset + estimated_lines_in_box,
     };
 
@@ -897,9 +897,9 @@ internal UI_Comm ui_text_view(
 
         ui_spacer(ui_em(text_padding_em, 0));
 
-        u32 line_idx = 0;
+        u32 line_idx = 1;
         for (u32 line_num = line_range.min; 
-                line_num < line_range.max && line_idx < txt_get_n_lines(text);
+                line_num <= line_range.max && line_idx <= txt_get_n_lines(text);
                 line_num++, line_idx++) {
             String8 display_string = txt_get_line(arena, text, line_num);
             String8 key_string = str8_cat(
@@ -914,13 +914,13 @@ internal UI_Comm ui_text_view(
 
             UI_Comm line_comm = ui_comm_from_box(line_box);
 
-            if (selected && view->cursor_row == line_num) {
+            if (selected && view->cursor.y == line_num) {
                 f32 advance = 0; 
                 if (display_string.size) {
                     FC_GlyphRun *glyph_run = ui_get_box_display_run(line_box);
                     u32 bytes_consumed = 0;
                     for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
-                            glyph_ptr_n != 0 && bytes_consumed < view->cursor_col;
+                            glyph_ptr_n != 0 && bytes_consumed < view->cursor.x;
                             glyph_ptr_n = glyph_ptr_n->next) {
                         FC_Glyph *glyph = glyph_ptr_n->v;
                         bytes_consumed += utf8_encode(glyph->codepoint, 0);

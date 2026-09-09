@@ -9,7 +9,6 @@ typedef enum {
 /*
 */ CMD_Kind_OpenFile, /*
 */ CMD_Kind_FocusView, /*
-*/ CMD_Kind_GoTo, /*
 */
     CMD_Kind_COUNT,
 } CMD_Kind;

@@ -4,13 +4,11 @@
 #define COMMAND_KIND_DEFS(M) /*
 */ M(OpenFile) /*
 */ M(FocusView) /*
-*/ M(GoTo) /*
 */
 
 #define COMMAND_DEFS(M) /*
 */ M("open", OpenFile) /*
 */ M("focus_view", FocusView) /*
-*/ M("goto", GoTo) /*
 */
 
 ////////////////////////////////////////////////////////////////////////////////

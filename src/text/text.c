@@ -344,6 +344,9 @@ internal u64 txt_get_n_lines(TXT_Text *text) {
 }
 
 internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
+    assert(row > 0); 
+    row--;
+
     u64 result = 0;
     u64 line_idx = 0;
     TXT_PieceNode *piece_n = text->first;
@@ -459,6 +462,10 @@ internal String8 txt_get_buffer_substr(
 // NOTE(fede): Ends with \n if its not the end of text
 internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
     TimeFunction;
+
+    assert(row > 0);
+    row--;
+        
 
     u64 line_idx = 0;
     TXT_PieceNode *piece_n = text->first;

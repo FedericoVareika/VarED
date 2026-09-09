@@ -44,6 +44,8 @@ void editor_init(EditorParams *params) {
         view->text_arena = arena_alloc();
         view->text = push_struct(view->text_arena, TXT_Text);
         view->single_line = true;
+        view->cursor.y = 1;
+        view->mark.y = 1;
     }
 
     p_init();
@@ -63,6 +65,91 @@ void editor_init(EditorParams *params) {
 void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     TXT_View *view = &view_n->v;
     f32 text_padding_em = 0.4;
+
+    // NOTE(fede): Apply per-frame actions
+    bool reset_anchor = false;
+    bool set_cursor_from_anchor = view->anchor_changed;
+    {
+        // TODO(fede): Make this be able to consume multiple actions (queue)
+        TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, view->action);
+        view->action = (TXT_ViewAction){0};
+
+        if (op.replace_range.min.y != 0) {
+            u64 min_at = txt_get_line_offset(view->text, op.replace_range.min.y);
+            min_at += op.replace_range.min.x;
+            u64 max_at = txt_get_line_offset(view->text, op.replace_range.max.y);
+            max_at += op.replace_range.max.x;
+            if (max_at - min_at) {
+                txt_delete(view->text_arena, view->text, min_at, max_at - min_at);
+            }
+        }
+
+        if (op.insert_text.size) {
+            u64 cursor_at = txt_get_line_offset(view->text, view->cursor.y);
+            cursor_at += view->cursor.x;
+            txt_insert(view->text_arena, view->text, op.insert_text, cursor_at);
+        }
+
+        if (op.update_cursor_col) {
+            reset_anchor = true;
+            view->cursor.x = op.new_cursor.x;
+        }
+
+        if (!view->single_line) {
+            if (view->cursor.y != op.new_cursor.y) {
+                set_cursor_from_anchor = true;
+            }
+            view->cursor.y = op.new_cursor.y;
+        }
+
+        view->mark = op.new_mark;
+    }
+
+    // NOTE(fede): If reset anchor is set, we should prioritize it, instead of 
+    // resetting the cursor. 
+    // This is because we might change the row of the cursor, but also change
+    // the cursor column correctly.
+    set_cursor_from_anchor &= !reset_anchor;
+
+    // Align cursor to anchor or set anchor to cursor.
+    if (reset_anchor || set_cursor_from_anchor) {
+        Temp scratch = scratch_begin(0, 0);
+
+        f32 one_em = ui_get_em(1, state->font_size);
+        FC_GlyphRun *glyph_run = fc_get_string_glyph_run(
+                state->font,
+                txt_get_line(scratch.arena, view->text, view->cursor.y),
+                state->font_size);
+
+        u32 bytes_consumed = 0;
+        f32 advance = 0;
+
+        for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
+                glyph_ptr_n != 0;
+                glyph_ptr_n = glyph_ptr_n->next) {
+            FC_Glyph *glyph = glyph_ptr_n->v;
+
+            if (reset_anchor &&
+                    (bytes_consumed >= view->cursor.x || 
+                    glyph->codepoint == (u32)'\n')) {
+                view->horizontal_anchor_em = advance / one_em;
+                break;
+            } else if (set_cursor_from_anchor && 
+                    (view->horizontal_anchor_em * one_em - advance < glyph->metrics.advance / 2 || 
+                    glyph->codepoint == (u32)'\n')) {
+                view->cursor.x = bytes_consumed;
+                break;
+            }
+
+            bytes_consumed += utf8_encode(glyph->codepoint, 0);
+            advance += glyph->metrics.advance;
+        }
+
+        view->anchor_changed = false;
+
+        scratch_end(scratch);
+    }
+
     UI_Comm view_comm = ui_text_view(state->frame_arena, view, label, text_padding_em, view_n == state->focused_view, state->line_height);
 
     if (view_comm.clicked) {
@@ -76,34 +163,15 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
 
         f32 mouse_line = (view_comm.rel_mouse_pos.y - text_padding_px) /
             ui_get_em(state->line_height, state->font_size);
-        u32 new_cursor_row = (u32)mouse_line + view->line_offset;
+        u32 new_cursor_row = (u32)mouse_line + view->line_offset + 1;
         new_cursor_row = min(new_cursor_row, txt_get_n_lines(view->text));
 
         f32 mouse_advance = view_comm.rel_mouse_pos.x - text_padding_px;
-        u32 new_cursor_col = 0;
-        FC_GlyphRun *glyph_run = fc_get_string_glyph_run(
-                state->font,
-                txt_get_line(scratch.arena, view->text, new_cursor_row),
-                state->font_size);
-
-        for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
-                glyph_ptr_n != 0;
-                glyph_ptr_n = glyph_ptr_n->next) {
-            FC_Glyph *glyph = glyph_ptr_n->v;
-            if (glyph->codepoint == (u32)'\n') {
-                break;
-            }
-            if (mouse_advance < glyph->metrics.advance / 2) {
-                break;
-            }
-            mouse_advance -= glyph->metrics.advance;
-            new_cursor_col++;
-        }
 
         {
-            CMD *cmd = cmd_push_name(S8("goto"));
-            cmd->cursor_row = new_cursor_row;
-            cmd->cursor_col = new_cursor_col;
+            view->action.row_delta = (i32)new_cursor_row - (i32)view->cursor.y;
+            view->horizontal_anchor_em = mouse_advance / ui_get_em(1, state->font_size);
+            view->anchor_changed = true;
         }
 
         scratch_end(scratch);
@@ -127,6 +195,7 @@ void editor_update_and_render(EditorParams *params) {
         for (WMEventNode *event_n = events->first; event_n; event_n = event_n->next) {
             WMEvent event = event_n->v;
             switch (event.kind) {
+            // TODO(fede): Move these to commands.
             case WMEventKind_Press: {
             // case WMEventKind_Release: {
                 switch (event.key) {
@@ -139,147 +208,46 @@ void editor_update_and_render(EditorParams *params) {
                     if (view->single_line)
                         break;
 
-                    u64 at = txt_get_line_offset(view->text, view->cursor_row);
-                    at += view->cursor_col;
-                    txt_insert(view->text_arena, view->text, S8("\n"), at);
-                    view->cursor_col = 0;
-                    view->cursor_row++;
+                    view->action.codepoint = (u32)'\n';
+                    view->action.row_delta++;
+                    view->action.hor_char_delta = -I32_MAX;
+                    view->action.flags |= 
+                        TXT_ViewAction_Flag_KeepBehindInsertion;
                 } break;
 
                 case WMKey_BACKSPACE: {
                     if (!state->focused_view)
                         break;
                     TXT_View *view = &state->focused_view->v;
-
-                    u64 n = 0;
-                    if (view->cursor_row == 0 && view->cursor_col == 0)
-                        break;
-
-                    Temp scratch = scratch_begin(0, 0);
-
-                    String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
-                    do {
-                        if (view->cursor_col > 0) {
-                            view->cursor_col--;
-                        } else {
-                            if (view->cursor_row)
-                                view->cursor_row--;
-
-                            line = txt_get_line(scratch.arena, view->text, view->cursor_row);
-                            view->cursor_col = line.size - 1; // before the \n
-                        }
-                        n++;
-                    } while (!utf8_byte_is_header(line.str[view->cursor_col]));
-
-                    u64 at = txt_get_line_offset(view->text, view->cursor_row);
-                    at += view->cursor_col;
-                    txt_delete(view->text_arena, view->text, at, n);
-
-                    scratch_end(scratch);
+                    view->action.flags |= 
+                        TXT_ViewAction_Flag_Delete |
+                        TXT_ViewAction_Flag_ZeroDeltaWithSelection;
+                    view->action.hor_char_delta--;
                 } break;
 
                 case WMKey_LEFT: {
                     if (!state->focused_view)
                         break;
                     TXT_View *view = &state->focused_view->v;
-
-                    if (view->cursor_row == 0 && view->cursor_col == 0)
-                        break;
-
-                    Temp scratch = scratch_begin(0, 0);
-                    String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
-                    do {
-                        if (view->cursor_col > 0) {
-                            view->cursor_col--;
-                        } else {
-                            if (view->cursor_row)
-                                view->cursor_row--;
-
-                            line = txt_get_line(scratch.arena, view->text, view->cursor_row);
-                            view->cursor_col = line.size - 1; // before the \n
-                        }
-                    } while (!utf8_byte_is_header(line.str[view->cursor_col]));
-
-                    scratch_end(scratch);
+                    view->action.hor_char_delta--;
                 } break;
                 case WMKey_RIGHT: {
                     if (!state->focused_view)
                         break;
                     TXT_View *view = &state->focused_view->v;
-
-                    u32 new_cursor_col = view->cursor_col; 
-                    u32 new_cursor_row = view->cursor_row; 
-
-                    Temp scratch = scratch_begin(0, 0);
-                    String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
-                    
-                    if (new_cursor_col + 1 == line.size && line.str[new_cursor_col] == '\n')
-                        new_cursor_col++;
-
-                    do {
-                        if (new_cursor_col < line.size) {
-                            new_cursor_col++;
-                        } else if (new_cursor_col == line.size) {
-                            if (txt_get_n_lines(view->text) <= new_cursor_row + 1) {
-                                new_cursor_col = view->cursor_col;
-                                new_cursor_row = view->cursor_row;
-                                break;
-                            }
-
-                            new_cursor_row++;
-                            line = txt_get_line(scratch.arena, view->text, new_cursor_row);
-                            new_cursor_col = 0;
-                            break;
-                        }
-                    } while (!utf8_byte_is_header(line.str[new_cursor_col]));
-
-                    view->cursor_col = new_cursor_col;
-                    view->cursor_row = new_cursor_row;
-                    scratch_end(scratch);
+                    view->action.hor_char_delta++;
                 } break;
                 case WMKey_UP: {
                     if (!state->focused_view)
                         break;
                     TXT_View *view = &state->focused_view->v;
-
-                    if (view->single_line)
-                        break;
-
-                    if (view->cursor_row > 0) {
-                        view->cursor_row--;
-
-                        // TODO(fede): Do optically aligned, instead of byte aligned.
-                        Temp scratch = scratch_begin(0, 0);
-                        String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
-                        view->cursor_col = min(line.size - 1, view->cursor_col);
-
-                        while (!utf8_byte_is_header(line.str[view->cursor_col])) {
-                            view->cursor_col--;
-                        }
-                        scratch_end(scratch);
-                    }
+                    view->action.row_delta--;
                 } break;
                 case WMKey_DOWN: {
                     if (!state->focused_view)
                         break;
                     TXT_View *view = &state->focused_view->v;
-
-                    if (view->single_line)
-                        break;
-
-                    if (view->cursor_row + 1 < txt_get_n_lines(view->text)) {
-                        view->cursor_row++;
-
-                        // TODO(fede): Do optically aligned, instead of byte aligned.
-                        Temp scratch = scratch_begin(0, 0);
-                        String8 line = txt_get_line(scratch.arena, view->text, view->cursor_row);
-                        view->cursor_col = min(line.size - 1, view->cursor_col);
-
-                        while (!utf8_byte_is_header(line.str[view->cursor_col])) {
-                            view->cursor_col--;
-                        }
-                        scratch_end(scratch);
-                    }
+                    view->action.row_delta++;
                 } break;
 
                 // TODO(fede): Fix this input, this never comes through, instead it 
@@ -309,13 +277,8 @@ void editor_update_and_render(EditorParams *params) {
                     TXT_View *view = &state->focused_view->v;
 
                     if (event.character) {
-                        u8 insert_chars[4] = {0};
-                        u32 codepoint_byte_size = utf8_encode(event.character, (u8 *)insert_chars);
-
-                        u64 at = txt_get_line_offset(view->text, view->cursor_row);
-                        at += view->cursor_col;
-                        txt_insert(view->text_arena, view->text, str8((u8 *)&insert_chars, codepoint_byte_size), at);
-                        view->cursor_col += codepoint_byte_size;
+                        view->action.codepoint = event.character;
+                        // view->action.hor_char_delta += 1;
                     }
                 } break; 
                 }
@@ -358,8 +321,8 @@ void editor_update_and_render(EditorParams *params) {
             arena_clear(view->text_arena);
             view->text = push_struct(view->text_arena, TXT_Text);
             view->file_view = true;
-            view->cursor_row = 0;
-            view->cursor_col = 0;
+            view->cursor.y = 1;
+            view->mark.y = 1;
 
             txt_insert(view->text_arena, view->text, str8(file.memory, file.size), 0);
 
@@ -373,21 +336,6 @@ void editor_update_and_render(EditorParams *params) {
             if (view_n->v.file_view) {
                 state->selected_file_view = view_n;
             }
-        } break;
-
-        // TODO(fede): I need to figure out how to do text commands, because how 
-        //      do i scroll the text view when the cursor moves outside the line 
-        //      range?
-        case CMD_Kind_GoTo: {
-            TXT_ViewNode *view_n = state->focused_view;
-            TXT_View *view = &view_n->v;
-
-            u32 cursor_row = cmd->cursor_row;
-            u32 cursor_col = cmd->cursor_col;
-
-            view->cursor_row = cursor_row;
-            // TODO(fede): Do desired col
-            view->cursor_col = cursor_col;
         } break;
         }
     }
@@ -529,7 +477,7 @@ void editor_update_and_render(EditorParams *params) {
                         {
                             if (ui_button(S8("Open")).clicked) {
                                 TXT_View *input_view = &state->input_view_n->v;
-                                String8 path = txt_get_line(cmd_frame_arena(), input_view->text, input_view->cursor_row);
+                                String8 path = txt_get_line(cmd_frame_arena(), input_view->text, input_view->cursor.y);
                                 path = str8_strip(path);
 
                                 // TODO(fede): Command kind fast-paths.

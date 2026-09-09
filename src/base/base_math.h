@@ -74,6 +74,14 @@ typedef struct {
     };
 } Rect2;
 
+typedef struct {
+    union {
+        struct {
+            v2u min, max;
+        };
+    };
+} Rng2u;
+
 internal inline v2 v2_add(v2 a, v2 b);
 internal inline v2 v2_sub(v2 a, v2 b);
 internal inline v2 v2_smul(v2 a, f32 m);
@@ -111,5 +119,7 @@ internal inline Rect2 rect2_center_dim(v2 center, v2 dim);
 internal inline bool rect2_test_inside(Rect2 rect, v2 test);
 internal inline bool rect2_overlap(Rect2 a, Rect2 b);
 #define R2_INF ((Rect2){V2_NEG_INF, V2_INF})
+
+internal inline Rng2u rng2u(v2u a, v2u b);
 
 #endif // VARED_MATH_H

@@ -55,6 +55,9 @@ typedef int64_t i64;
 typedef float f32;
 typedef double f64;
 
+#define I32_MAX 0x7FFFFFF
+#define I64_MAX 0x7FFFFFFFFFFFFFF
+
 // STUDY(fede): This is added because of SDL, check if this is necessary.
 #if !defined(__bool_true_false_are_defined)
 typedef enum { false, true } bool;
