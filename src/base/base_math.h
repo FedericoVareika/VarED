@@ -99,7 +99,7 @@ internal inline v2u v2u_sub(v2u a, v2u b);
 internal inline v2u v2u_smul(v2u a, u32 m);
 internal inline v2u v2u_sdiv(v2u a, u32 m);
 internal inline v2u v2u_vmul(v2u a, v2u b);
-internal inline v2u v2u_neg(v2u a);
+internal inline bool v2u_equal(v2u a, v2u b);
 
 internal inline v4 v4_add(v4 a, v4 b);
 internal inline v4 v4_sub(v4 a, v4 b);

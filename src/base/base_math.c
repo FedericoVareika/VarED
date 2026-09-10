@@ -150,11 +150,8 @@ internal inline v2u v2u_vmul(v2u a, v2u b) {
     };
 }
 
-internal inline v2u v2u_neg(v2u a) {
-    return (v2u){
-        -a.x,
-        -a.y,
-    };
+internal inline bool v2u_equal(v2u a, v2u b) {
+    return a.x == b.x && a.y == b.y;
 }
 
 internal inline v4 v4_add(v4 a, v4 b) {

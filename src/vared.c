@@ -190,7 +190,11 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
 
         f32 text_padding_px = ui_get_em(text_padding_em, view_comm.box->font_size);
 
-        f32 mouse_line = (view_comm.rel_mouse_pos.y - text_padding_px) /
+        f32 mouse_y = view_comm.rel_mouse_pos.y - text_padding_px;
+        if (mouse_y < 0)
+            mouse_y = 0;
+
+        f32 mouse_line = mouse_y /
             ui_get_em(state->line_height, state->font_size);
         u32 new_cursor_row = (u32)mouse_line + view->line_offset + 1;
         new_cursor_row = min(new_cursor_row, txt_get_n_lines(view->text));
@@ -575,28 +579,6 @@ void editor_update_and_render(EditorParams *params) {
                         ui_slider(&state->font_size, 6, 20, S8("Font size"));
                         state->font_size = (f32)ceil_f32_to_int(state->font_size);
                     }
-
-                    ui_spacer(ui_em(1, 0));
-
-                    // if (state->focused_view) 
-                    //     UI_Row {
-                    //     Temp scratch = scratch_begin(0, 0);
-                    //     // TODO(fede): debug coord view
-                    //
-                    //     TXT_View *view = &state->focused_view->v;
-                    //
-                    //     // TODO(fede): fstrings
-                    //     String8 cursor_label = S8("");
-                    //     cursor_label = str8_cat(frame_arena,
-                    //             str8_cat(scratch.arena, 
-                    //                 str8_from_u64(scratch.arena, view->cursor.x), S(", ")),
-                    //             str8_from_u64(scratch.arena, view->cursor.y));
-                    //
-                    //     UI_Box *cursor_box = ui_box_makef(UI_BoxFlag_DrawText, "###cursor");
-                    //     ui_box_equip_string(cursor_box, cursor_label);
-                    //
-                    //     scratch_end(scratch);
-                    // }
 
                     ui_spacer(ui_em(1, 0));
 
