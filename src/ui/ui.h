@@ -10,30 +10,31 @@ typedef enum {
 
 typedef u32 UI_BoxFlags; 
 enum {
-    UI_BoxFlag_Clickable       = (1 << 0), 
-    UI_BoxFlag_DrawText        = (1 << 1),
-    UI_BoxFlag_Draggable       = (1 << 2),
+    UI_BoxFlag_Clickable        = (1 << 0), 
+    UI_BoxFlag_DrawText         = (1 << 1),
+    UI_BoxFlag_Draggable        = (1 << 2),
+    UI_BoxFlag_Scrollable       = (1 << 3),
     // TODO: Hoverable
 
-    UI_BoxFlag_DrawBackground  = (1 << 3),
-    UI_BoxFlag_DrawBorder      = (1 << 4),
-    UI_BoxFlag_ClipChildren    = (1 << 5),
+    UI_BoxFlag_DrawBackground  = (1 << 4),
+    UI_BoxFlag_DrawBorder      = (1 << 5),
+    UI_BoxFlag_ClipChildren    = (1 << 6),
 
     // TODO: Impl layout
-    UI_BoxFlag_FloatAxis       = (1 << 6),
+    UI_BoxFlag_FloatAxis       = (1 << 7),
     UI_BoxFlag_FloatX          = (UI_BoxFlag_FloatAxis << UI_Axis2_X),
     UI_BoxFlag_FloatY          = (UI_BoxFlag_FloatAxis << UI_Axis2_Y),
 
-    UI_BoxFlag_OverflowX       = (1 << 8),
-    UI_BoxFlag_OverflowY       = (1 << 9),
+    UI_BoxFlag_OverflowX       = (1 << 9),
+    UI_BoxFlag_OverflowY       = (1 << 10),
 
-    UI_BoxFlag_DrawHotEffects    = (1 << 10),
-    UI_BoxFlag_DrawActiveEffects = (1 << 11),
+    UI_BoxFlag_DrawHotEffects    = (1 << 11),
+    UI_BoxFlag_DrawActiveEffects = (1 << 12),
 
-    UI_BoxFlag_HotAnimation    = (1 << 12),
-    UI_BoxFlag_ActiveAnimation = (1 << 13),
+    UI_BoxFlag_HotAnimation    = (1 << 13),
+    UI_BoxFlag_ActiveAnimation = (1 << 14),
 
-    UI_BoxFlag_RenderBucket    = (1 << 14),
+    UI_BoxFlag_RenderBucket    = (1 << 15),
 };
 
 typedef struct UI_Key UI_Key; 
@@ -113,6 +114,8 @@ struct UI_Comm {
     v2 rel_mouse_pos;
     v2 drag_delta;
 
+    v2 scroll_delta;
+
     bool clicked; 
     bool dragging;
     bool hovering;
@@ -160,6 +163,8 @@ struct UI_State {
     bool mouse_press;
     v2 mouse_pos;
     v2 mouse_delta;
+
+    v2 scroll_delta;
 
     v2 mouse_drag_start_pos;
     v2 mouse_drag_start_rel_pos;

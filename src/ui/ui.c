@@ -193,7 +193,8 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
     comm.rel_mouse_pos = v2_sub(comm.mouse_pos, box->rect.min);
 
     bool mouse_interactable = box->flags & UI_BoxFlag_Clickable || 
-        box->flags & UI_BoxFlag_Draggable;
+        box->flags & UI_BoxFlag_Draggable ||
+        box->flags & UI_BoxFlag_Scrollable;
 
     if (mouse_interactable) {
         bool mouse_inside_box = rect2_test_inside(box->rect, ui_state->mouse_pos);
@@ -253,6 +254,10 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
             comm.drag_delta = v2_sub(ui_state->mouse_pos, ui_state->mouse_drag_start_pos);
         }
 
+        if (box->flags & UI_BoxFlag_Scrollable && hot) {
+            comm.scroll_delta = ui_state->scroll_delta;
+        }
+
         // TODO(fede): Anim
         if (hot_change) {
             ui_state->hot = hot ? box->key : ui_nil_key();
@@ -301,6 +306,8 @@ internal void ui_begin_build(v2 window_dim, WMEventList *events, f32 dt) {
 
     ui_state->root = &ui_nil_box;
 
+    ui_state->scroll_delta = V2(0, 0);
+
     GENERATE_STYLE_INIT_DEFAULTS()
 
     {
@@ -331,6 +338,9 @@ internal void ui_begin_build(v2 window_dim, WMEventList *events, f32 dt) {
         case WMEventKind_MouseMove: {
             ui_state->mouse_delta = v2_sub(event->pos, ui_state->mouse_pos); 
             ui_state->mouse_pos = event->pos;
+        } break;
+        case WMEventKind_MouseScroll: {
+            ui_state->scroll_delta = event->pos; 
         } break;
         case WMEventKind_Release: {
             if (event->key == WMKey_MOUSELEFT) {
@@ -665,8 +675,11 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
 
                 Rect2 glyph_rect = rect2_min_dim(pos, dim);
 
-                if (!rect2_overlap(glyph_rect, clip))
+                if (glyph_rect.min.x > clip.max.x)
                     break;
+
+                // if (!rect2_overlap(glyph_rect, clip))
+                //     continue;
 
                 r_push_rect2(
                         .tex = glyph->tex,
@@ -872,6 +885,7 @@ internal UI_Comm ui_text_view(
             UI_BoxFlag_DrawBorder |
             UI_BoxFlag_Clickable |
             UI_BoxFlag_Draggable |
+            UI_BoxFlag_Scrollable |
             UI_BoxFlag_OverflowY |
             UI_BoxFlag_ClipChildren, label);
 
@@ -881,7 +895,7 @@ internal UI_Comm ui_text_view(
     estimated_lines_in_box /= ui_get_em(line_height, text_box->font_size);
     estimated_lines_in_box += 1;
 
-    v2u64 line_range = {
+    Rng2u64 line_range = {
         .min = view->line_offset + 1,
         .max = view->line_offset + estimated_lines_in_box,
     };
@@ -987,7 +1001,7 @@ internal UI_Comm ui_text_view(
                                 line_box->rect.max.y),
                     };
 
-                    r_push_rect2(.pos = cursor_rect);
+                    r_push_rect2(.pos = cursor_rect, .clip = text_box->rect);
                 }
 
                 if (view->mark.y == line_num) {
@@ -1008,7 +1022,7 @@ internal UI_Comm ui_text_view(
                                 line_box->rect.min.x + selection_end + text_padding_px,
                                 line_box->rect.max.y),
                     };
-                    r_push_rect2(.pos = selection_rect, R_Color4(RGBA(1, 0, 0, 0.5)));
+                    r_push_rect2(.pos = selection_rect, .clip = text_box->rect, R_Color4(RGBA(1, 0, 0, 0.5)));
                 }
 
                 r_pop_bucket();

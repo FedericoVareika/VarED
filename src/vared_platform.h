@@ -158,6 +158,7 @@ typedef enum {
     WMEventKind_Release,
     WMEventKind_Text,
     WMEventKind_MouseMove,
+    WMEventKind_MouseScroll,
 } WMEventKind;
 
 typedef struct {

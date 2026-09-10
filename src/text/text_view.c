@@ -5,6 +5,7 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
     op.new_cursor = view->cursor;
     op.new_mark = view->mark;
     op.new_hor_anchor_em = view->horizontal_anchor_em;
+    op.new_line_offset = view->line_offset;
 
     i32 insertion_col_delta = 0;
 
@@ -78,6 +79,18 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
         op.new_mark = op.new_cursor;
     } else {
         op.keep_mark = true;
+    }
+
+    if (!view->single_line && !!(action.flags & TXT_ViewAction_AutoScrollLines)) {
+        if (op.new_cursor.y + 4 > view->last_line) {
+            u32 missing = op.new_cursor.y + 4 - view->last_line;
+            op.new_line_offset += missing;
+        } else if (op.new_cursor.y < 4) {
+            op.new_line_offset = 0;
+        } else if (op.new_cursor.y - 4 < view->first_line) {
+            u32 missing = view->first_line - (op.new_cursor.y - 4);
+            op.new_line_offset -= missing;
+        }
     }
 
     return op;

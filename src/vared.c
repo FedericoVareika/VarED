@@ -118,6 +118,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         }
 
         view->mark = op.new_mark;
+        view->line_offset = op.new_line_offset;
     }
     view->first_action = 0;
 
@@ -142,30 +143,29 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
 
         FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
         while (true) {
-            if (reset_anchor) {
-                view->horizontal_anchor_em = advance / one_em;
-            } else if (set_cursor_from_anchor) {
-                view->cursor.x = bytes_consumed;
-                if (!keep_mark) {
-                    view->mark.x = bytes_consumed;
-                }
-            }
-
             if (glyph_ptr_n == 0) 
                 break;
 
             FC_Glyph *glyph = glyph_ptr_n->v;
 
-            if (reset_anchor && (bytes_consumed >= view->cursor.x || 
-                    glyph->codepoint == (u32)'\n')) {
-                break;
+            if (set_cursor_from_anchor) {
+                f32 horizontal_anchor_px = view->horizontal_anchor_em * one_em;
+                f32 glyph_center = advance + glyph->metrics.advance / 2;
+                bool reached_anchor = glyph_center > horizontal_anchor_px;
+
+                if (reached_anchor) {
+                    break;
+                }
+            } else if (reset_anchor) {
+                bool reached_target_bytes = bytes_consumed >= view->cursor.x;
+
+                if (reached_target_bytes) {
+                    break;
+                }
             }
 
-            if (set_cursor_from_anchor && 
-                    (view->horizontal_anchor_em * one_em - advance < glyph->metrics.advance / 2 || 
-                     glyph->codepoint == (u32)'\n')) {
+            if (glyph->codepoint == (u32)'\n')
                 break;
-            }
 
             bytes_consumed += utf8_encode(glyph->codepoint, 0);
             advance += glyph->metrics.advance;
@@ -173,10 +173,29 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             glyph_ptr_n = glyph_ptr_n->next; 
         }
 
+        if (set_cursor_from_anchor) {
+            view->cursor.x = bytes_consumed;
+            if (!keep_mark) {
+                view->mark.x = bytes_consumed;
+            }
+        } else if (reset_anchor) {
+            view->horizontal_anchor_em = advance / one_em;
+        }
+
         scratch_end(scratch);
     }
 
     UI_Comm view_comm = ui_text_view(state->frame_arena, view, label, text_padding_em, view_n == state->focused_view, state->line_height);
+
+    {
+        UI_Box *text_box = view_comm.box;
+        view->text_rect = text_box->rect;
+        f32 estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
+        estimated_lines_in_box /= ui_get_em(state->line_height, text_box->font_size);
+        estimated_lines_in_box += 1;
+        view->first_line = view->line_offset;
+        view->last_line = view->line_offset + (u32)estimated_lines_in_box;
+    }
 
     if (view_comm.pressed) {
         {
@@ -212,6 +231,15 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         }
 
         scratch_end(scratch);
+    }
+
+    if (view_comm.scroll_delta.y) {
+        i64 line_offset_i = view->line_offset;
+        line_offset_i -= (i64)view_comm.scroll_delta.y;
+        line_offset_i = max(line_offset_i, 0);
+        line_offset_i = min(line_offset_i, (i64)txt_get_n_lines(view->text) - 1);
+
+        view->line_offset = (u32)line_offset_i;
     }
 }
 
@@ -256,6 +284,7 @@ void editor_update_and_render(EditorParams *params) {
                     {
                         CMD *cmd = cmd_push_name(S8("text_action"));
                         cmd->view_n = view_n;
+                        cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
                         cmd->view_action.row_delta++;
                         cmd->view_action.hor_delta = -I32_MAX;
                     }
@@ -335,6 +364,7 @@ void editor_update_and_render(EditorParams *params) {
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
                     cmd->view_action.row_delta--;
+                    cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                     if (!!(event.modifiers & WMModifier_ctrl) )
@@ -349,6 +379,7 @@ void editor_update_and_render(EditorParams *params) {
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
                     cmd->view_action.row_delta++;
+                    cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                     if (!!(event.modifiers & WMModifier_ctrl) )
@@ -386,11 +417,13 @@ void editor_update_and_render(EditorParams *params) {
                         CMD *cmd = cmd_push_name(S8("text_action"));
                         cmd->view_n = view_n;
                         cmd->view_action.codepoint = event.character;
+                        cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
                     }
                 } break; 
                 }
             } break;
 
+            case WMEventKind_MouseScroll:
             case WMEventKind_MouseMove: {
                 
             } break;
