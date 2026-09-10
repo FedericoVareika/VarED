@@ -4,6 +4,7 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
     op.new_cursor = view->cursor;
     op.new_mark = view->mark;
+    op.new_hor_anchor_em = view->horizontal_anchor_em;
 
     i32 insertion_col_delta = 0;
 
@@ -18,10 +19,17 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
         insertion_col_delta += count;
         op.update_cursor_col = true;
+        action.flags |= TXT_ViewAction_Flag_Delete;
+        // op.replace_range = rng2u(op.new_cursor, op.new_mark);
     }
 
     i32 col_delta = 0;
-    i32 row_delta = 0;
+    i32 row_delta = action.row_delta;
+    if ((i64)op.new_cursor.y + row_delta < 0) {
+        row_delta = -(i64)op.new_cursor.y + 1;
+    } else if ((u64)((i64)op.new_cursor.y + row_delta) > txt_get_n_lines(view->text)) {
+        row_delta = txt_get_n_lines(view->text) - op.new_cursor.y;
+    }
 
     // NOTE(fede): Consume characters
     // TODO(fede): Consume words
@@ -30,24 +38,36 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
         Temp scratch = scratch_begin(&arena, 1);
 
-        String8 line = txt_get_line(scratch.arena, view->text, op.new_cursor.y);
+        String8 line = txt_get_line(scratch.arena, view->text, op.new_cursor.y + row_delta);
+
+        op.new_cursor.x = min(line.size, op.new_cursor.x); 
+
         i32 sign = action.hor_char_delta / abs(action.hor_char_delta);
         assert(sign == 1 || sign == -1);
 
         bool end = false;
         while (!end && action.hor_char_delta != 0) {
+            i32 delta = 0;
             do {
-                i64 new_cursor_col = (i64)op.new_cursor.x + col_delta + sign;
+                i64 new_cursor_col = (i64)op.new_cursor.x + col_delta + delta + sign;
                 if (new_cursor_col < 0) {
                     end = true; 
                     break;
                 } else if (new_cursor_col > (u32)line.size) {
                     end = true; 
                     break;
-                }                
+                }
 
-                col_delta += sign;
-            } while (!utf8_byte_is_header(line.str[op.new_cursor.x + col_delta]));
+                delta += sign;
+            } while (!utf8_byte_is_header(line.str[op.new_cursor.x + col_delta + delta]));
+
+            // NOTE(fede): Border case where we want to go right, but the next 
+            //      character is newline, then we cap the movement. 
+            if (sign > 0 && line.str[op.new_cursor.x + col_delta] == '\n') {
+                end = true; 
+            } else {
+                col_delta += delta;
+            }
 
             action.hor_char_delta -= sign;
         }
@@ -55,10 +75,9 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
         scratch_end(scratch);
     }
 
-    if (!(action.flags & TXT_ViewAction_Flag_KeepBehindInsertion)) {
-        col_delta += insertion_col_delta;
+    if (!!(action.flags & TXT_ViewAction_Flag_SetHorizontalAnchor)) {
+        op.new_hor_anchor_em = action.hor_anchor_em;
     }
-    row_delta += action.row_delta;
 
     if (!!(action.flags & TXT_ViewAction_Flag_ZeroDeltaWithSelection) && 
             (view->cursor.x != view->mark.x || 
@@ -77,6 +96,10 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
         op.replace_range = rng2u(op.new_cursor, op.new_mark);
         op.new_cursor = op.new_mark = op.replace_range.min;
     }
+
+    op.new_cursor.x += insertion_col_delta;
+    // if (!(action.flags & TXT_ViewAction_Flag_KeepBehindInsertion)) {
+    // }
 
     if (!(action.flags & TXT_ViewAction_Flag_KeepMark)) {
         op.new_mark = op.new_cursor;

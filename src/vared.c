@@ -68,11 +68,24 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
 
     // NOTE(fede): Apply per-frame actions
     bool reset_anchor = false;
-    bool set_cursor_from_anchor = view->anchor_changed;
-    {
-        // TODO(fede): Make this be able to consume multiple actions (queue)
-        TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, view->action);
-        view->action = (TXT_ViewAction){0};
+    bool set_cursor_from_anchor = false;
+    bool mark_follow_cursor = true;
+    for (TXT_ViewActionNode *action_n = view->first_action;
+            action_n != 0;
+            action_n = action_n->next) {
+        TXT_ViewAction *action = &action_n->v;
+        TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, *action);
+
+        if (op.new_cursor.x != op.new_mark.x ||
+                op.new_cursor.y != op.new_mark.y) {
+            mark_follow_cursor = false;
+        }
+
+        if (op.insert_text.size) {
+            u64 cursor_at = txt_get_line_offset(view->text, view->cursor.y);
+            cursor_at += view->cursor.x;
+            txt_insert(view->text_arena, view->text, op.insert_text, cursor_at);
+        }
 
         if (op.replace_range.min.y != 0) {
             u64 min_at = txt_get_line_offset(view->text, op.replace_range.min.y);
@@ -82,12 +95,6 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             if (max_at - min_at) {
                 txt_delete(view->text_arena, view->text, min_at, max_at - min_at);
             }
-        }
-
-        if (op.insert_text.size) {
-            u64 cursor_at = txt_get_line_offset(view->text, view->cursor.y);
-            cursor_at += view->cursor.x;
-            txt_insert(view->text_arena, view->text, op.insert_text, cursor_at);
         }
 
         if (op.update_cursor_col) {
@@ -102,8 +109,14 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             view->cursor.y = op.new_cursor.y;
         }
 
+        if (view->horizontal_anchor_em != op.new_hor_anchor_em) {
+            view->horizontal_anchor_em = op.new_hor_anchor_em;
+            set_cursor_from_anchor = true;
+        }
+
         view->mark = op.new_mark;
     }
+    view->first_action = 0;
 
     // NOTE(fede): If reset anchor is set, we should prioritize it, instead of 
     // resetting the cursor. 
@@ -111,7 +124,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     // the cursor column correctly.
     set_cursor_from_anchor &= !reset_anchor;
 
-    // Align cursor to anchor or set anchor to cursor.
+    // Visually align cursor to anchor or set anchor to cursor.
     if (reset_anchor || set_cursor_from_anchor) {
         Temp scratch = scratch_begin(0, 0);
 
@@ -124,28 +137,38 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         u32 bytes_consumed = 0;
         f32 advance = 0;
 
-        for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
-                glyph_ptr_n != 0;
-                glyph_ptr_n = glyph_ptr_n->next) {
+        FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
+        while (true) {
+            if (reset_anchor) {
+                view->horizontal_anchor_em = advance / one_em;
+            } else if (set_cursor_from_anchor) {
+                view->cursor.x = bytes_consumed;
+                if (mark_follow_cursor) {
+                    view->mark.x = bytes_consumed;
+                }
+            }
+
+            if (glyph_ptr_n == 0) 
+                break;
+
             FC_Glyph *glyph = glyph_ptr_n->v;
 
-            if (reset_anchor &&
-                    (bytes_consumed >= view->cursor.x || 
+            if (reset_anchor && (bytes_consumed >= view->cursor.x || 
                     glyph->codepoint == (u32)'\n')) {
-                view->horizontal_anchor_em = advance / one_em;
                 break;
-            } else if (set_cursor_from_anchor && 
+            }
+
+            if (set_cursor_from_anchor && 
                     (view->horizontal_anchor_em * one_em - advance < glyph->metrics.advance / 2 || 
-                    glyph->codepoint == (u32)'\n')) {
-                view->cursor.x = bytes_consumed;
+                     glyph->codepoint == (u32)'\n')) {
                 break;
             }
 
             bytes_consumed += utf8_encode(glyph->codepoint, 0);
             advance += glyph->metrics.advance;
-        }
 
-        view->anchor_changed = false;
+            glyph_ptr_n = glyph_ptr_n->next; 
+        }
 
         scratch_end(scratch);
     }
@@ -169,9 +192,11 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         f32 mouse_advance = view_comm.rel_mouse_pos.x - text_padding_px;
 
         {
-            view->action.row_delta = (i32)new_cursor_row - (i32)view->cursor.y;
-            view->horizontal_anchor_em = mouse_advance / ui_get_em(1, state->font_size);
-            view->anchor_changed = true;
+            CMD *cmd = cmd_push_name(S8("text_action"));
+            cmd->view_n = view_n;
+            cmd->view_action.row_delta = (i32)new_cursor_row - (i32)view->cursor.y;
+            cmd->view_action.hor_anchor_em = mouse_advance / ui_get_em(1, state->font_size); 
+            cmd->view_action.flags |= TXT_ViewAction_Flag_SetHorizontalAnchor;
         }
 
         scratch_end(scratch);
@@ -203,51 +228,91 @@ void editor_update_and_render(EditorParams *params) {
                 case WMKey_RETURN: {
                     if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->focused_view->v;
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
 
                     if (view->single_line)
                         break;
 
-                    view->action.codepoint = (u32)'\n';
-                    view->action.row_delta++;
-                    view->action.hor_char_delta = -I32_MAX;
-                    view->action.flags |= 
-                        TXT_ViewAction_Flag_KeepBehindInsertion;
+
+                    {
+                        CMD *cmd = cmd_push_name(S8("text_action"));
+                        cmd->view_n = view_n;
+                        cmd->view_action.codepoint = (u32)'\n';
+                    }
+
+                    {
+                        CMD *cmd = cmd_push_name(S8("text_action"));
+                        cmd->view_n = view_n;
+                        cmd->view_action.row_delta++;
+                        cmd->view_action.hor_char_delta = -I32_MAX;
+                    }
+
                 } break;
 
                 case WMKey_BACKSPACE: {
                     if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->focused_view->v;
-                    view->action.flags |= 
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
+
+                    CMD *cmd = cmd_push_name(S8("text_action"));
+                    cmd->view_n = view_n;
+                    cmd->view_action.hor_char_delta--;
+                    cmd->view_action.flags |= 
                         TXT_ViewAction_Flag_Delete |
                         TXT_ViewAction_Flag_ZeroDeltaWithSelection;
-                    view->action.hor_char_delta--;
+                    if (!!(event.modifiers & WMModifier_shift) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                 } break;
 
                 case WMKey_LEFT: {
                     if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->focused_view->v;
-                    view->action.hor_char_delta--;
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
+
+                    CMD *cmd = cmd_push_name(S8("text_action"));
+                    cmd->view_n = view_n;
+                    cmd->view_action.hor_char_delta--;
+                    if (!!(event.modifiers & WMModifier_shift) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                 } break;
                 case WMKey_RIGHT: {
                     if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->focused_view->v;
-                    view->action.hor_char_delta++;
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
+
+                    CMD *cmd = cmd_push_name(S8("text_action"));
+                    cmd->view_n = view_n;
+                    cmd->view_action.hor_char_delta++;
+                    if (!!(event.modifiers & WMModifier_shift) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                 } break;
                 case WMKey_UP: {
                     if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->focused_view->v;
-                    view->action.row_delta--;
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
+
+                    CMD *cmd = cmd_push_name(S8("text_action"));
+                    cmd->view_n = view_n;
+                    cmd->view_action.row_delta--;
+                    if (!!(event.modifiers & WMModifier_shift) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                 } break;
                 case WMKey_DOWN: {
                     if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->focused_view->v;
-                    view->action.row_delta++;
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
+
+                    CMD *cmd = cmd_push_name(S8("text_action"));
+                    cmd->view_n = view_n;
+                    cmd->view_action.row_delta++;
+                    if (!!(event.modifiers & WMModifier_shift) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                 } break;
 
                 // TODO(fede): Fix this input, this never comes through, instead it 
@@ -274,10 +339,13 @@ void editor_update_and_render(EditorParams *params) {
                 default: {
                     if (!state->focused_view)
                         break;
-                    TXT_View *view = &state->focused_view->v;
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
 
                     if (event.character) {
-                        view->action.codepoint = event.character;
+                        CMD *cmd = cmd_push_name(S8("text_action"));
+                        cmd->view_n = view_n;
+                        cmd->view_action.codepoint = event.character;
                         // view->action.hor_char_delta += 1;
                     }
                 } break; 
@@ -337,6 +405,18 @@ void editor_update_and_render(EditorParams *params) {
                 state->selected_file_view = view_n;
             }
         } break;
+
+        case CMD_Kind_TextAction: {
+            TXT_ViewNode *view_n = cmd->view_n;
+            TXT_ViewAction action = cmd->view_action;
+
+            TXT_ViewActionNode *action_n = push_struct(state->arena, TXT_ViewActionNode);
+            action_n->v = action;
+            
+            SLL_PushBack(view_n->v.first_action, view_n->v.last_action, action_n);
+        } break;
+
+        default: {} break;
         }
     }
 
@@ -459,6 +539,28 @@ void editor_update_and_render(EditorParams *params) {
                     {
                         ui_slider(&state->font_size, 6, 20, S8("Font size"));
                         state->font_size = (f32)ceil_f32_to_int(state->font_size);
+                    }
+
+                    ui_spacer(ui_em(1, 0));
+
+                    if (state->focused_view) 
+                        UI_Row {
+                        Temp scratch = scratch_begin(0, 0);
+                        // TODO(fede): debug coord view
+                        
+                        TXT_View *view = &state->focused_view->v;
+
+                        // TODO(fede): fstrings
+                        String8 cursor_label = S8("");
+                        cursor_label = str8_cat(frame_arena,
+                                str8_cat(scratch.arena, 
+                                    str8_from_u64(scratch.arena, view->cursor.x), S(", ")),
+                                str8_from_u64(scratch.arena, view->cursor.y));
+
+                        UI_Box *cursor_box = ui_box_makef(UI_BoxFlag_DrawText, "###cursor");
+                        ui_box_equip_string(cursor_box, cursor_label);
+
+                        scratch_end(scratch);
                     }
 
                     ui_spacer(ui_em(1, 0));

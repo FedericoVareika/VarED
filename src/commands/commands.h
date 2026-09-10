@@ -12,7 +12,7 @@ struct CMD {
     String8 filepath;
     TXT_ViewNode *view_n;
     // TODO(fede): Add txt_action command
-    TXT_ViewAction action;
+    TXT_ViewAction view_action;
 };
 
 typedef struct CMD_Node CMD_Node;

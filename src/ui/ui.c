@@ -914,36 +914,94 @@ internal UI_Comm ui_text_view(
 
             UI_Comm line_comm = ui_comm_from_box(line_box);
 
-            if (selected && view->cursor.y == line_num) {
-                f32 advance = 0; 
+            if (selected && 
+                    (view->cursor.y == line_num || view->mark.y == line_num)) {
+                f32 cursor_advance = 0; 
+                f32 mark_advance = 0; 
                 if (display_string.size) {
+                    bool cursor_set = false;
+                    bool mark_set = false;
+                    f32 advance = 0;
+                    
                     FC_GlyphRun *glyph_run = ui_get_box_display_run(line_box);
                     u32 bytes_consumed = 0;
+
+                    FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
+                    while (true) {
+                        if (!cursor_set) {
+                            cursor_advance = advance;
+                            cursor_set = bytes_consumed == view->cursor.x;
+                        }
+                        if (!mark_set) {
+                            mark_advance = advance;
+                            mark_set = bytes_consumed == view->mark.x;
+                        }
+
+                        if (cursor_set && mark_set)
+                            break;
+
+                        if (glyph_ptr_n == 0) 
+                            break;
+
+                        FC_Glyph *glyph = glyph_ptr_n->v;
+                        bytes_consumed += utf8_encode(glyph->codepoint, 0);
+                        advance += glyph->metrics.advance;
+
+                        glyph_ptr_n = glyph_ptr_n->next;
+                    }
+
+                    /*
                     for (FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
-                            glyph_ptr_n != 0 && bytes_consumed < view->cursor.x;
+                            glyph_ptr_n != 0 && !(cursor_set && mark_set);
                             glyph_ptr_n = glyph_ptr_n->next) {
+                        if (!cursor_set) {
+                            cursor_advance = advance;
+                            cursor_set = bytes_consumed == view->cursor.x;
+                        }
+                        if (!mark_set) {
+                            mark_advance = advance;
+                            mark_set = bytes_consumed == view->mark.x;
+                        }
+
                         FC_Glyph *glyph = glyph_ptr_n->v;
                         bytes_consumed += utf8_encode(glyph->codepoint, 0);
                         advance += glyph->metrics.advance;
                     }
+                    */
                 }
 
                 R_Bucket *line_bucket = r_get_new_bucket();
                 ui_box_equip_r_bucket(line_box, line_bucket);
                 line_box->r_bucket = line_bucket;
+                f32 cursor_width = ui_top_font_size() / 10;
+
                 r_push_bucket(line_bucket);
-                {
-                    f32 cursor_width = ui_top_font_size() / 10;
+                if (view->cursor.y == line_num) {
                     Rect2 cursor_rect = (Rect2){
                         .V4 = V4(
-                                line_box->rect.min.x + advance + text_padding_px,
+                                line_box->rect.min.x + cursor_advance + text_padding_px,
                                 line_box->rect.min.y,
-                                line_box->rect.min.x + advance + cursor_width + text_padding_px,
+                                line_box->rect.min.x + cursor_advance + cursor_width + text_padding_px,
                                 line_box->rect.max.y),
                     };
 
                     r_push_rect2(.pos = cursor_rect);
                 }
+
+                if (view->mark.y == line_num && 
+                        (view->mark.y != view->cursor.y ||
+                         mark_advance != cursor_advance)) {
+                    Rect2 mark_rect = (Rect2){
+                        .V4 = V4(
+                                line_box->rect.min.x + mark_advance + text_padding_px,
+                                line_box->rect.min.y,
+                                line_box->rect.min.x + mark_advance + cursor_width + text_padding_px,
+                                line_box->rect.max.y),
+                    };
+
+                    r_push_rect2(.pos = mark_rect, R_Color4(RGBA(1, 0, 0, 1)));
+                }
+
                 r_pop_bucket();
             }
         }

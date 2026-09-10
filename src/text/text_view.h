@@ -6,6 +6,7 @@ typedef enum {
     TXT_ViewAction_Flag_Delete                 = (1 << 1),
     TXT_ViewAction_Flag_ZeroDeltaWithSelection = (1 << 2),
     TXT_ViewAction_Flag_KeepBehindInsertion    = (1 << 3),
+    TXT_ViewAction_Flag_SetHorizontalAnchor    = (1 << 4),
 } TXT_ViewAction_Flag;
 
 typedef struct TXT_ViewAction TXT_ViewAction;
@@ -14,14 +15,22 @@ struct TXT_ViewAction {
 
     i32 row_delta;
     i32 hor_char_delta;
+    f32 hor_anchor_em;
 
     u32 codepoint;
+};
+
+typedef struct TXT_ViewActionNode TXT_ViewActionNode;
+struct TXT_ViewActionNode {
+    TXT_ViewActionNode *next;
+    TXT_ViewAction v;
 };
 
 typedef struct TXT_ViewOp TXT_ViewOp;
 struct TXT_ViewOp {
     v2u new_cursor;
     v2u new_mark;
+    f32 new_hor_anchor_em;
 
     Rng2u replace_range;
     String8 insert_text;
@@ -44,11 +53,11 @@ struct TXT_View {
     v2u cursor;
     v2u mark;
 
-    bool anchor_changed;
     f32 horizontal_anchor_em;
 
     // NOTE(fede): Per-frame actions.
-    TXT_ViewAction action;
+    TXT_ViewActionNode *first_action;
+    TXT_ViewActionNode *last_action;
 };
 
 typedef struct TXT_ViewNode TXT_ViewNode;

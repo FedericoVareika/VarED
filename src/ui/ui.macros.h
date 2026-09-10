@@ -14,7 +14,7 @@
 */ M(FontHandle, font_handle, FP_Handle, font_handle, (FP_Handle){0}) /*
 */ M(FontSize  , font_size  , f32          , font_size  , 16) /*
 
-*/ M(CornerRadius   , corner_radius   , f32, corner_radius   , 5) /*
+*/ M(CornerRadius   , corner_radius   , f32, corner_radius   , 0) /*
 */ M(BorderThickness, border_thickness, f32, border_thickness, 1) /*
 */
 

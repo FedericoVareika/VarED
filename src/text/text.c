@@ -98,7 +98,8 @@ internal TXT_PieceNode *txt_split_piece_n(
     TXT_Buffer *buffer = piece->buffer;
 
     u64 l_size = at;
-    u64 r_size = piece->size - at - gap;
+    u64 r_size = piece->size - at; // - gap;
+    r_size = max(r_size, gap) - gap;
 
     TXT_PieceNode *insertion_node = piece_n->prev; 
     if (l_size > 0) {
@@ -292,8 +293,6 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
 internal u64 txt_delete_from_node(
         Arena *arena, TXT_Text *text,
         TXT_PieceNode *node, u64 at, u64 n) {
-    TXT_PieceNode *gap = txt_split_piece_n(arena, text, node, at, n);
-
     assert(node);
     assert(n);
 
@@ -301,9 +300,11 @@ internal u64 txt_delete_from_node(
     assert(at < piece->size);
 
     u64 n_deleted = n;
-    if (piece->size - at - n <= 0) {
+    if (piece->size <= at + n) {
         n_deleted = piece->size - at;
     }
+
+    TXT_PieceNode *gap = txt_split_piece_n(arena, text, node, at, n);
 
     return n_deleted;
 }
@@ -318,7 +319,9 @@ internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n) {
     }
 
     u64 n_deleted = 0;
-    for (; delete_n != 0; delete_n = delete_n->next) {
+    TXT_PieceNode *delete_next_n;
+    for (; delete_n != 0; delete_n = delete_next_n) {
+        delete_next_n = delete_n->next;
         n_deleted += txt_delete_from_node(arena, text, delete_n, offset, n - n_deleted);
 
         if (n_deleted >= n) {
