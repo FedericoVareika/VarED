@@ -76,6 +76,8 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
     if (!(action.flags & TXT_ViewAction_Flag_KeepMark)) {
         op.new_mark = op.new_cursor;
+    } else {
+        op.keep_mark = true;
     }
 
     return op;

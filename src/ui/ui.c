@@ -220,6 +220,7 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
             assert(mouse_inside_box);
             active = true;
             active_change = true;
+            comm.pressed = true;
         }
 
         // STUDY(fede): Maybe hovering should occurr after some time being hot.
@@ -239,6 +240,7 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
 
             active = false;
             active_change = true;
+            comm.released = true;
         }
 
         if (box->flags & UI_BoxFlag_Draggable && active) {
@@ -258,10 +260,6 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
 
         if (active_change) {
             ui_state->active = active ? box->key : ui_nil_key();
-
-            if (!active) {
-                comm.released = true;
-            }
         }
 
         // Hot anim
@@ -873,6 +871,7 @@ internal UI_Comm ui_text_view(
     UI_Box *text_box = ui_box_make(
             UI_BoxFlag_DrawBorder |
             UI_BoxFlag_Clickable |
+            UI_BoxFlag_Draggable |
             UI_BoxFlag_OverflowY |
             UI_BoxFlag_ClipChildren, label);
 

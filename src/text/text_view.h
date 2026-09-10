@@ -37,6 +37,7 @@ struct TXT_ViewOp {
     String8 insert_text;
 
     bool update_cursor_col;
+    bool keep_mark;
 };
 
 typedef struct TXT_View TXT_View;

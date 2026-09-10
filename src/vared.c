@@ -69,17 +69,15 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     // NOTE(fede): Apply per-frame actions
     bool reset_anchor = false;
     bool set_cursor_from_anchor = false;
-    bool mark_follow_cursor = true;
+    bool keep_mark = false;
     for (TXT_ViewActionNode *action_n = view->first_action;
             action_n != 0;
             action_n = action_n->next) {
         TXT_ViewAction *action = &action_n->v;
         TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, *action);
 
-        if (op.new_cursor.x != op.new_mark.x ||
-                op.new_cursor.y != op.new_mark.y) {
-            mark_follow_cursor = false;
-        }
+        if (op.keep_mark)
+            keep_mark = true;
 
         if (op.insert_text.size) {
             // TODO(fede): Give the option to insert before or after the selection area. 
@@ -148,7 +146,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                 view->horizontal_anchor_em = advance / one_em;
             } else if (set_cursor_from_anchor) {
                 view->cursor.x = bytes_consumed;
-                if (mark_follow_cursor) {
+                if (!keep_mark) {
                     view->mark.x = bytes_consumed;
                 }
             }
@@ -180,12 +178,15 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
 
     UI_Comm view_comm = ui_text_view(state->frame_arena, view, label, text_padding_em, view_n == state->focused_view, state->line_height);
 
-    if (view_comm.clicked) {
-        Temp scratch = scratch_begin(0, 0);
+    if (view_comm.pressed) {
         {
             CMD *cmd = cmd_push_name(S8("focus_view"));
             cmd->view_n = view_n;
         }
+    }
+
+    if (view_comm.dragging) {
+        Temp scratch = scratch_begin(0, 0);
 
         f32 text_padding_px = ui_get_em(text_padding_em, view_comm.box->font_size);
 
@@ -201,7 +202,9 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             cmd->view_n = view_n;
             cmd->view_action.row_delta = (i32)new_cursor_row - (i32)view->cursor.y;
             cmd->view_action.hor_anchor_em = mouse_advance / ui_get_em(1, state->font_size); 
-            cmd->view_action.flags |= TXT_ViewAction_Flag_SetHorizontalAnchor;
+            cmd->view_action.flags |= 
+                TXT_ViewAction_Flag_SetHorizontalAnchor |
+                (!view_comm.pressed ? TXT_ViewAction_Flag_KeepMark : 0);
         }
 
         scratch_end(scratch);
