@@ -7,6 +7,7 @@ typedef enum {
     TXT_ViewAction_Flag_ZeroDeltaWithSelection = (1 << 2),
     TXT_ViewAction_Flag_KeepBehindInsertion    = (1 << 3),
     TXT_ViewAction_Flag_SetHorizontalAnchor    = (1 << 4),
+    TXT_ViewAction_Flag_ScanWords              = (1 << 5),
 } TXT_ViewAction_Flag;
 
 typedef struct TXT_ViewAction TXT_ViewAction;
@@ -14,7 +15,7 @@ struct TXT_ViewAction {
     u32 flags;
 
     i32 row_delta;
-    i32 hor_char_delta;
+    i32 hor_delta;
     f32 hor_anchor_em;
 
     u32 codepoint;

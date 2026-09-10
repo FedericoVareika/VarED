@@ -7,6 +7,16 @@ internal inline bool u8_is_whitespace(u8 c) {
         c == ' ';
 }
 
+internal inline bool u8_is_word_delim(u8 c) {
+    return u8_is_whitespace(c) || 
+        c == '_' || 
+        c == ',' || 
+        c == '.' || 
+        c == '/' || 
+        c == '\\' || 
+        c == '=';
+}
+
 internal String8 str8(u8 *str, u64 size) {
     return (String8){
         .str = str,
@@ -270,13 +280,94 @@ internal u32 utf8_encode(u32 character, u8 *dst) {
         character >>= 6; 
     }
 
-#if VARED_SLOW
     if (original_dst) {
         assert(original_dst == dst + 1);
     }
-#endif // VARED_SLOW
        
     return bytes_to_write;
+}
+
+// NOTE(fede): This scan stops at newlines or end of lines (size limit).
+internal i32 utf8_scan_codepoints(String8 str, u32 at, i32 delta) {
+    i32 result = 0;
+
+    i32 sign = delta / abs(delta);
+    assert(sign == 1 || sign == -1);
+
+    bool end = false;
+    while (!end && delta != 0) {
+        i32 delta_char = 0;
+        do {
+            i64 new_cursor_col = (i64)at + result + delta_char + sign;
+            if (new_cursor_col < 0) {
+                end = true; 
+                break;
+            } else if (new_cursor_col > (u32)str.size) {
+                end = true; 
+                break;
+            }
+
+            delta_char += sign;
+        } while (!utf8_byte_is_header(str.str[at + result + delta_char]));
+
+        // NOTE(fede): Border case where we want to go right, but the next 
+        //      character is newline, then we cap the movement. 
+        if (sign > 0 && str.str[at + result] == '\n') {
+            end = true; 
+        } else {
+            result += delta_char;
+        }
+
+        delta -= sign;
+    }
+
+    return result;
+}
+
+internal i32 utf8_scan_words(String8 str, u32 at, i32 delta) {
+    assert(delta != 0);
+    i32 result = 0;
+    i32 step = delta / abs(delta);
+
+    bool look_ahead = step < 0;
+
+    if (look_ahead) {
+
+    } else {
+    }
+
+    while (delta != 0) {
+        bool first = look_ahead;
+        bool find_word_delim = true;
+
+        i64 next_char_offset = -1;
+        // If the next_char_offset is 0, then we have reached a string boundary. 
+        while (next_char_offset != 0) {
+            i64 check_at = at + result;
+
+            next_char_offset = utf8_scan_codepoints(str, at + result, step);
+            // If we are looking ahead, check ahead, but dont move ahead.
+            if (look_ahead) 
+                check_at += next_char_offset;
+
+            if (check_at < 0 || (u64)check_at > str.size)
+                break;
+
+            if (find_word_delim == u8_is_word_delim(str.str[check_at])) {
+                if (!find_word_delim) {
+                    break;
+                } else { 
+                    find_word_delim = false;
+                }
+            }
+
+            result += next_char_offset;
+        }
+
+        delta -= step;
+    }
+
+    return result;
 }
 
 ////////////////////////////////////////////////////////////////////////////////

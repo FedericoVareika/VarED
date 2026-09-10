@@ -82,9 +82,14 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         }
 
         if (op.insert_text.size) {
-            u64 cursor_at = txt_get_line_offset(view->text, view->cursor.y);
-            cursor_at += view->cursor.x;
-            txt_insert(view->text_arena, view->text, op.insert_text, cursor_at);
+            // TODO(fede): Give the option to insert before or after the selection area. 
+            v2u end = view->cursor; 
+            if (end.y < view->mark.y || end.y == view->mark.y && end.x < view->mark.x)
+                end = view->mark;
+
+            u64 end_at = txt_get_line_offset(view->text, end.y);
+            end_at += end.x;
+            txt_insert(view->text_arena, view->text, op.insert_text, end_at);
         }
 
         if (op.replace_range.min.y != 0) {
@@ -245,7 +250,7 @@ void editor_update_and_render(EditorParams *params) {
                         CMD *cmd = cmd_push_name(S8("text_action"));
                         cmd->view_n = view_n;
                         cmd->view_action.row_delta++;
-                        cmd->view_action.hor_char_delta = -I32_MAX;
+                        cmd->view_action.hor_delta = -I32_MAX;
                     }
 
                 } break;
@@ -258,12 +263,32 @@ void editor_update_and_render(EditorParams *params) {
 
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
-                    cmd->view_action.hor_char_delta--;
+                    cmd->view_action.hor_delta--;
                     cmd->view_action.flags |= 
                         TXT_ViewAction_Flag_Delete |
                         TXT_ViewAction_Flag_ZeroDeltaWithSelection;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
+                    if (!!(event.modifiers & WMModifier_ctrl) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
+                } break;
+
+                case WMKey_DELETE: {
+                    if (!state->focused_view)
+                        break;
+                    TXT_ViewNode *view_n = state->focused_view;
+                    TXT_View *view = &view_n->v;
+
+                    CMD *cmd = cmd_push_name(S8("text_action"));
+                    cmd->view_n = view_n;
+                    cmd->view_action.hor_delta++;
+                    cmd->view_action.flags |= 
+                        TXT_ViewAction_Flag_Delete |
+                        TXT_ViewAction_Flag_ZeroDeltaWithSelection;
+                    if (!!(event.modifiers & WMModifier_shift) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
+                    if (!!(event.modifiers & WMModifier_ctrl) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
                 } break;
 
                 case WMKey_LEFT: {
@@ -274,9 +299,11 @@ void editor_update_and_render(EditorParams *params) {
 
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
-                    cmd->view_action.hor_char_delta--;
+                    cmd->view_action.hor_delta--;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
+                    if (!!(event.modifiers & WMModifier_ctrl) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
                 } break;
                 case WMKey_RIGHT: {
                     if (!state->focused_view)
@@ -286,9 +313,11 @@ void editor_update_and_render(EditorParams *params) {
 
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
-                    cmd->view_action.hor_char_delta++;
+                    cmd->view_action.hor_delta++;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
+                    if (!!(event.modifiers & WMModifier_ctrl) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
                 } break;
                 case WMKey_UP: {
                     if (!state->focused_view)
@@ -301,6 +330,8 @@ void editor_update_and_render(EditorParams *params) {
                     cmd->view_action.row_delta--;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
+                    if (!!(event.modifiers & WMModifier_ctrl) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
                 } break;
                 case WMKey_DOWN: {
                     if (!state->focused_view)
@@ -313,6 +344,8 @@ void editor_update_and_render(EditorParams *params) {
                     cmd->view_action.row_delta++;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
+                    if (!!(event.modifiers & WMModifier_ctrl) )
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
                 } break;
 
                 // TODO(fede): Fix this input, this never comes through, instead it 
@@ -346,7 +379,6 @@ void editor_update_and_render(EditorParams *params) {
                         CMD *cmd = cmd_push_name(S8("text_action"));
                         cmd->view_n = view_n;
                         cmd->view_action.codepoint = event.character;
-                        // view->action.hor_char_delta += 1;
                     }
                 } break; 
                 }
@@ -543,25 +575,25 @@ void editor_update_and_render(EditorParams *params) {
 
                     ui_spacer(ui_em(1, 0));
 
-                    if (state->focused_view) 
-                        UI_Row {
-                        Temp scratch = scratch_begin(0, 0);
-                        // TODO(fede): debug coord view
-                        
-                        TXT_View *view = &state->focused_view->v;
-
-                        // TODO(fede): fstrings
-                        String8 cursor_label = S8("");
-                        cursor_label = str8_cat(frame_arena,
-                                str8_cat(scratch.arena, 
-                                    str8_from_u64(scratch.arena, view->cursor.x), S(", ")),
-                                str8_from_u64(scratch.arena, view->cursor.y));
-
-                        UI_Box *cursor_box = ui_box_makef(UI_BoxFlag_DrawText, "###cursor");
-                        ui_box_equip_string(cursor_box, cursor_label);
-
-                        scratch_end(scratch);
-                    }
+                    // if (state->focused_view) 
+                    //     UI_Row {
+                    //     Temp scratch = scratch_begin(0, 0);
+                    //     // TODO(fede): debug coord view
+                    //
+                    //     TXT_View *view = &state->focused_view->v;
+                    //
+                    //     // TODO(fede): fstrings
+                    //     String8 cursor_label = S8("");
+                    //     cursor_label = str8_cat(frame_arena,
+                    //             str8_cat(scratch.arena, 
+                    //                 str8_from_u64(scratch.arena, view->cursor.x), S(", ")),
+                    //             str8_from_u64(scratch.arena, view->cursor.y));
+                    //
+                    //     UI_Box *cursor_box = ui_box_makef(UI_BoxFlag_DrawText, "###cursor");
+                    //     ui_box_equip_string(cursor_box, cursor_label);
+                    //
+                    //     scratch_end(scratch);
+                    // }
 
                     ui_spacer(ui_em(1, 0));
 

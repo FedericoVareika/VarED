@@ -20,7 +20,6 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
         insertion_col_delta += count;
         op.update_cursor_col = true;
         action.flags |= TXT_ViewAction_Flag_Delete;
-        // op.replace_range = rng2u(op.new_cursor, op.new_mark);
     }
 
     i32 col_delta = 0;
@@ -33,7 +32,7 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
     // NOTE(fede): Consume characters
     // TODO(fede): Consume words
-    if (action.hor_char_delta != 0) {
+    if (action.hor_delta != 0) {
         op.update_cursor_col = true;
 
         Temp scratch = scratch_begin(&arena, 1);
@@ -42,34 +41,10 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
         op.new_cursor.x = min(line.size, op.new_cursor.x); 
 
-        i32 sign = action.hor_char_delta / abs(action.hor_char_delta);
-        assert(sign == 1 || sign == -1);
-
-        bool end = false;
-        while (!end && action.hor_char_delta != 0) {
-            i32 delta = 0;
-            do {
-                i64 new_cursor_col = (i64)op.new_cursor.x + col_delta + delta + sign;
-                if (new_cursor_col < 0) {
-                    end = true; 
-                    break;
-                } else if (new_cursor_col > (u32)line.size) {
-                    end = true; 
-                    break;
-                }
-
-                delta += sign;
-            } while (!utf8_byte_is_header(line.str[op.new_cursor.x + col_delta + delta]));
-
-            // NOTE(fede): Border case where we want to go right, but the next 
-            //      character is newline, then we cap the movement. 
-            if (sign > 0 && line.str[op.new_cursor.x + col_delta] == '\n') {
-                end = true; 
-            } else {
-                col_delta += delta;
-            }
-
-            action.hor_char_delta -= sign;
+        if (!!(action.flags & TXT_ViewAction_Flag_ScanWords)) {
+            col_delta = utf8_scan_words(line, op.new_cursor.x, action.hor_delta);
+        } else {
+            col_delta = utf8_scan_codepoints(line, op.new_cursor.x, action.hor_delta);
         }
 
         scratch_end(scratch);
@@ -98,8 +73,6 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
     }
 
     op.new_cursor.x += insertion_col_delta;
-    // if (!(action.flags & TXT_ViewAction_Flag_KeepBehindInsertion)) {
-    // }
 
     if (!(action.flags & TXT_ViewAction_Flag_KeepMark)) {
         op.new_mark = op.new_cursor;

@@ -5,6 +5,7 @@
 /// NOTE(fede): Character handling
 
 internal inline bool u8_is_whitespace(u8 c);
+internal inline bool u8_is_word_delim(u8 c);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Strings
@@ -51,6 +52,9 @@ internal inline bool utf8_byte_is_header(u8 byte);
 internal inline bool utf8_byte_is_continuation(u8 byte);
 internal UnicodeCodepoint utf8_decode(u8 *base, u64 max_size);
 internal u32 utf8_encode(u32 character, u8 *dst);
+
+internal i32 utf8_scan_codepoints(String8 str, u32 at, i32 delta);
+internal i32 utf8_scan_words(String8 str, u32 at, i32 delta);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Hashing

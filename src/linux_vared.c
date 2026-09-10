@@ -316,6 +316,17 @@ internal WMKey sdl_get_wm_key(SDL_KeyCode key_code) {
     case SDLK_F12: 
         return WMKey_F12;
 
+    case SDLK_HOME: 
+        return WMKey_HOME;
+    case SDLK_PAGEUP: 
+        return WMKey_PAGEUP;
+    case SDLK_DELETE: 
+        return WMKey_DELETE;
+    case SDLK_END: 
+        return WMKey_END;
+    case SDLK_PAGEDOWN:
+        return WMKey_PAGEDOWN;
+
     case SDLK_RIGHT: 
         return WMKey_RIGHT;
     case SDLK_LEFT: 
