@@ -18,6 +18,7 @@
 
 */ internal void ui_push_corner_radius(f32 v) { CornerRadius_Node *n = push_struct(ui_state->build_arena, CornerRadius_Node); n->v = v; n->next = ui_state->corner_radius; ui_state->corner_radius = n; } /*
 */ internal void ui_push_border_thickness(f32 v) { BorderThickness_Node *n = push_struct(ui_state->build_arena, BorderThickness_Node); n->v = v; n->next = ui_state->border_thickness; ui_state->border_thickness = n; } /*
+*/ internal void ui_push_text_padding(f32 v) { TextPadding_Node *n = push_struct(ui_state->build_arena, TextPadding_Node); n->v = v; n->next = ui_state->text_padding; ui_state->text_padding = n; } /*
 */
 /*
 */ internal void ui_pop_parent(void) { ui_state->parent = ui_state->parent->next; } /*
@@ -34,6 +35,7 @@
 
 */ internal void ui_pop_corner_radius(void) { ui_state->corner_radius = ui_state->corner_radius->next; } /*
 */ internal void ui_pop_border_thickness(void) { ui_state->border_thickness = ui_state->border_thickness->next; } /*
+*/ internal void ui_pop_text_padding(void) { ui_state->text_padding = ui_state->text_padding->next; } /*
 */
 /*
 */ internal UI_Box * ui_top_parent(void) { return ui_state->parent->v; } /*
@@ -50,5 +52,6 @@
 
 */ internal f32 ui_top_corner_radius(void) { return ui_state->corner_radius->v; } /*
 */ internal f32 ui_top_border_thickness(void) { return ui_state->border_thickness->v; } /*
+*/ internal f32 ui_top_text_padding(void) { return ui_state->text_padding->v; } /*
 */
 ////////////////////////////////////////////////////////////////////////////////

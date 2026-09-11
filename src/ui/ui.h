@@ -92,6 +92,7 @@ struct UI_Box {
     v4 border_color;
     f32 corner_radius;
     f32 border_thickness;
+    f32 text_padding;
 
     FP_Handle font_handle;
     f32 font_size;
@@ -251,6 +252,7 @@ internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 t
 
 #define UI_CornerRadius(v) DeferLoop(ui_push_corner_radius(v), ui_pop_corner_radius())
 #define UI_BorderThickness(v) DeferLoop(ui_push_border_thickness(v), ui_pop_border_thickness())
+#define UI_TextPadding(v) DeferLoop(ui_push_text_padding(v), ui_pop_text_padding())
 
 // #define UI_x(v) DeferLoop(ui_push_x(v), ui_pop_x())
 

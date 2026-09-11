@@ -510,6 +510,7 @@ void editor_update_and_render(EditorParams *params) {
             UI_FontSize(state->font_size)
             UI_BackgroundColor(RGBA(0.11, 0.11, 0.11, 1))
             UI_BorderColor(RGBA(0, 0, 0, 0))
+            UI_CornerRadius(ui_get_em(0.2, state->font_size))
         {
             UI_Row
             UI_Parent(ui_box_makef(UI_BoxFlag_DrawBackground, ""))
@@ -665,19 +666,23 @@ void editor_update_and_render(EditorParams *params) {
                             String8 text_box_label = S8("##text");
                             text_box_label = str8_cat(frame_arena, text_box_label, str8_from_u32(frame_arena, i));
 
-                            UI_Box *view_tab_box = ui_box_make(
-                                    UI_BoxFlag_DrawText |
-                                    UI_BoxFlag_DrawBorder |
-                                    UI_BoxFlag_DrawHotEffects |
-                                    UI_BoxFlag_DrawActiveEffects |
-                                    UI_BoxFlag_Clickable, 
-                                    text_box_label);
-                            ui_box_equip_string(view_tab_box, view->label);
+                            UI_TextPadding(10)
+                            {
+                                UI_Box *view_tab_box = ui_box_make(
+                                        UI_BoxFlag_DrawText |
+                                        UI_BoxFlag_DrawBorder |
+                                        UI_BoxFlag_DrawHotEffects |
+                                        UI_BoxFlag_DrawActiveEffects |
+                                        UI_BoxFlag_Clickable, 
+                                        text_box_label);
+                                ui_box_equip_string(view_tab_box, view->label);
 
-                            if (ui_comm_from_box(view_tab_box).clicked) {
-                                CMD *cmd = cmd_push_name(S8("focus_view"));
-                                cmd->view_n = view_n;
+                                if (ui_comm_from_box(view_tab_box).clicked) {
+                                    CMD *cmd = cmd_push_name(S8("focus_view"));
+                                    cmd->view_n = view_n;
+                                }
                             }
+
 
                             ui_pop_border_color();
                         }

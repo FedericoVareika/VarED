@@ -16,6 +16,7 @@
 
 */ M(CornerRadius   , corner_radius   , f32, corner_radius   , 0) /*
 */ M(BorderThickness, border_thickness, f32, border_thickness, 1) /*
+*/ M(TextPadding    , text_padding    , f32, text_padding    , 0) /*
 */
 
 ////////////////////////////////////////////////////////////////////////////////

@@ -26,6 +26,7 @@
 
 */ typedef struct CornerRadius_Node CornerRadius_Node; struct CornerRadius_Node { CornerRadius_Node *next; f32 v; }; /*
 */ typedef struct BorderThickness_Node BorderThickness_Node; struct BorderThickness_Node { BorderThickness_Node *next; f32 v; }; /*
+*/ typedef struct TextPadding_Node TextPadding_Node; struct TextPadding_Node { TextPadding_Node *next; f32 v; }; /*
 */
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Headers
@@ -44,6 +45,7 @@
 
 */ internal void ui_push_corner_radius(f32 v); /*
 */ internal void ui_push_border_thickness(f32 v); /*
+*/ internal void ui_push_text_padding(f32 v); /*
 */
 /*
 */ internal void ui_pop_parent(void); /*
@@ -60,6 +62,7 @@
 
 */ internal void ui_pop_corner_radius(void); /*
 */ internal void ui_pop_border_thickness(void); /*
+*/ internal void ui_pop_text_padding(void); /*
 */
 /*
 */ internal UI_Box * ui_top_parent(void); /*
@@ -76,6 +79,7 @@
 
 */ internal f32 ui_top_corner_radius(void); /*
 */ internal f32 ui_top_border_thickness(void); /*
+*/ internal f32 ui_top_text_padding(void); /*
 */
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Decls
