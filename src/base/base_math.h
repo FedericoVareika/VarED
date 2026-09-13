@@ -29,6 +29,15 @@ typedef struct {
     };
 } Rng2u64;
 
+typedef struct {
+    union {
+        struct {
+            f32 min, max;
+        };
+        f32 e[2];
+    };
+} Rng2f32;
+
 #define V3(x, y, z) ((v3){(x), (y), (z)})
 #define expand_v3(v) (v).x, (v).y, (v).z
 typedef struct {

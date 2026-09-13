@@ -38,8 +38,6 @@ struct P_AnchorNode {
 typedef struct P_FrameState P_FrameState;
 struct P_FrameState {
     Arena *anchor_arena;
-    // P_AnchorNode *root;
-    // P_AnchorNode *parent;
     u32 parent_idx;
 
     // NOTE(fede): Assume indexing is exclusive for each node.
@@ -109,11 +107,10 @@ internal P_FrameState *p_previous_state(void);
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Helpers
 
-// internal P_AnchorNode *p_anchor_from_key(P_Key key);
-// internal inline bool p_anchor_is_nil(P_AnchorNode *anchor_n);
-
 internal void p_block_destructor(P_Block *block);
 internal P_Block p_construct_block(String8 label, u32 anchor_index, u64 byte_count);
+
+internal void p_anchor_print(u64 total_clocks, u64 timer_freq, P_Anchor *anchor);
 
 ////////////////////////////////////////////////////////////////////////////////
 

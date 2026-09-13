@@ -89,6 +89,34 @@ internal P_Block p_construct_block(String8 label, u32 anchor_idx, u64 byte_count
     return block;
 }
 
+// internal void p_anchor_print(u64 total_clocks, u64 timer_freq, P_Anchor *anchor) {
+//     f64 percentage_exclusive =
+//         (f64)(anchor->exclusive_elapsed_time * 100) / (f64)total_clocks;
+//     // printf("  %s[%llu]: %llu (%.2f%%", anchor->label, anchor->hit_count,
+//     printf("  %s[%lu]: %lu (%.2f%%", anchor->label, anchor->hit_count,
+//            anchor->exclusive_elapsed_time, percentage_exclusive);
+//
+//     if (anchor->inclusive_elapsed_time != anchor->exclusive_elapsed_time) {
+//         f64 percentage_inclusive =
+//             (f64)(anchor->inclusive_elapsed_time * 100) / (f64)total_clocks;
+//         printf(", %.2f%% w/children", percentage_inclusive);
+//     }
+//
+//     if (anchor->processed_byte_count) {
+//         f64 megabyte = 1024.0f * 1024.0f;
+//
+//         f64 seconds = (f64)anchor->inclusive_elapsed_time / (f64)timer_freq;
+//         f64 bytes_per_second = (f64)anchor->processed_byte_count / seconds;
+//         f64 megabytes = (f64)anchor->processed_byte_count / (f64)megabyte;
+//         f64 megabytes_per_second = bytes_per_second / megabyte;
+//
+//         // printf("  %.3fmb at %.2fgb/s", megabytes, gigabytes_per_second);
+//         printf("  %.3fmb at %.2fmb/s", megabytes, megabytes_per_second);
+//     }
+//
+//     printf(")\n");
+// }
+
 /* TODO(fede): STUDY
  *
  *  How do i want to represent function calls to the same function that have 

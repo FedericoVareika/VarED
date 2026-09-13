@@ -124,6 +124,54 @@ internal String8 str8_from_u64(Arena *arena, u64 v) {
     return result;
 }
 
+internal String8 str8_from_f32(Arena *arena, f32 v, u32 n_decimals) {
+    u64 whole_size = 0;
+    u32 scratch = abs_f32(v);
+    do {
+        scratch /= 10;
+        whole_size++;
+    } while (scratch > 0);
+
+    String8 result = {0};
+
+    result.size = whole_size + n_decimals + 1;
+    if (v < 0) {
+        result.size++;
+    }
+
+    result.str = push_size(arena, result.size);
+
+    u8 *dst = result.str;
+    if (v < 0) { 
+        *dst = '-';
+        dst++;
+    }
+
+    scratch = abs_f32(v);
+    u64 idx = whole_size - 1;
+    do {
+        dst[idx] = '0' + (scratch % 10);
+        scratch /= 10;
+        idx--;
+    } while (scratch > 0);
+
+    dst[whole_size] = '.';
+
+    dst = dst + whole_size + 1;
+
+    f32 decimal = v;
+    for (u32 i = 0; i < n_decimals; i++) {
+        decimal = decimal - (f32)(i32)decimal;
+        decimal *= 10;
+        dst[i] = '0' + (u32)decimal;
+    }
+
+    return result;
+}
+
+// internal String8 str8_from_f64(Arena *arena, f64 v) {
+// }
+
 ////////////////////////////////////////////////////////////////////////////////
 // NOTE(fede): Cstr
 

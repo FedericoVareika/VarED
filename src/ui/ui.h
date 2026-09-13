@@ -105,6 +105,9 @@ struct UI_Box {
     // // NOTE(fede): Persistent data
     f32 hot_t;
     f32 active_t;
+
+    v2 pressed_mouse_pos;
+    v2 pressed_rel_mouse_pos;
 }; 
 
 typedef struct UI_Comm UI_Comm; 
@@ -231,9 +234,7 @@ internal inline FC_GlyphRun *ui_get_box_display_run(UI_Box *box);
 internal UI_Comm ui_button(String8 str);
 internal void ui_spacer(UI_Size size);
 internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str);
-internal UI_Comm ui_f32_slider(f32 *val, f32 min, f32 max, String8 str);
-
-internal UI_Comm ui_text_view(Arena *arena, TXT_View *view, String8 label, f32 text_padding_px, bool selected, f32 line_height);
+internal UI_Comm ui_slider_anon(f32 *val, f32 min, f32 max, f32 slider_size, String8 str);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Style stack DeferLoops

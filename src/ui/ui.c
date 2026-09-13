@@ -192,9 +192,9 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
     comm.mouse_pos = ui_state->mouse_pos;
     comm.rel_mouse_pos = v2_sub(comm.mouse_pos, box->rect.min);
 
-    bool mouse_interactable = box->flags & UI_BoxFlag_Clickable || 
-        box->flags & UI_BoxFlag_Draggable ||
-        box->flags & UI_BoxFlag_Scrollable;
+    bool mouse_interactable = !!(box->flags & UI_BoxFlag_Clickable) || 
+        !!(box->flags & UI_BoxFlag_Draggable) ||
+        !!(box->flags & UI_BoxFlag_Scrollable);
 
     if (mouse_interactable) {
         bool mouse_inside_box = rect2_test_inside(box->rect, ui_state->mouse_pos);
@@ -244,7 +244,7 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
             comm.released = true;
         }
 
-        if (box->flags & UI_BoxFlag_Draggable && active) {
+        if (!!(box->flags & UI_BoxFlag_Draggable) && active) {
             if (active_change) {
                 ui_state->mouse_drag_start_pos = ui_state->mouse_pos;
                 ui_state->mouse_drag_start_rel_pos = v2_sub(ui_state->mouse_pos, box->rect.min);
@@ -254,17 +254,21 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
             comm.drag_delta = v2_sub(ui_state->mouse_pos, ui_state->mouse_drag_start_pos);
         }
 
-        if (box->flags & UI_BoxFlag_Scrollable && hot) {
+        if (!!(box->flags & UI_BoxFlag_Scrollable) && hot) {
             comm.scroll_delta = ui_state->scroll_delta;
         }
 
-        // TODO(fede): Anim
         if (hot_change) {
             ui_state->hot = hot ? box->key : ui_nil_key();
         } 
 
         if (active_change) {
             ui_state->active = active ? box->key : ui_nil_key();
+        }
+
+        if (comm.pressed) {
+            box->pressed_mouse_pos = comm.mouse_pos;
+            box->pressed_rel_mouse_pos = comm.rel_mouse_pos;
         }
 
         // Hot anim
@@ -293,6 +297,7 @@ internal UI_Comm ui_comm_from_box(UI_Box *box) {
             }
         }
     }
+
 
     return comm;
 }
@@ -643,55 +648,15 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
             .y = (box->rect.min.y + box->rect.max.y) / 2,
         };
 
-        Rect2 text_rect = rect2_center_dim(
-                center,
-                (v2){ display_run->advance, metrics.height });
-        v2 text_pos = text_rect.min;
+        v2 at = center;
+        at.x -= display_run->advance / 2;
+        at.y -= metrics.height / 2;
 
         if (box->semantic_size[UI_Axis2_X].kind == UI_SizeKind_TextContent)
-            text_pos.x += box->semantic_size[UI_Axis2_X].value;
-        text_pos.x += box->text_padding;
-        text_pos.y += metrics.ascender;
+            at.x += box->semantic_size[UI_Axis2_X].value;
+        at.x += box->text_padding;
 
-        // TODO font runs do not work anymore when changing font and stuff?
-        for (FC_GlyphPtrNode *glyph_ptr_n = display_run->first;
-                glyph_ptr_n != 0;
-                glyph_ptr_n = glyph_ptr_n->next) {
-
-            FC_Glyph *glyph = glyph_ptr_n->v;
-
-            if (glyph->codepoint != '\n') {
-                v2 pos = v2_add(text_pos, (v2){
-                    glyph->metrics.bearing_x,
-                    -glyph->metrics.bearing_y,
-                });
-
-                pos.x = round_f32_to_int(pos.x);
-                pos.y = round_f32_to_int(pos.y);
-
-                v2 dim = {
-                    glyph->metrics.width,
-                    glyph->metrics.height,
-                };
-
-                Rect2 glyph_rect = rect2_min_dim(pos, dim);
-
-                if (glyph_rect.min.x > clip.max.x)
-                    break;
-
-                // if (!rect2_overlap(glyph_rect, clip))
-                //     continue;
-
-                r_push_rect2(
-                        .tex = glyph->tex,
-                        .pos = glyph_rect,
-                        .uv = glyph->uvs,
-                        .clip = clip,
-                        R_Color4(box->text_color));
-            }
-
-            text_pos.x += glyph->metrics.advance;
-        }
+        dr_glyph_run(metrics, display_run, at, clip, box->text_color);
     }
 
     if (!!(box->flags & UI_BoxFlag_RenderBucket)) {
@@ -829,6 +794,61 @@ internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str) {
     return comm;
 }
 
+internal UI_Comm ui_slider_anon(f32 *val, f32 min, f32 max, f32 slider_size, String8 str) {
+    UI_Comm result = {0};
+
+    UI_Box *slider_container_box = ui_box_make(
+            UI_BoxFlag_DrawBorder,
+            str);
+
+    UI_Parent(slider_container_box)
+    {
+        f32 total_size = max - min + slider_size;
+        f32 space_before = (*val - min) / total_size;
+        f32 space_after = 1 - (((*val + slider_size) - min) / total_size);
+        f32 slider_size_pct = slider_size / total_size;
+
+        ui_spacer(ui_pct(space_before, 0));
+
+        UI_Box *slider_box = ui_box_makef(
+                UI_BoxFlag_DrawBackground |
+                UI_BoxFlag_HotAnimation |
+                UI_BoxFlag_ActiveAnimation |
+                UI_BoxFlag_Draggable,
+                "slider");
+
+        UI_Axis2 layout_axis = ui_top_parent()->child_layout_axis;
+        {
+            slider_box->semantic_size[layout_axis] = ui_pct(slider_size_pct, 1);
+        }
+
+        {
+            UI_Comm slider_comm = ui_comm_from_box(slider_box);
+
+            if (slider_comm.dragging) {
+                f32 slider_start_px = v2_sub(slider_comm.mouse_pos, slider_box->pressed_rel_mouse_pos).e[layout_axis];
+
+                // All in pixels
+                f32 slider_container_start = slider_container_box->rect.min.e[layout_axis];
+                f32 slider_container_end = slider_container_box->rect.max.e[layout_axis];
+                f32 slider_container_size = slider_container_end - slider_container_start;
+
+                f32 new_slider_space_before = (slider_start_px - slider_container_start) / slider_container_size;
+                f32 new_val = new_slider_space_before * total_size + min;
+                new_val = max(new_val, min);
+                new_val = min(new_val, max);
+                *val = new_val;
+            }
+
+            result = slider_comm;
+        }
+
+        ui_spacer(ui_pct(space_after, 0));
+    }
+
+    return result;
+}
+
 internal UI_Comm ui_checkbox(bool *val, String8 str) {
     UI_Comm comm = {0};
 
@@ -870,168 +890,3 @@ internal UI_Comm ui_checkbox(bool *val, String8 str) {
     }
 }
 
-internal UI_Comm ui_text_view(
-        Arena *arena,
-        TXT_View *view,
-        String8 label,
-        f32 text_padding_em,
-        bool selected,
-        f32 line_height) {
-    UI_Comm result = {0};
-
-    TXT_Text *text = view->text;
-
-    ui_push_child_layout_axis(UI_Axis2_Y);
-    UI_Box *text_box = ui_box_make(
-            UI_BoxFlag_DrawBorder |
-            UI_BoxFlag_Clickable |
-            UI_BoxFlag_Draggable |
-            UI_BoxFlag_Scrollable |
-            UI_BoxFlag_OverflowY |
-            UI_BoxFlag_ClipChildren, label);
-
-    result = ui_comm_from_box(text_box);
-
-    f32 estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
-    estimated_lines_in_box /= ui_get_em(line_height, text_box->font_size);
-    estimated_lines_in_box += 1;
-
-    Rng2u64 line_range = {
-        .min = view->line_offset + 1,
-        .max = view->line_offset + estimated_lines_in_box,
-    };
-
-    f32 text_padding_px = ui_get_em(text_padding_em, text_box->font_size);
-
-    UI_Parent(text_box)
-        UI_PrefHeight(ui_em(line_height, 1))
-        UI_PrefWidth(ui_tc(text_padding_px, 0))
-    {
-        TimeBlock(S8("UI Build Text"));
-
-        ui_spacer(ui_em(text_padding_em, 0));
-
-        Rng2u selection_range = rng2u(view->mark, view->cursor);
-
-        u32 line_idx = 1;
-        for (u32 line_num = line_range.min; 
-                line_num <= line_range.max && line_idx <= txt_get_n_lines(text);
-                line_num++, line_idx++) {
-            String8 display_string = txt_get_line(arena, text, line_num);
-            String8 key_string = str8_cat(
-                    arena,
-                    S8("line"),
-                    str8_from_u32(arena, line_idx));
-
-            UI_Box *line_box = ui_box_make(
-                    UI_BoxFlag_DrawText,
-                    key_string); 
-            ui_box_equip_string(line_box, display_string);
-
-            UI_Comm line_comm = ui_comm_from_box(line_box);
-
-            
-            bool line_is_selected = selected && 
-                line_num >= selection_range.min.y &&
-                line_num <= selection_range.max.y;
-            if (line_is_selected) {
-                R_Bucket *line_bucket = r_get_new_bucket();
-                ui_box_equip_r_bucket(line_box, line_bucket);
-                line_box->r_bucket = line_bucket;
-
-                r_push_bucket(line_bucket);
-
-                f32 selection_start = 0;
-                f32 selection_end = 0;
-
-                f32 cursor_width = ui_top_font_size() / 10;
-                f32 cursor_advance = 0; 
-                f32 mark_advance = 0; 
-
-                if (display_string.size) {
-                    FC_GlyphRun *glyph_run = ui_get_box_display_run(line_box);
-                    selection_end = glyph_run->advance;
-
-                    if (view->cursor.y == line_num || view->mark.y == line_num) {
-                        bool cursor_set = false;
-                        bool mark_set = false;
-
-                        f32 advance = 0;
-
-                        u32 bytes_consumed = 0;
-
-                        FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
-                        while (true) {
-                            if (!cursor_set) {
-                                cursor_advance = advance;
-                                cursor_set = bytes_consumed == view->cursor.x;
-                            }
-                            if (!mark_set) {
-                                mark_advance = advance;
-                                mark_set = bytes_consumed == view->mark.x;
-                            }
-
-                            if (cursor_set && mark_set)
-                                break;
-
-                            if (glyph_ptr_n == 0) 
-                                break;
-
-                            FC_Glyph *glyph = glyph_ptr_n->v;
-                            bytes_consumed += utf8_encode(glyph->codepoint, 0);
-                            advance += glyph->metrics.advance;
-
-                            glyph_ptr_n = glyph_ptr_n->next;
-                        }
-
-                    }
-                }
-
-                if (view->cursor.y == line_num) {
-                    if (v2u_equal(selection_range.min, view->cursor)) {
-                        selection_start = cursor_advance;
-                    } else {
-                        selection_end = cursor_advance;
-                    }
-
-                    Rect2 cursor_rect = (Rect2){
-                        .V4 = V4(
-                                line_box->rect.min.x + cursor_advance + text_padding_px,
-                                line_box->rect.min.y,
-                                line_box->rect.min.x + cursor_advance + cursor_width + text_padding_px,
-                                line_box->rect.max.y),
-                    };
-
-                    r_push_rect2(.pos = cursor_rect, .clip = text_box->rect);
-                }
-
-                if (view->mark.y == line_num) {
-                    if (v2u_equal(selection_range.min, view->mark)) {
-                        selection_start = mark_advance;
-                    } else {
-                        selection_end = mark_advance;
-                    }
-                }
-
-                if (!v2u_equal(selection_range.min, selection_range.max) &&
-                        selection_start != selection_end) {
-                    assert(selection_start < selection_end);
-                    Rect2 selection_rect = (Rect2){
-                        .V4 = V4(
-                                line_box->rect.min.x + selection_start + text_padding_px,
-                                line_box->rect.min.y,
-                                line_box->rect.min.x + selection_end + text_padding_px,
-                                line_box->rect.max.y),
-                    };
-                    r_push_rect2(.pos = selection_rect, .clip = text_box->rect, R_Color4(RGBA(1, 0, 0, 0.5)));
-                }
-
-                r_pop_bucket();
-            }
-        }
-    }
-
-    ui_pop_child_layout_axis();
-
-    return result;
-}

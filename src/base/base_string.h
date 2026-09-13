@@ -37,8 +37,8 @@ internal String8 str8_from_u32(Arena *arena, u32 v);
 internal String8 str8_from_u64(Arena *arena, u64 v);
 
 // TODO
-internal String8 str8_from_f32(Arena *arena, f32 v);
-internal String8 str8_from_f64(Arena *arena, f64 v);
+internal String8 str8_from_f32(Arena *arena, f32 v, u32 n_decimals);
+internal String8 str8_from_f64(Arena *arena, f32 v, u32 n_decimals);
 
 ////////////////////////////////////////////////////////////////////////////////
 // NOTE(fede): UTF-8

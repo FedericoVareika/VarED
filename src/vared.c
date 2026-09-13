@@ -20,6 +20,9 @@
 #include "font_cache/font_cache.h"
 #include "font_cache/font_cache.c"
 
+#include "draw/draw.h"
+#include "draw/draw.c"
+
 #include "ui/ui.h"
 #include "ui/ui.c"
 
@@ -123,12 +126,13 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     view->first_action = 0;
 
     // NOTE(fede): If reset anchor is set, we should prioritize it, instead of 
-    // resetting the cursor. 
-    // This is because we might change the row of the cursor, but also change
-    // the cursor column correctly.
+    //      resetting the cursor. 
+    //      This is because we might change the row of the cursor, but also
+    //      change the cursor column correctly.
     set_cursor_from_anchor &= !reset_anchor;
 
-    // Visually align cursor to anchor or set anchor to cursor.
+    // NOTE(fede): After processing actions, visually align cursor to anchor or
+    //      set anchor to cursor.
     if (reset_anchor || set_cursor_from_anchor) {
         Temp scratch = scratch_begin(0, 0);
 
@@ -185,61 +189,234 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         scratch_end(scratch);
     }
 
-    UI_Comm view_comm = ui_text_view(state->frame_arena, view, label, text_padding_em, view_n == state->focused_view, state->line_height);
+    bool selected = view_n == state->focused_view;
 
+    // NOTE(fede): Build main text view UI.
+    UI_Parent(ui_box_make(0, label))
+        UI_BackgroundColor(ui_lighten_color(ui_top_background_color(), 0.1))
+        UI_Row
     {
-        UI_Box *text_box = view_comm.box;
-        view->text_rect = text_box->rect;
-        f32 estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
-        estimated_lines_in_box /= ui_get_em(state->line_height, text_box->font_size);
-        estimated_lines_in_box += 1;
-        view->first_line = view->line_offset;
-        view->last_line = view->line_offset + (u32)estimated_lines_in_box;
-    }
+        f32 estimated_lines_in_box;
 
-    if (view_comm.pressed) {
+        UI_ChildLayoutAxis(UI_Axis2_Y)
         {
-            CMD *cmd = cmd_push_name(S8("focus_view"));
-            cmd->view_n = view_n;
+            UI_Box *text_box = ui_box_makef(
+                    UI_BoxFlag_DrawBorder |
+                    UI_BoxFlag_Clickable |
+                    UI_BoxFlag_Draggable |
+                    UI_BoxFlag_Scrollable |
+                    UI_BoxFlag_DrawBackground |
+                    UI_BoxFlag_OverflowY |
+                    UI_BoxFlag_ClipChildren, "##text_box");
+
+            f32 line_height_px = ui_get_em(state->line_height, text_box->font_size);
+
+            estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
+            estimated_lines_in_box /= line_height_px;
+            estimated_lines_in_box += 1;
+
+            f32 text_padding_px = ui_get_em(text_padding_em, text_box->font_size);
+
+            UI_Comm view_comm = ui_comm_from_box(text_box);
+
+            // NOTE(fede): Draw text lines in text box.
+            {
+                Temp scratch = scratch_begin(0, 0);
+
+                UI_Box *text_box = view_comm.box;
+
+                R_Bucket *text_bucket = r_get_new_bucket();
+                ui_box_equip_r_bucket(text_box, text_bucket);
+                r_push_bucket(text_bucket);
+
+                Rng2u64 line_range = {
+                    .min = floor_f32_to_int(view->line_offset) + 1,
+                    .max = floor_f32_to_int(view->line_offset) + ceil_f32_to_int(estimated_lines_in_box),
+                };
+
+                v2 at = {
+                    text_box->rect.min.x + text_padding_px,
+                    text_box->rect.min.y,
+                };
+
+                if (view->single_line) {
+                    // Center text on text box
+                    f32 center = (text_box->rect.max.y + text_box->rect.min.y) / 2;
+                    at.y = center - (line_height_px / 2);
+                } else {
+                    // Do fractional vertical scrolling
+                    f32 text_fractional_offset = view->line_offset - (f32)floor_f32_to_int(abs_f32(view->line_offset));
+                    if (text_fractional_offset > 0) {
+                        text_fractional_offset = -text_fractional_offset;
+                    }
+                    text_fractional_offset *= line_height_px;
+                    at.y += text_fractional_offset;
+                }
+
+                Rng2u selection_range = rng2u(view->mark, view->cursor);
+
+                u32 line_idx = 1;
+                for (u32 line_num = line_range.min; 
+                        line_num <= line_range.max && line_idx <= txt_get_n_lines(view->text);
+                        line_num++, line_idx++) {
+
+                    String8 line_string = txt_get_line(scratch.arena, view->text, line_num);
+                    FC_GlyphRun *glyph_run = fc_get_string_glyph_run(state->font, line_string, state->font_size);
+                    FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
+
+                    dr_glyph_run(metrics, glyph_run, at, text_box->rect, text_box->text_color);
+
+                    bool line_is_selected = selected && 
+                        line_num >= selection_range.min.y &&
+                        line_num <= selection_range.max.y;
+                    // NOTE(fede): Draw cursor and selection.
+                    if (line_is_selected) {
+                        f32 selection_start = 0;
+                        f32 selection_end = 0;
+
+                        f32 cursor_width = ui_top_font_size() / 10;
+                        f32 cursor_advance = 0; 
+                        f32 mark_advance = 0; 
+
+                        if (line_string.size) {
+                            selection_end = glyph_run->advance;
+
+                            if (view->cursor.y == line_num || view->mark.y == line_num) {
+                                bool cursor_set = false;
+                                bool mark_set = false;
+
+                                f32 advance = 0;
+
+                                u32 bytes_consumed = 0;
+
+                                FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
+                                while (true) {
+                                    if (!cursor_set) {
+                                        cursor_advance = advance;
+                                        cursor_set = bytes_consumed == view->cursor.x;
+                                    }
+                                    if (!mark_set) {
+                                        mark_advance = advance;
+                                        mark_set = bytes_consumed == view->mark.x;
+                                    }
+
+                                    if (cursor_set && mark_set)
+                                        break;
+
+                                    if (glyph_ptr_n == 0) 
+                                        break;
+
+                                    FC_Glyph *glyph = glyph_ptr_n->v;
+                                    bytes_consumed += utf8_encode(glyph->codepoint, 0);
+                                    advance += glyph->metrics.advance;
+
+                                    glyph_ptr_n = glyph_ptr_n->next;
+                                }
+
+                            }
+                        }
+
+                        if (view->cursor.y == line_num) {
+                            if (v2u_equal(selection_range.min, view->cursor)) {
+                                selection_start = cursor_advance;
+                            } else {
+                                selection_end = cursor_advance;
+                            }
+
+                            Rect2 cursor_rect = (Rect2){
+                                .V4 = V4(
+                                        at.x + cursor_advance,
+                                        at.y,
+                                        at.x + cursor_advance + cursor_width,
+                                        at.y + line_height_px),
+                            };
+
+                            r_push_rect2(.pos = cursor_rect, .clip = text_box->rect);
+                        }
+
+                        if (view->mark.y == line_num) {
+                            if (v2u_equal(selection_range.min, view->mark)) {
+                                selection_start = mark_advance;
+                            } else {
+                                selection_end = mark_advance;
+                            }
+                        }
+
+                        if (!v2u_equal(selection_range.min, selection_range.max) &&
+                                selection_start != selection_end) {
+                            assert(selection_start < selection_end);
+                            Rect2 selection_rect = (Rect2){
+                                .V4 = V4(
+                                        at.x + selection_start,
+                                        at.y,
+                                        at.x + selection_end,
+                                        at.y + line_height_px),
+                            };
+                            r_push_rect2(.pos = selection_rect, .clip = text_box->rect, R_Color4(RGBA(1, 0, 0, 0.5)));
+                        }
+                    }
+
+                    at.y += line_height_px;
+                }
+
+                r_pop_bucket();
+                scratch_end(scratch);
+
+                view->first_line = view->line_offset;
+                view->last_line = view->line_offset + (u32)estimated_lines_in_box;
+            }
+
+            if (view_comm.pressed) {
+                {
+                    CMD *cmd = cmd_push_name(S8("focus_view"));
+                    cmd->view_n = view_n;
+                }
+            }
+
+            if (view_comm.dragging) {
+                Temp scratch = scratch_begin(0, 0);
+
+                f32 mouse_y = view_comm.rel_mouse_pos.y - text_padding_px;
+                if (mouse_y < 0)
+                    mouse_y = 0;
+
+                f32 mouse_line = mouse_y /
+                    ui_get_em(state->line_height, state->font_size);
+                u32 new_cursor_row = (u32)mouse_line + view->line_offset + 1;
+                new_cursor_row = min(new_cursor_row, txt_get_n_lines(view->text));
+
+                f32 mouse_advance = view_comm.rel_mouse_pos.x - text_padding_px;
+
+                {
+                    CMD *cmd = cmd_push_name(S8("text_action"));
+                    cmd->view_n = view_n;
+                    cmd->view_action.row_delta = (i32)new_cursor_row - (i32)view->cursor.y;
+                    cmd->view_action.hor_anchor_em = mouse_advance / ui_get_em(1, state->font_size); 
+                    cmd->view_action.flags |= 
+                        TXT_ViewAction_Flag_SetHorizontalAnchor |
+                        (!view_comm.pressed ? TXT_ViewAction_Flag_KeepMark : 0);
+                }
+
+                scratch_end(scratch);
+            }
+
+            if (view_comm.scroll_delta.y) {
+                i64 line_offset_i = view->line_offset;
+                line_offset_i -= 2 * (i64)view_comm.scroll_delta.y;
+                line_offset_i = max(line_offset_i, 0);
+                line_offset_i = min(line_offset_i, (i64)txt_get_n_lines(view->text) - 1);
+
+                view->line_offset = (u32)line_offset_i;
+            }
         }
-    }
 
-    if (view_comm.dragging) {
-        Temp scratch = scratch_begin(0, 0);
-
-        f32 text_padding_px = ui_get_em(text_padding_em, view_comm.box->font_size);
-
-        f32 mouse_y = view_comm.rel_mouse_pos.y - text_padding_px;
-        if (mouse_y < 0)
-            mouse_y = 0;
-
-        f32 mouse_line = mouse_y /
-            ui_get_em(state->line_height, state->font_size);
-        u32 new_cursor_row = (u32)mouse_line + view->line_offset + 1;
-        new_cursor_row = min(new_cursor_row, txt_get_n_lines(view->text));
-
-        f32 mouse_advance = view_comm.rel_mouse_pos.x - text_padding_px;
-
-        {
-            CMD *cmd = cmd_push_name(S8("text_action"));
-            cmd->view_n = view_n;
-            cmd->view_action.row_delta = (i32)new_cursor_row - (i32)view->cursor.y;
-            cmd->view_action.hor_anchor_em = mouse_advance / ui_get_em(1, state->font_size); 
-            cmd->view_action.flags |= 
-                TXT_ViewAction_Flag_SetHorizontalAnchor |
-                (!view_comm.pressed ? TXT_ViewAction_Flag_KeepMark : 0);
+        if (!view->single_line) {
+            UI_PrefWidth(ui_em(1, 1))
+                UI_ChildLayoutAxis(UI_Axis2_Y)
+                {
+                    ui_slider_anon(&view->line_offset, 0, (f32)(txt_get_n_lines(view->text) - 2), estimated_lines_in_box, S8("##line_slider"));
+                }
         }
-
-        scratch_end(scratch);
-    }
-
-    if (view_comm.scroll_delta.y) {
-        i64 line_offset_i = view->line_offset;
-        line_offset_i -= (i64)view_comm.scroll_delta.y;
-        line_offset_i = max(line_offset_i, 0);
-        line_offset_i = min(line_offset_i, (i64)txt_get_n_lines(view->text) - 1);
-
-        view->line_offset = (u32)line_offset_i;
     }
 }
 
@@ -530,55 +707,87 @@ void editor_update_and_render(EditorParams *params) {
                         state->show_profiler = !state->show_profiler;
                     }
 
-                    if (state->show_profiler) {
-                        UI_PrefWidth(ui_pct(1, 1))
-                            UI_PrefHeight(ui_cs(1))
-                        {
-                            P_FrameState *p_prev = p_previous_state();
-                            u64 total_time = p_prev->end_time - p_prev->start_time;
-                            f64 total_time_frame_pct = ((f64)total_time / performance_frequency()) * 144;
+                    {
+                        P_FrameState *p_prev = p_previous_state();
+                        u64 total_clocks = p_prev->end_time - p_prev->start_time;
+                        f64 total_time_frame_pct = ((f64)total_clocks / performance_frequency()) * 144;
 
-                            bool red = total_time_frame_pct > 1;
-
-                            f64 added_pct = 0;
-
-                            UI_NamedColumn(S8("__anchors__"))
-                                UI_PrefHeight(ui_em(1.2, 1))
+                        if (total_time_frame_pct > 1) {
+                            printf("Total time: %lu (Cpu freq: %lu)\n", total_clocks, performance_frequency());
                             for (u32 i = 1; i <= p_prev->last_anchor_idx; i++) {
                                 P_Anchor *anchor = &p_prev->anchors[i];
-                                f64 pct = (f64)anchor->exclusive_elapsed_time / (f64)total_time;
-                                added_pct += pct;
+                                f64 pct = (f64)anchor->exclusive_elapsed_time / (f64)total_clocks;
 
-                                Temp scratch = scratch_begin(0, 0);
+                                printf("  %.*s[%lu]: %lu (%.2f%%", 
+                                        (int)anchor->label.size,
+                                        anchor->label.str,
+                                        anchor->hit_count,
+                                        anchor->exclusive_elapsed_time, pct);
 
-                                String8 parent_label = str8_cat(frame_arena, S8("__anchor__"), str8_from_u64(frame_arena, i));
-                                UI_ChildLayoutAxis(UI_Axis2_X)
-                                    UI_PrefWidth(ui_pct(1, 1))
-                                    UI_Parent(ui_box_make(UI_BoxFlag_ClipChildren, parent_label))
-                                {
-                                    UI_PrefWidth(ui_em(10, 1))
-                                        UI_Parent(ui_box_makef(UI_BoxFlag_ClipChildren, ""))
-                                        ui_box_make(UI_BoxFlag_DrawText, anchor->label);
-
-                                    UI_PrefWidth(ui_em(5, 1))
-                                        ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(frame_arena, (u32)(pct * 100)));
-
-                                    UI_CornerRadius(0)
-                                        UI_BackgroundColor(RGBA(red, !red, 0, 1))
-                                        UI_PrefWidth(ui_pct(pct / 2, 1))
-                                        ui_box_make(UI_BoxFlag_DrawBackground, S8(""));
-
-                                    if (anchor->processed_byte_count) {
-                                        f64 kilobytes = (f64)anchor->processed_byte_count / (f64)kilobytes(1);
-
-                                        ui_spacer(ui_pct(1, 0));
-
-                                        UI_PrefWidth(ui_em(5, 0))
-                                            ui_box_make(UI_BoxFlag_DrawText, str8_from_u32(frame_arena, (u32)(kilobytes)));
-                                    }
+                                if (anchor->inclusive_elapsed_time != anchor->exclusive_elapsed_time) {
+                                    f64 percentage_inclusive =
+                                        (f64)(anchor->inclusive_elapsed_time * 100) / (f64)total_clocks;
+                                    printf(", %.2f%% w/children", percentage_inclusive);
                                 }
 
-                                scratch_end(scratch);
+                                if (anchor->processed_byte_count) {
+                                    f64 megabyte = 1024.0f * 1024.0f;
+
+                                    f64 seconds = (f64)anchor->inclusive_elapsed_time / (f64)performance_frequency();
+                                    f64 bytes_per_second = (f64)anchor->processed_byte_count / seconds;
+                                    f64 megabytes = (f64)anchor->processed_byte_count / (f64)megabyte;
+                                    f64 megabytes_per_second = bytes_per_second / megabyte;
+
+                                    // printf("  %.3fmb at %.2fgb/s", megabytes, gigabytes_per_second);
+                                    printf("  %.3fmb at %.2fmb/s", megabytes, megabytes_per_second);
+                                }
+                                printf(")\n");
+                            }
+                        }
+
+                        if (state->show_profiler) {
+                            UI_PrefWidth(ui_pct(1, 1))
+                                UI_PrefHeight(ui_cs(1))
+                            {
+                                bool red = total_time_frame_pct > 1;
+
+                                UI_NamedColumn(S8("__anchors__"))
+                                    UI_PrefHeight(ui_em(1.2, 1))
+                                for (u32 i = 1; i <= p_prev->last_anchor_idx; i++) {
+                                    P_Anchor *anchor = &p_prev->anchors[i];
+                                    f64 pct = (f64)anchor->exclusive_elapsed_time / (f64)total_clocks;
+
+                                    Temp scratch = scratch_begin(0, 0);
+
+                                    String8 parent_label = str8_cat(frame_arena, S8("__anchor__"), str8_from_u64(frame_arena, i));
+                                    UI_ChildLayoutAxis(UI_Axis2_X)
+                                        UI_PrefWidth(ui_pct(1, 1))
+                                        UI_Parent(ui_box_make(UI_BoxFlag_ClipChildren, parent_label))
+                                    {
+                                        UI_PrefWidth(ui_em(10, 1))
+                                            UI_Parent(ui_box_makef(UI_BoxFlag_ClipChildren, ""))
+                                            ui_box_make(UI_BoxFlag_DrawText, anchor->label);
+
+                                        UI_PrefWidth(ui_em(5, 1))
+                                            ui_box_make(UI_BoxFlag_DrawText, str8_from_f32(frame_arena, pct * 100, 2));
+
+                                        UI_CornerRadius(0)
+                                            UI_BackgroundColor(RGBA(red, !red, 0, 1))
+                                            UI_PrefWidth(ui_pct(pct / 2, 1))
+                                            ui_box_make(UI_BoxFlag_DrawBackground, S8(""));
+
+                                        if (anchor->processed_byte_count) {
+                                            f64 kilobytes = (f64)anchor->processed_byte_count / (f64)kilobytes(1);
+
+                                            ui_spacer(ui_pct(1, 0));
+
+                                            UI_PrefWidth(ui_em(5, 0))
+                                                ui_box_make(UI_BoxFlag_DrawText, str8_from_f32(frame_arena, kilobytes, 2));
+                                        }
+                                    }
+
+                                    scratch_end(scratch);
+                                }
                             }
                         }
                     }
@@ -640,12 +849,13 @@ void editor_update_and_render(EditorParams *params) {
                         }
                     }
 
+                    ui_spacer(ui_em(1, 0));
+
                     f32 text_padding_px = 5;
                     bool draw_view = false;
                     UI_PrefWidth(ui_pct(1, 1)) 
                         UI_Row
                         UI_PrefWidth(ui_em(10, 0))
-                        // UI_ChildLayoutAxis(UI_Axis2_Y)
                     {
                         u32 i = 0;
                         for (TXT_ViewNode *view_n = state->first_view;
@@ -689,7 +899,7 @@ void editor_update_and_render(EditorParams *params) {
                     }
 
                     if (draw_view) {
-                        UI_PrefWidth(ui_pct(1, 0)) UI_PrefHeight(ui_pct(0.75, 0))
+                        UI_PrefWidth(ui_pct(1, 0)) UI_PrefHeight(ui_pct(1, 0))
                         {
                             text_view(state, state->selected_file_view, S8("##text_box"));
                         }
