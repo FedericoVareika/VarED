@@ -62,7 +62,7 @@ void editor_init(EditorParams *params) {
     ui_init();
     cmd_init();
 
-    state->show_profiler = true;
+    state->show_profiler = false;
 }
 
 // STUDY(fede): Editing lines in sqlite3.c (middle/bottom) produces spikes in 
@@ -213,7 +213,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                     UI_BoxFlag_OverflowY |
                     UI_BoxFlag_ClipChildren, "##text_box");
 
-            f32 line_height_px = ui_get_em(state->line_height, text_box->font_size);
+            f32 line_height_px = (u32)ui_get_em(state->line_height, text_box->font_size);
 
             estimated_lines_in_box = text_box->rect.max.y - text_box->rect.min.y;
             estimated_lines_in_box /= line_height_px;
@@ -249,12 +249,9 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                     at.y = center - (line_height_px / 2);
                 } else {
                     // Do fractional vertical scrolling
-                    f32 text_fractional_offset = view->line_offset - (f32)floor_f32_to_int(abs_f32(view->line_offset));
-                    if (text_fractional_offset > 0) {
-                        text_fractional_offset = -text_fractional_offset;
+                    if (view->sub_line_offset) {
+                        at.y -= view->sub_line_offset * line_height_px;
                     }
-                    text_fractional_offset *= line_height_px;
-                    at.y += text_fractional_offset;
                 }
 
                 Rng2u selection_range = rng2u(view->mark, view->cursor);
@@ -408,26 +405,48 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             }
 
             if (view_comm.scroll_delta.y) {
-                f32 line_offset = view->line_offset;
-                line_offset -= 2 * view_comm.scroll_delta.y;
-                line_offset = max(line_offset, 0);
-                line_offset = min(line_offset, txt_get_n_lines(view->text) - 1);
+                f32 delta_line_offset_f = view_comm.scroll_delta.y;
+                // TODO(fede): Parametize sensitivity
+                f32 new_sub_line_offset = view->sub_line_offset - 2 * delta_line_offset_f;
+                i32 delta_line_offset = floor_f32_to_int(new_sub_line_offset);
+                new_sub_line_offset -= delta_line_offset;
+                assert(new_sub_line_offset >= 0 && new_sub_line_offset < 1);
 
-                view->line_offset = line_offset;
+                if (delta_line_offset < 0) {
+                    if (view->line_offset < (u64)(-delta_line_offset)) {
+                        view->line_offset = 0;
+                        new_sub_line_offset = 0;
+                    } else {
+                        view->line_offset = view->line_offset - (u64)(-delta_line_offset);
+                    }
+                } else { 
+                    if (view->line_offset + delta_line_offset > txt_get_n_lines(view->text) - 3) {
+                        view->line_offset = txt_get_n_lines(view->text) - 3;
+                        new_sub_line_offset = 1;
+                    } else {
+                        view->line_offset += delta_line_offset;
+                    }
+                }
+
+                view->sub_line_offset = new_sub_line_offset;
             }
         }
 
         if (!view->single_line) {
-            f32 min_scroller_size = (f32)txt_get_n_lines(view->text) / 100;
-            f32 scroller_size = max(min_scroller_size, estimated_lines_in_box);
+            f64 min_scroller_size = 0.05;
+            f64 max = (f64)txt_get_n_lines(view->text) - 2;
+            f64 scroller_size = max(min_scroller_size, (f64)estimated_lines_in_box / max);
+
+            f64 line_pct = (f64)view->line_offset + (f32)view->sub_line_offset;
+            line_pct /= max;
+
             UI_PrefWidth(ui_em(1, 1))
                 UI_ChildLayoutAxis(UI_Axis2_Y)
-                    ui_slider_anon(
-                            &view->line_offset,
-                            0,
-                            (f32)(txt_get_n_lines(view->text) - 2),
-                            scroller_size,
-                            S8("##line_slider"));
+                    ui_slider_anon(&line_pct, 0, 1, scroller_size, S8("##line_slider"));
+            
+            f64 line_offset_f = line_pct * max; 
+            view->line_offset = (u64)(line_offset_f);
+            view->sub_line_offset = line_offset_f - (f32)(view->line_offset);
         }
     }
 }

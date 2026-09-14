@@ -234,7 +234,7 @@ internal inline FC_GlyphRun *ui_get_box_display_run(UI_Box *box);
 internal UI_Comm ui_button(String8 str);
 internal void ui_spacer(UI_Size size);
 internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str);
-internal UI_Comm ui_slider_anon(f32 *val, f32 min, f32 max, f32 slider_size, String8 str);
+internal UI_Comm ui_slider_anon(f64 *val, f64 min, f64 max, f64 slider_size, String8 str);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Style stack DeferLoops

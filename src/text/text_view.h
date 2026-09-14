@@ -51,7 +51,8 @@ struct TXT_View {
     bool file_view;
 
     TXT_Text *text;
-    f32 line_offset;
+    u64 line_offset;
+    f32 sub_line_offset; // NOTE(fede): Positive, between 0 and 1.
 
     v2u cursor;
     v2u mark;

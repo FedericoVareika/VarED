@@ -11,7 +11,8 @@ internal void dr_glyph_run(FP_FontMetrics metrics, FC_GlyphRun *glyph_run, v2 at
 
         FC_Glyph *glyph = glyph_ptr_n->v;
 
-        if (glyph->codepoint != '\n') {
+        if (glyph->codepoint != '\n' &&
+                glyph->codepoint != '\t') {
             v2 pos = v2_add(text_pos, (v2){
                 glyph->metrics.bearing_x,
                 -glyph->metrics.bearing_y,

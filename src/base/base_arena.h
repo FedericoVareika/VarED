@@ -18,7 +18,8 @@ struct Arena {
     u8 *base;
 };
 
-global u64 arena_default_reserve_size = megabytes(64);
+// global u64 arena_default_reserve_size = megabytes(64);
+global u64 arena_default_reserve_size = gigabytes((u64)64);
 global u64 arena_default_commit_size  = kilobytes(64);
 
 typedef struct ArenaParams ArenaParams;

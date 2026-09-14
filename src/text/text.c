@@ -71,7 +71,7 @@ internal TXT_Buffer *txt_get_buffer_for_str(Arena *arena, TXT_Text *text, String
                 }
             }
 
-            buffer->line_starts = push_array(arena, u64, newline_count);
+            buffer->line_starts = push_array(arena, u64, newline_count + 1);
         } else {
             buffer->line_starts = push_array(arena, u64, TXT_WRITE_BUFFER_MAX_LINES);
         }
@@ -521,6 +521,8 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
         while (true) {
             TXT_LinePos line_end_pos = piece->end;
             if (line_start_pos.line_idx < line_end_pos.line_idx) {
+                assert(buffer->line_starts[line_start_pos.line_idx + 1] >
+                        buffer->line_starts[line_start_pos.line_idx]);
                 line_end_pos.offset =
                     buffer->line_starts[line_start_pos.line_idx + 1] -
                     buffer->line_starts[line_start_pos.line_idx] - 1;

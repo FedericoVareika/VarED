@@ -794,7 +794,7 @@ internal UI_Comm ui_slider(f32 *val, f32 min, f32 max, String8 str) {
     return comm;
 }
 
-internal UI_Comm ui_slider_anon(f32 *val, f32 min, f32 max, f32 slider_size, String8 str) {
+internal UI_Comm ui_slider_anon(f64 *val, f64 min, f64 max, f64 slider_size, String8 str) {
     UI_Comm result = {0};
 
     UI_Box *slider_container_box = ui_box_make(
@@ -803,10 +803,12 @@ internal UI_Comm ui_slider_anon(f32 *val, f32 min, f32 max, f32 slider_size, Str
 
     UI_Parent(slider_container_box)
     {
-        f32 total_size = max - min + slider_size;
-        f32 space_before = (*val - min) / total_size;
-        f32 space_after = 1 - (((*val + slider_size) - min) / total_size);
-        f32 slider_size_pct = slider_size / total_size;
+        f64 total_size = max - min + slider_size;
+        f64 space_before = (*val - min) / total_size;
+        f64 space_after = 1 - (((*val + slider_size) - min) / total_size);
+        f64 slider_size_pct = slider_size / total_size;
+
+        assert(space_before + space_after < 1);
 
         ui_spacer(ui_pct(space_before, 0));
 
@@ -819,22 +821,24 @@ internal UI_Comm ui_slider_anon(f32 *val, f32 min, f32 max, f32 slider_size, Str
 
         UI_Axis2 layout_axis = ui_top_parent()->child_layout_axis;
         {
-            slider_box->semantic_size[layout_axis] = ui_pct(slider_size_pct, 1);
+            slider_box->semantic_size[layout_axis] = ui_pct(slider_size_pct, 0);
         }
 
         {
             UI_Comm slider_comm = ui_comm_from_box(slider_box);
 
             if (slider_comm.dragging) {
-                f32 slider_start_px = v2_sub(slider_comm.mouse_pos, slider_box->pressed_rel_mouse_pos).e[layout_axis];
+                f64 mouse_pos = slider_comm.mouse_pos.e[layout_axis];
+                f64 pressed_rel_mouse_pos = slider_box->pressed_rel_mouse_pos.e[layout_axis];
+                f64 slider_start_px = mouse_pos - pressed_rel_mouse_pos;
 
                 // All in pixels
-                f32 slider_container_start = slider_container_box->rect.min.e[layout_axis];
-                f32 slider_container_end = slider_container_box->rect.max.e[layout_axis];
-                f32 slider_container_size = slider_container_end - slider_container_start;
+                f64 slider_container_start = slider_container_box->rect.min.e[layout_axis];
+                f64 slider_container_end = slider_container_box->rect.max.e[layout_axis];
+                f64 slider_container_size = slider_container_end - slider_container_start;
 
-                f32 new_slider_space_before = (slider_start_px - slider_container_start) / slider_container_size;
-                f32 new_val = new_slider_space_before * total_size + min;
+                f64 new_slider_space_before = (slider_start_px - slider_container_start) / slider_container_size;
+                f64 new_val = new_slider_space_before * total_size + min;
                 new_val = max(new_val, min);
                 new_val = min(new_val, max);
                 *val = new_val;
