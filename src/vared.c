@@ -280,7 +280,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                             f32 selection_start = 0;
                             f32 selection_end = 0;
 
-                            f32 cursor_width = ui_top_font_size() / 10;
+                            f32 cursor_width = max(ui_top_font_size() / 10, 1);
                             f32 cursor_advance = 0; 
                             f32 mark_advance = 0; 
 
@@ -408,12 +408,12 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             }
 
             if (view_comm.scroll_delta.y) {
-                i64 line_offset_i = view->line_offset;
-                line_offset_i -= 2 * (i64)view_comm.scroll_delta.y;
-                line_offset_i = max(line_offset_i, 0);
-                line_offset_i = min(line_offset_i, (i64)txt_get_n_lines(view->text) - 1);
+                f32 line_offset = view->line_offset;
+                line_offset -= 2 * view_comm.scroll_delta.y;
+                line_offset = max(line_offset, 0);
+                line_offset = min(line_offset, txt_get_n_lines(view->text) - 1);
 
-                view->line_offset = (u32)line_offset_i;
+                view->line_offset = line_offset;
             }
         }
 
