@@ -781,7 +781,10 @@ void editor_update_and_render(EditorParams *params) {
                                             ui_box_make(UI_BoxFlag_DrawText, anchor->label);
 
                                         UI_PrefWidth(ui_em(5, 1))
-                                            ui_box_make(UI_BoxFlag_DrawText, str8_from_f32(frame_arena, pct * 100, 2));
+                                        {
+                                            UI_Box *pct_box = ui_box_make(UI_BoxFlag_DrawText, S8(""));
+                                            ui_box_equip_string(pct_box, str8_from_f32(frame_arena, pct * 100, 2));
+                                        }
 
                                         UI_CornerRadius(0)
                                             UI_BackgroundColor(RGBA(red, !red, 0, 1))
@@ -794,7 +797,10 @@ void editor_update_and_render(EditorParams *params) {
                                             ui_spacer(ui_pct(1, 0));
 
                                             UI_PrefWidth(ui_em(5, 0))
-                                                ui_box_make(UI_BoxFlag_DrawText, str8_from_f32(frame_arena, kilobytes, 2));
+                                            {
+                                                UI_Box *bandwidth = ui_box_make(UI_BoxFlag_DrawText, S8(""));
+                                                ui_box_equip_string(bandwidth, str8_from_f32(frame_arena, kilobytes, 2));
+                                            }
                                         }
                                     }
 
