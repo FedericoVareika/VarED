@@ -51,12 +51,12 @@ internal R_BatchGroupNode *r_get_batch_group_n(
 internal void *r_push_batch_inst_(R_BatchList *batches, u64 inst_bytes) {
     R_BatchNode *batch_n = batches->last;
     if (!batch_n || batch_n->v.byte_size - batch_n->v.byte_count < inst_bytes) {
+        TimeBandwidth(S8("Add Batch Node"), inst_bytes);
         batch_n = push_struct(r_state->frame_arena, R_BatchNode);
         batch_n->v.v = push_size(r_state->frame_arena, BATCH_SIZE);
         batch_n->v.byte_size = BATCH_SIZE;
 
-        QueuePush(batches->first, batches->last, batch_n);
-        // SLL_PushBack(batches->first, batches->last, batch_n);
+        SLL_PushBack(batches->first, batches->last, batch_n);
         batches->batch_count++;
     }
 

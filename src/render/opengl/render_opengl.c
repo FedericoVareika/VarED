@@ -341,8 +341,11 @@ internal void r_consume_pass(R_Pass *pass) {
             glVertexAttribDivisor(attrib.index, 1);
         }
 
-        glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, 
-                batches->byte_count / batches->bytes_per_inst);
+        {
+            TimeBandwidth(S8("Draw Call"), batches->byte_count);
+            glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, 
+                    batches->byte_count / batches->bytes_per_inst);
+        }
     }
 
     assert(!batch_group_n);
@@ -379,8 +382,6 @@ internal void r_consume_passes(R_PassList *passes) {
 
 // NOTE(fede): Consume hook 
 internal void r_consume_all(void) {
-    TimeFunction;
-
     glClearColor(0x0, 0x0, 0x0, 0xFF);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -390,14 +391,9 @@ internal void r_consume_all(void) {
         R_PassList *passes = &bucket_n->v->passes;
         r_consume_passes(passes);
     }
-
-    r_state->top_bucket = 0;
-    arena_clear(r_state->frame_arena);
 }
 
 internal void r_end_frame(void) {
-    TimeFunction;
-
     for (R_OpenGL_BufferNode *buffer_n = r_ogl_state->buffers.first;
             buffer_n;
             buffer_n = buffer_n->next) {
@@ -405,6 +401,9 @@ internal void r_end_frame(void) {
     }
 
     arena_clear(r_ogl_state->buffer_arena);
+
+    r_state->top_bucket = 0;
+    arena_clear(r_state->frame_arena);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

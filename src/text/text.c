@@ -469,13 +469,13 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
     assert(row > 0);
     row--;
         
-
     u64 line_idx = 0;
     TXT_PieceNode *piece_n = text->first;
 
     // NOTE(fede): Get the LinePos of the start of the `row` 
     TXT_LinePos line_start_pos = {0}; 
     {
+        TimeBlock(S8("GetLinePos"));
         for (; piece_n != 0; 
                 piece_n = piece_n->next) {
             TXT_Piece *piece = &piece_n->v;
@@ -495,15 +495,14 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
         TXT_Buffer *buffer = piece->buffer;
 
         line_start_pos = piece->start;
-        for (; line_idx < row; line_idx++) {
-            if (line_start_pos.line_idx >= buffer->line_count) {
-                assert(line_start_pos.line_idx == buffer->line_count);
-                break;
-            }
 
-            line_start_pos.line_idx++;
+        u64 lines_remaining = row - line_idx;
+        if (lines_remaining > 0) {
+            line_start_pos.line_idx = min(
+                    buffer->line_count,
+                    line_start_pos.line_idx + lines_remaining);
             line_start_pos.offset = 0;
-        }
+        } 
 
         assert(line_start_pos.line_idx < piece->end.line_idx ||
                 line_start_pos.line_idx == piece->end.line_idx &&
@@ -515,6 +514,7 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
     Temp scratch = scratch_begin(&arena, 1);
     String8 result = S("");
     {
+        TimeBlock(S8("BuildLine"));
         TXT_Piece *piece = &piece_n->v;
         TXT_Buffer *buffer = piece->buffer;
 

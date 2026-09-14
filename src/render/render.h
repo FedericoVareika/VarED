@@ -166,6 +166,8 @@ struct R_State {
 #define BLACK_V4 V4(1, 1, 1, 1)
 
 internal void r_init(u32 window_width, u32 window_height);
+internal void r_tick(void);
+
 internal R_Rect2DInst *r_push_rect2_(R_Rect2Params params);
 #define r_push_rect2(...) r_push_rect2_((R_Rect2Params){.tex = nil_texture, .color0 = WHITE_V4, .color1 = WHITE_V4, .color2 = WHITE_V4, .color3 = WHITE_V4, .clip = R2_INF, __VA_ARGS__})
 

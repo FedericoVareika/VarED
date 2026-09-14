@@ -1,8 +1,7 @@
 
 internal void dr_glyph_run(FP_FontMetrics metrics, FC_GlyphRun *glyph_run, v2 at, Rect2 clip, v4 color) {
-    // Rect2 text_rect = rect2_min_dim(
-    //         at,
-    //         (v2){ glyph_run->advance, metrics.height });
+    TimeFunction;
+
     v2 text_pos = at;
     text_pos.y += metrics.ascender;
 

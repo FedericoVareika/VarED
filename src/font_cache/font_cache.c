@@ -13,34 +13,23 @@ internal void fc_init(void) {
     fc_state->scratch_raster_dst_size = kilobytes(2);
     fc_state->scratch_raster_dst = push_size(arena, fc_state->scratch_raster_dst_size);
 
-    fc_state->glyph_table_size = 100;
+    fc_state->glyph_table_size = 256;
     fc_state->glyph_table = push_array(fc_state->caching_arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
 
     fc_state->run_hash_arena = arena_alloc(.reserve_size=gigabytes(1));
-    fc_state->run_table_size = 100;
+    fc_state->run_table_size = 256;
     fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
 }
 
 internal void fc_tick(void) {
-    TimeFunction;
-
     arena_clear(fc_state->frame_arena);
 
-    for (u32 i = 0; i < fc_state->glyph_table_size; i++) {
-        FC_GlyphHashSlot *slot = &fc_state->glyph_table[i];
-
-        for (FC_GlyphNode *glyph_n = slot->hash_first; glyph_n != 0;) {
-            FC_GlyphNode *next_n = glyph_n->next;
-
-            if (glyph_n->v.last_frame_touched_idx != fc_state->frame_idx) {
-                DLL_Remove(slot->hash_first, slot->hash_last, glyph_n);
-                glyph_n->next = fc_state->first_free_glyph;
-                fc_state->first_free_glyph = glyph_n;
-            }
-
-            glyph_n = next_n;
-        }
-    }
+    // NOTE(fede): I was previously deleting the glyph nodes that were 'stale' 
+    //      (not touched this frame), I do not know why I did this though. 
+    //      Deleting it prevented a performance error where we needed to 
+    //      constantly bind different textures (glyph atlases) to render a 
+    //      single frame. We definitely need to upgrade this cache in the 
+    //      future, starting with a better layout algorithm for the atlases.
 
     fc_state->frame_idx++;
 }
@@ -58,7 +47,6 @@ internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 fon
     FC_GlyphHashSlot *slot = &fc_state->glyph_table[codepoint % fc_state->glyph_table_size];
     FC_GlyphNode *glyph_n = slot->hash_first;
     for (; glyph_n != 0; glyph_n = glyph_n->next) {
-
         if (glyph_n->v.codepoint == codepoint &&
                 glyph_n->v.font_size == font_size) {
             break; 
@@ -152,7 +140,6 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
         FP_Handle font,
         String8 string,
         f32 font_size) {
-
     FC_RunKey key = fc_run_key_from_string_size(font, string, font_size);
     FC_GlyphRunHashSlot *slot = &fc_state->run_table[key.v % fc_state->run_table_size];
     FC_GlyphRunNode *run_n = slot->hash_first;
