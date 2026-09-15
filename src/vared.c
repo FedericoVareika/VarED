@@ -30,6 +30,8 @@
  *      - Historic graph (STUDY on how other people do this)
  *      - Memory profiler (arena analysis)
  *
+ *  - Undo (maybe even undo trees).
+ *
  * */
 
 #include "base/base_inc.h"
