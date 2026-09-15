@@ -1,3 +1,34 @@
+/*
+ * GENERAL PROJECT TODOs: 
+ *
+ *  - Async I/O for file reading, writing. 
+ *      - Maybe even file streaming, to not have the entire editing file in memory??
+ *
+ *  - Subpixel font rendering and alignment. 
+ *
+ *  - Lexer (at least C) for code highlighting and basic analysis. 
+ *
+ *  - More established UI: 
+ *      - Tabs, panes, tree-style viewer for these. 
+ *      - Control panel with settings and stuff. 
+ *
+ *  - Better movement: 
+ *      - Vim or kakoune style movement
+ *      - Multiple cursors? 
+ *
+ *  - Directory viewer for opening files visually, and creating files.
+ *
+ *  - App config, that is persistent (the following are needed regardless of persistent): 
+ *      - Colours
+ *      - Keybinds 
+ *
+ *  - Better profiler:
+ *      - Floating pane
+ *      - Historic graph (STUDY on how other people do this)
+ *      - Memory profiler (arena analysis)
+ *
+ * */
+
 #include "base/base_inc.h"
 #include "base/base_inc.c"
 
