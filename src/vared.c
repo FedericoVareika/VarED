@@ -1,6 +1,9 @@
 /*
  * GENERAL PROJECT TODOs: 
  *
+ *  - Embed files that are currently shipped in data:
+ *      - Default font.
+ *
  *  - Async I/O for file reading, writing. 
  *      - Maybe even file streaming, to not have the entire editing file in memory??
  *
