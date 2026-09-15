@@ -481,7 +481,7 @@ int main(void) {
         p_tick();
         p_begin();
 
-        TimeBlock(S8("Whole Frame"));
+        // TimeBlock(S8("Whole Frame"));
 
         WMEventList *event_list = push_struct(event_arena, WMEventList);
         SDL_Event event = {0};
@@ -610,9 +610,10 @@ int main(void) {
 
         r_end_frame();
 
+        p_end();
 #if 1
         {
-            TimeBlock(S8("Sleeping"));
+            // TimeBlock(S8("Sleeping"));
             // u64 end_counter = SDL_GetPerformanceCounter();
             u64 end_counter = performance_counter();
 
@@ -637,8 +638,6 @@ int main(void) {
 #endif
 
         arena_clear(event_arena);
-
-        p_end();
     }
 
     SDL_DestroyWindow(window);

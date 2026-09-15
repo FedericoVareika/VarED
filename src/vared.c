@@ -414,12 +414,12 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             if (view_comm.dragging) {
                 Temp scratch = scratch_begin(0, 0);
 
-                f32 mouse_y = view_comm.rel_mouse_pos.y - text_padding_px;
+                f32 mouse_y = view_comm.rel_mouse_pos.y;
                 if (mouse_y < 0)
                     mouse_y = 0;
 
-                f32 mouse_line = mouse_y /
-                    ui_get_em(state->line_height, state->font_size);
+                f32 mouse_line = mouse_y / line_height_px;
+                mouse_line += view->sub_line_offset;
                 u32 new_cursor_row = (u32)mouse_line + view->line_offset + 1;
                 new_cursor_row = min(new_cursor_row, txt_get_n_lines(view->text));
 
@@ -889,6 +889,7 @@ void editor_update_and_render(EditorParams *params) {
                     ui_spacer(ui_em(0.5, 0));
 
                     UI_PrefWidth(ui_pct(1, 1)) 
+                        UI_ChildLayoutAxis(UI_Axis2_X)
                     {
                         ui_slider(&state->font_size, 6, 20, S8("Font size"));
                         state->font_size = (f32)ceil_f32_to_int(state->font_size);
