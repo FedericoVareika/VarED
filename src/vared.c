@@ -1,15 +1,22 @@
 /*
- * GENERAL PROJECT TODOs: 
+ *  ////////////////////////////////////////////////////////////////////////////
+ *  ////////////////////////////////////////////////////////////////////////////
+ *  /// GENERAL PROJECT TODOs: 
  *
- *  - Embed files that are currently shipped in data:
- *      - Default font.
+ *  ////////////////////////////////////////////////////////////////////////////
+ *  /// HIGH PRIORITY
  *
  *  - Async I/O for file reading, writing. 
  *      - Maybe even file streaming, to not have the entire editing file in memory??
  *
- *  - Subpixel font rendering and alignment. 
- *
  *  - Lexer (at least C) for code highlighting and basic analysis. 
+ *
+ *  ////////////////////////////////////////////////////////////////////////////
+ *
+ *  - Embed files that are currently shipped in data:
+ *      - Default font.
+ *
+ *  - Subpixel font rendering and alignment. 
  *
  *  - More established UI: 
  *      - Tabs, panes, tree-style viewer for these. 
@@ -31,6 +38,9 @@
  *      - Memory profiler (arena analysis)
  *
  *  - Undo (maybe even undo trees).
+ *
+ *  ////////////////////////////////////////////////////////////////////////////
+ *  ////////////////////////////////////////////////////////////////////////////
  *
  * */
 
@@ -236,6 +246,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         UI_BackgroundColor(ui_lighten_color(ui_top_background_color(), 0.1))
         UI_Row
     {
+        TimeBlock(S8("text_view ui"));
         f32 estimated_lines_in_box;
 
         UI_ChildLayoutAxis(UI_Axis2_Y)
