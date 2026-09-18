@@ -1,7 +1,5 @@
 
 internal void dr_glyph_run(FP_FontMetrics metrics, FC_GlyphRun *glyph_run, v2 at, Rect2 clip, v4 color) {
-    TimeFunction;
-
     v2 text_pos = at;
     text_pos.y += metrics.ascender;
 

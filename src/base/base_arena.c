@@ -70,7 +70,9 @@ internal void arena_pop_to(Arena *arena, u64 to) {
     new_commit_amount *= arena->commit_size;
     
     u64 decommit_size = arena->commited - new_commit_amount;
-    assert(mem_decommit(arena->base + new_commit_amount, decommit_size));
+    if (decommit_size) {
+        assert(mem_decommit(arena->base + new_commit_amount, decommit_size));
+    }
     arena->commited = new_commit_amount;
 
     arena->pos = to;

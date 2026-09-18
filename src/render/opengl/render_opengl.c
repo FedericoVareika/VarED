@@ -404,6 +404,7 @@ internal void r_end_frame(void) {
 
     r_state->top_bucket = 0;
     arena_clear(r_state->frame_arena);
+    arena_clear(r_state->inst_frame_arena);
 }
 
 ////////////////////////////////////////////////////////////////////////////////

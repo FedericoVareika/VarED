@@ -6,7 +6,7 @@ internal void fc_init(void) {
     fc_state = push_struct(arena, FC_State);
     fc_state->arena = arena; 
     fc_state->frame_arena = arena_alloc();
-    fc_state->caching_arena = arena_alloc();
+    fc_state->caching_arena = arena_alloc(.commit_size = kilobytes(32));
 
     fc_state->frame_idx = 0;
 
@@ -24,12 +24,36 @@ internal void fc_init(void) {
 internal void fc_tick(void) {
     arena_clear(fc_state->frame_arena);
 
+    TimeBandwidth(S8("Commited fc_state caching arena"), fc_state->caching_arena->commited);
+
     // NOTE(fede): I was previously deleting the glyph nodes that were 'stale' 
     //      (not touched this frame), I do not know why I did this though. 
     //      Deleting it prevented a performance error where we needed to 
     //      constantly bind different textures (glyph atlases) to render a 
     //      single frame. We definitely need to upgrade this cache in the 
     //      future, starting with a better layout algorithm for the atlases.
+
+    for (u32 i = 0; i < fc_state->run_table_size; i++) {
+        FC_GlyphRunHashSlot *slot = &fc_state->run_table[i];
+        for (FC_GlyphRunNode *run_n = slot->hash_first; 
+                run_n != 0;) {
+            FC_GlyphRunNode *run_next = run_n->next;
+            FC_GlyphRun *run = &run_n->v;
+            if (run->last_frame_touched_idx != fc_state->frame_idx) {
+                if (run->first) {
+                    assert(run->last);
+                    run->last->next = fc_state->first_free_glyph_ptr;
+                    fc_state->first_free_glyph_ptr = run->first;
+                }
+
+                DLL_Remove(slot->hash_first, slot->hash_last, run_n);
+                run_n->next = fc_state->first_free_run;
+                fc_state->first_free_run = run_n;
+            }
+
+            run_n = run_next;
+        }
+    }
 
     fc_state->frame_idx++;
 }
@@ -41,6 +65,9 @@ internal void fc_flush(void) {
 
     arena_clear(fc_state->run_hash_arena);
     fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
+
+    fc_state->first_free_run = 0;
+    fc_state->first_free_glyph_ptr = 0;
 }
 
 internal FC_Glyph *fc_get_codepoint_glyph(FP_Handle font, u32 codepoint, f32 font_size) {
@@ -152,16 +179,24 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
 
     FC_GlyphRun *run;
     if (!run_n) {
-        run_n = push_struct(fc_state->run_hash_arena, FC_GlyphRunNode);
+        if (fc_state->first_free_run) {
+            run_n = fc_state->first_free_run;
+            fc_state->first_free_run = fc_state->first_free_run->next;
+        } else {
+            run_n = push_struct(fc_state->run_hash_arena, FC_GlyphRunNode);
+        }
+
         DLL_PushBack(slot->hash_first, slot->hash_last, run_n);
 
         run = &run_n->v;
 
         run->key = key;
+        run->first = 0;
+        run->last = 0;
         run->advance = 0;
         run->count = 0;
         run->font_size = font_size;
-        run->last_frame_touched_idx = -1;
+        run->last_frame_touched_idx = fc_state->frame_idx - 2;
     }
 
     run = &run_n->v;
@@ -180,8 +215,14 @@ internal FC_GlyphRun *fc_get_string_glyph_run(
 
         FC_GlyphPtrNode *glyph_ptr_n = run->first;
         for (u32 i = 0; i < string.size; glyph_ptr_n = glyph_ptr_n->next) {
-            if (glyph_ptr_n == 0) {
-                glyph_ptr_n = push_struct(fc_state->run_hash_arena, FC_GlyphPtrNode);
+            if (!glyph_ptr_n) {
+                if (fc_state->first_free_glyph_ptr) {
+                    glyph_ptr_n = fc_state->first_free_glyph_ptr;
+                    fc_state->first_free_glyph_ptr = fc_state->first_free_glyph_ptr->next;
+                } else {
+                    glyph_ptr_n = push_struct(fc_state->run_hash_arena, FC_GlyphPtrNode);
+                }
+
                 DLL_PushBack(run->first, run->last, glyph_ptr_n);
             }
 

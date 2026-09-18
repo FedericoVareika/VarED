@@ -109,6 +109,9 @@ void editor_init(EditorParams *params) {
     cmd_init();
 
     state->show_profiler = false;
+
+    printf("R_Rect2DInst size: %ld\n", sizeof(R_Rect2DInst));
+    printf("FC_Glyph size: %ld\n", sizeof(FC_Glyph));
 }
 
 // STUDY(fede): Editing lines in sqlite3.c (middle/bottom) produces spikes in 
@@ -304,105 +307,121 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                 Rng2u selection_range = rng2u(view->mark, view->cursor);
 
                 {
-                    TimeBlock(S8("Draw lines"));
                     u32 line_idx = 1;
                     for (u32 line_num = line_range.min; 
                             line_num <= line_range.max && line_idx <= txt_get_n_lines(view->text);
                             line_num++, line_idx++) {
+                        TimeBlock(S8("Draw line"));
 
-                        String8 line_string = txt_get_line(scratch.arena, view->text, line_num);
-                        FC_GlyphRun *glyph_run = fc_get_string_glyph_run(state->font, line_string, state->font_size);
-                        FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
+                        String8 line_string;
+                        FC_GlyphRun *glyph_run;
+                        FP_FontMetrics metrics;
+                        {
+                            TimeBlock(S8("Draw line setup"));
+                            line_string = txt_get_line(scratch.arena, view->text, line_num);
+                            glyph_run = fc_get_string_glyph_run(state->font, line_string, state->font_size);
+                            metrics = fp_get_font_metrics(state->font, state->font_size);
+                        }
 
-                        dr_glyph_run(metrics, glyph_run, at, text_box->rect, text_box->text_color);
+                        // String8 line_string = txt_get_line(scratch.arena, view->text, line_num);
+                        // FC_GlyphRun *glyph_run = fc_get_string_glyph_run(state->font, line_string, state->font_size);
+                        // FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
 
-                        bool line_is_selected = selected && 
-                            line_num >= selection_range.min.y &&
-                            line_num <= selection_range.max.y;
-                        // NOTE(fede): Draw cursor and selection.
-                        if (line_is_selected) {
-                            f32 selection_start = 0;
-                            f32 selection_end = 0;
+                        {
+                            TimeBandwidth(S8("Draw line run"), line_string.size * sizeof(R_Rect2DInst));
+                            dr_glyph_run(metrics, glyph_run, at, text_box->rect, text_box->text_color);
+                        }
 
-                            f32 cursor_width = max(ui_top_font_size() / 10, 1);
-                            f32 cursor_advance = 0; 
-                            f32 mark_advance = 0; 
+                        {
+                            TimeBlock(S8("Draw line rest"))
+                            bool line_is_selected = selected && 
+                                line_num >= selection_range.min.y &&
+                                line_num <= selection_range.max.y;
+                            // NOTE(fede): Draw cursor and selection.
+                            if (line_is_selected) {
+                                f32 selection_start = 0;
+                                f32 selection_end = 0;
 
-                            if (line_string.size) {
-                                selection_end = glyph_run->advance;
+                                f32 cursor_width = max(ui_top_font_size() / 10, 1);
+                                f32 cursor_advance = 0; 
+                                f32 mark_advance = 0; 
 
-                                if (view->cursor.y == line_num || view->mark.y == line_num) {
-                                    bool cursor_set = false;
-                                    bool mark_set = false;
+                                if (line_string.size) {
+                                    selection_end = glyph_run->advance;
 
-                                    f32 advance = 0;
+                                    if (view->cursor.y == line_num || view->mark.y == line_num) {
+                                        bool cursor_set = false;
+                                        bool mark_set = false;
 
-                                    u32 bytes_consumed = 0;
+                                        f32 advance = 0;
 
-                                    FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
-                                    while (true) {
-                                        if (!cursor_set) {
-                                            cursor_advance = advance;
-                                            cursor_set = bytes_consumed == view->cursor.x;
+                                        u32 bytes_consumed = 0;
+
+                                        FC_GlyphPtrNode *glyph_ptr_n = glyph_run->first;
+                                        while (true) {
+                                            if (!cursor_set) {
+                                                cursor_advance = advance;
+                                                cursor_set = bytes_consumed == view->cursor.x;
+                                            }
+                                            if (!mark_set) {
+                                                mark_advance = advance;
+                                                mark_set = bytes_consumed == view->mark.x;
+                                            }
+
+                                            if (cursor_set && mark_set)
+                                                break;
+
+                                            if (glyph_ptr_n == 0) 
+                                                break;
+
+                                            FC_Glyph *glyph = glyph_ptr_n->v;
+                                            bytes_consumed += utf8_encode(glyph->codepoint, 0);
+                                            advance += glyph->metrics.advance;
+
+                                            glyph_ptr_n = glyph_ptr_n->next;
                                         }
-                                        if (!mark_set) {
-                                            mark_advance = advance;
-                                            mark_set = bytes_consumed == view->mark.x;
-                                        }
 
-                                        if (cursor_set && mark_set)
-                                            break;
+                                    }
+                                }
 
-                                        if (glyph_ptr_n == 0) 
-                                            break;
-
-                                        FC_Glyph *glyph = glyph_ptr_n->v;
-                                        bytes_consumed += utf8_encode(glyph->codepoint, 0);
-                                        advance += glyph->metrics.advance;
-
-                                        glyph_ptr_n = glyph_ptr_n->next;
+                                if (view->cursor.y == line_num) {
+                                    if (v2u_equal(selection_range.min, view->cursor)) {
+                                        selection_start = cursor_advance;
+                                    } else {
+                                        selection_end = cursor_advance;
                                     }
 
+                                    Rect2 cursor_rect = (Rect2){
+                                        .V4 = V4(
+                                                at.x + cursor_advance,
+                                                at.y,
+                                                at.x + cursor_advance + cursor_width,
+                                                at.y + line_height_px),
+                                    };
+
+                                    r_push_rect2(.pos = cursor_rect, .clip = text_box->rect);
                                 }
-                            }
 
-                            if (view->cursor.y == line_num) {
-                                if (v2u_equal(selection_range.min, view->cursor)) {
-                                    selection_start = cursor_advance;
-                                } else {
-                                    selection_end = cursor_advance;
+                                if (view->mark.y == line_num) {
+                                    if (v2u_equal(selection_range.min, view->mark)) {
+                                        selection_start = mark_advance;
+                                    } else {
+                                        selection_end = mark_advance;
+                                    }
                                 }
 
-                                Rect2 cursor_rect = (Rect2){
-                                    .V4 = V4(
-                                            at.x + cursor_advance,
-                                            at.y,
-                                            at.x + cursor_advance + cursor_width,
-                                            at.y + line_height_px),
-                                };
-
-                                r_push_rect2(.pos = cursor_rect, .clip = text_box->rect);
-                            }
-
-                            if (view->mark.y == line_num) {
-                                if (v2u_equal(selection_range.min, view->mark)) {
-                                    selection_start = mark_advance;
-                                } else {
-                                    selection_end = mark_advance;
+                                if (!v2u_equal(selection_range.min, selection_range.max) &&
+                                        selection_start != selection_end) {
+                                    assert(selection_start < selection_end);
+                                    Rect2 selection_rect = (Rect2){
+                                        .V4 = V4(
+                                                at.x + selection_start,
+                                                at.y,
+                                                at.x + selection_end,
+                                                at.y + line_height_px),
+                                    };
+                                    r_push_rect2(.pos = selection_rect, .clip = text_box->rect, R_Color4(RGBA(1, 0, 0, 0.5)));
                                 }
-                            }
-
-                            if (!v2u_equal(selection_range.min, selection_range.max) &&
-                                    selection_start != selection_end) {
-                                assert(selection_start < selection_end);
-                                Rect2 selection_rect = (Rect2){
-                                    .V4 = V4(
-                                            at.x + selection_start,
-                                            at.y,
-                                            at.x + selection_end,
-                                            at.y + line_height_px),
-                                };
-                                r_push_rect2(.pos = selection_rect, .clip = text_box->rect, R_Color4(RGBA(1, 0, 0, 0.5)));
                             }
                         }
 
@@ -829,6 +848,15 @@ void editor_update_and_render(EditorParams *params) {
                             {
                                 bool red = total_time_frame_pct > 1;
 
+                                UI_PrefHeight(ui_em(1, 1));
+                                {
+                                    UI_Box *total_time_box = ui_box_makef(UI_BoxFlag_DrawText, "##total_time");
+                                    ui_box_equip_string(total_time_box, 
+                                            str8_from_f32(frame_arena,
+                                                (f32)total_clocks / (f32)performance_frequency() * 1000,
+                                                4));
+                                }
+
                                 UI_NamedColumn(S8("__anchors__"))
                                     UI_PrefHeight(ui_em(1.2, 1))
                                 for (u32 i = 1; i <= p_prev->last_anchor_idx; i++) {
@@ -842,14 +870,25 @@ void editor_update_and_render(EditorParams *params) {
                                         UI_PrefWidth(ui_pct(1, 1))
                                         UI_Parent(ui_box_make(UI_BoxFlag_ClipChildren, parent_label))
                                     {
-                                        UI_PrefWidth(ui_em(10, 1))
+                                        UI_PrefWidth(ui_em(15, 1))
                                             UI_Parent(ui_box_makef(UI_BoxFlag_ClipChildren, ""))
                                             ui_box_make(UI_BoxFlag_DrawText, anchor->label);
 
                                         UI_PrefWidth(ui_em(5, 1))
                                         {
                                             UI_Box *pct_box = ui_box_make(UI_BoxFlag_DrawText, S8(""));
-                                            ui_box_equip_string(pct_box, str8_from_f32(frame_arena, pct * 100, 2));
+                                            // ui_box_equip_string(pct_box, str8_from_f32(frame_arena, pct * 100, 2));
+                                            ui_box_equip_string(pct_box, 
+                                                    str8_from_f32(frame_arena,
+                                                        (f32)anchor->exclusive_elapsed_time / (f32)performance_frequency() * 1000,
+                                                        4));
+                                        }
+
+                                        UI_PrefWidth(ui_em(5, 1))
+                                        {
+                                            UI_Box *hit_count_box = ui_box_make(UI_BoxFlag_DrawText, S8(""));
+                                            ui_box_equip_string(hit_count_box, 
+                                                    str8_from_u32(frame_arena, anchor->hit_count));
                                         }
 
                                         UI_CornerRadius(0)

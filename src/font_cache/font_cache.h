@@ -107,6 +107,9 @@ struct FC_State {
     FC_GlyphRunHashSlot *run_table; 
     u32 run_table_size;
 
+    FC_GlyphRunNode *first_free_run;
+    FC_GlyphPtrNode *first_free_glyph_ptr;
+
     FC_AtlasList atlases;
 
     void *scratch_raster_dst;

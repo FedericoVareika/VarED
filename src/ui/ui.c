@@ -151,6 +151,7 @@ internal UI_Box *ui_box_make(UI_BoxFlags flags, String8 string) {
         }
     }
 
+    // TODO(fede): Do the ## stuff
     key = ui_key_from_string_seed(hash_string, seed_key);
     UI_Box *result = ui_box_from_key(flags, key);
     result->string = string;

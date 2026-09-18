@@ -6,6 +6,7 @@ internal void r_init(u32 window_width, u32 window_height) {
     r_state = push_struct(arena, R_State);
     r_state->arena = arena;
     r_state->frame_arena = arena_alloc();
+    r_state->inst_frame_arena = arena_alloc(.commit_size = megabytes(4), .reserve_size = megabytes(128));
 
     r_state->window_width = window_width;
     r_state->window_height = window_width;
@@ -51,9 +52,9 @@ internal R_BatchGroupNode *r_get_batch_group_n(
 internal void *r_push_batch_inst_(R_BatchList *batches, u64 inst_bytes) {
     R_BatchNode *batch_n = batches->last;
     if (!batch_n || batch_n->v.byte_size - batch_n->v.byte_count < inst_bytes) {
-        TimeBandwidth(S8("Add Batch Node"), inst_bytes);
+        TimeBandwidth(S8("Add Batch Node"), BATCH_SIZE);
         batch_n = push_struct(r_state->frame_arena, R_BatchNode);
-        batch_n->v.v = push_size(r_state->frame_arena, BATCH_SIZE);
+        batch_n->v.v = push_size(r_state->inst_frame_arena, BATCH_SIZE);
         batch_n->v.byte_size = BATCH_SIZE;
 
         SLL_PushBack(batches->first, batches->last, batch_n);

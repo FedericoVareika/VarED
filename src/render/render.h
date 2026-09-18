@@ -152,6 +152,7 @@ typedef struct R_State R_State;
 struct R_State {
     Arena *arena;
     Arena *frame_arena;
+    Arena *inst_frame_arena;
 
     R_BucketNode *top_bucket;
 

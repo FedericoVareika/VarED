@@ -388,25 +388,19 @@ internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
      *                         
      */
 
+    
     TXT_Piece *piece = &piece_n->v;
     TXT_Buffer *buffer = piece->buffer;
     TXT_LinePos buf_line = piece->start;
-    for (; line_idx < row; line_idx++) {
-        assert(buf_line.line_idx < buffer->line_count);
+    {
+        u64 lines_to_go = row - line_idx;
+        u64 end_buf_line_idx = buf_line.line_idx + lines_to_go;
 
-        // NOTE(fede): if line_idx needs to be incremented, then the next one 
-        //      must be available.
-        assert(buf_line.line_idx + 1 < buffer->line_count);
+        u64 size_to_add = 
+            buffer->line_starts[end_buf_line_idx] - 
+            buffer->line_starts[buf_line.line_idx] - buf_line.offset;
 
-        u64 buffer_line_size = 
-            buffer->line_starts[buf_line.line_idx + 1] - 
-            buffer->line_starts[buf_line.line_idx];
-        buffer_line_size -= buf_line.offset; 
-
-        result += buffer_line_size;
-
-        buf_line.line_idx++;
-        buf_line.offset = 0;
+        result += size_to_add;
     }
 
     return result;
@@ -464,8 +458,6 @@ internal String8 txt_get_buffer_substr(
 
 // NOTE(fede): Ends with \n if its not the end of text
 internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
-    TimeFunction;
-
     assert(row > 0);
     row--;
         
