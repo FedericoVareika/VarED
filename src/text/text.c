@@ -392,7 +392,7 @@ internal u64 txt_get_line_offset(TXT_Text *text, u64 row) {
     TXT_Piece *piece = &piece_n->v;
     TXT_Buffer *buffer = piece->buffer;
     TXT_LinePos buf_line = piece->start;
-    {
+    if (row != line_idx) {
         u64 lines_to_go = row - line_idx;
         u64 end_buf_line_idx = buf_line.line_idx + lines_to_go;
 

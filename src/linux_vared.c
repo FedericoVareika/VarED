@@ -611,7 +611,8 @@ int main(void) {
         r_end_frame();
 
         p_end();
-#if 1
+// TODO(fede): Fix this frame limiting, it oversleeps sometimes.
+#if 0
         {
             // TimeBlock(S8("Sleeping"));
             // u64 end_counter = SDL_GetPerformanceCounter();
