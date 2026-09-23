@@ -39,6 +39,10 @@
  *
  *  - Undo (maybe even undo trees).
  *
+ *  - (Maybe) When we do left arrow at the beginning of the line move to the end 
+ *      of the previous line. Same thing with moving right at the end of the 
+ *      line, where we should move to the beginning of the next line.
+ *
  *  ////////////////////////////////////////////////////////////////////////////
  *  ////////////////////////////////////////////////////////////////////////////
  *
@@ -714,6 +718,9 @@ void editor_update_and_render(EditorParams *params) {
 
         switch (kind) {
         case CMD_Kind_OpenFile: {
+            // TODO(fede): Dispath work to low priority queue, and do 
+            //      something to start reading the result from io_uring 
+            //      (in the case of linux).
             TXT_ViewNode *view_n = push_struct(state->arena, TXT_ViewNode);
             TXT_View *view = &view_n->v;
             view->text_arena = arena_alloc();
@@ -943,7 +950,7 @@ void editor_update_and_render(EditorParams *params) {
                     UI_PrefWidth(ui_pct(1, 1)) 
                         UI_ChildLayoutAxis(UI_Axis2_X)
                     {
-                        ui_slider(&state->font_size, 6, 20, S8("Font size"));
+                        ui_slider(&state->font_size, 10, 20, S8("Font size"));
                         state->font_size = (f32)ceil_f32_to_int(state->font_size);
                     }
 
@@ -967,6 +974,7 @@ void editor_update_and_render(EditorParams *params) {
                                 path = str8_strip(path);
 
                                 // TODO(fede): Command kind fast-paths.
+                                // TODO(fede): Do async I/O 
                                 CMD *cmd = cmd_push_name(S8("open"));
                                 cmd->filepath = path;
                             }

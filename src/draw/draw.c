@@ -16,8 +16,8 @@ internal void dr_glyph_run(FP_FontMetrics metrics, FC_GlyphRun *glyph_run, v2 at
                 -glyph->metrics.bearing_y,
             });
 
-            pos.x = round_f32_to_int(pos.x);
-            pos.y = round_f32_to_int(pos.y);
+            pos.x = floor_f32_to_int(pos.x);
+            pos.y = floor_f32_to_int(pos.y);
 
             v2 dim = {
                 glyph->metrics.width,
