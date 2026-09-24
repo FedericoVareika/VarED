@@ -405,7 +405,7 @@ void PrintKeyInfo( SDL_KeyboardEvent *key ){
 }
 
 int main(void) {
-    t_context_init();
+    t_context_init(0);
 
     LinuxState state = {0};
 

@@ -1,11 +1,12 @@
 
 thread_static T_Context *t_context = 0;
 
-internal void t_context_init(void) {
+internal void t_context_init(u32 id) {
     Arena *arena_0 = arena_alloc();
     Arena *arena_1 = arena_alloc();
 
     t_context = push_struct(arena_0, T_Context);
+    t_context->id = id;
     t_context->arena_count = 2;
     t_context->arenas[0] = arena_0;
     t_context->arenas[1] = arena_1;

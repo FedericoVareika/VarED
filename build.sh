@@ -6,7 +6,7 @@ common_flags_internal="-DVARED_SLOW=1 -DVARED_INTERNAL=1 -ffile-prefix-map=old=n
 common_flags_external="-DVARED_SLOW=0 -DVARED_INTERNAL=0 -ffile-prefix-map=old=new -g -W -pipe -O3"
 
 pkgs="sdl2 freetype2"
-linker_flags="-lm -ldl"
+linker_flags="-lm -ldl -lpthread"
 
 sdl2_include="$(pkg-config --variable=includedir sdl2)/SDL2"
 freetype_include="$(pkg-config --variable=includedir freetype2)/freetype2"

@@ -51,8 +51,10 @@
 #include "base/base_inc.h"
 #include "base/base_inc.c"
 
-#include "thread_context/thread_context.h"
-#include "thread_context/thread_context.c"
+#include "thread_context/thread_context_inc.h"
+#include "thread_context/thread_context_inc.c"
+
+#include "work_queue/work_queue_inc.c"
 
 #define PROFILER 1
 #include "profiler/profiler.h"
@@ -90,6 +92,40 @@ void editor_init(EditorParams *params) {
 
     // STUDY(fede): change commit/reserve sizes for this
     state->frame_arena = arena_alloc();
+
+    {
+        state->thread_count = t_get_n_logical_cores() - 1;
+        state->threads = push_array(arena, WQ_ThreadCtx, state->thread_count);
+
+        state->work_queue = push_struct(arena, WQ_Queue);
+        wq_init(state->work_queue);
+
+        for (u32 i = 0; i < state->thread_count; i++) {
+            WQ_ThreadCtx *ctx = state->threads + i;
+            ctx->id = state->total_thread_count + i + 1;
+            ctx->queue = state->work_queue;
+            wq_thread_launch(ctx);
+        }
+
+        state->total_thread_count += state->thread_count;
+    }
+
+    {
+        state->low_priority_thread_count = 2;
+        state->low_priority_threads = push_array(arena, WQ_ThreadCtx, state->low_priority_thread_count);
+
+        state->low_priority_work_queue = push_struct(arena, WQ_Queue);
+        wq_init(state->low_priority_work_queue);
+
+        for (u32 i = 0; i < state->low_priority_thread_count; i++) {
+            WQ_ThreadCtx *ctx = state->low_priority_threads + i;
+            ctx->id = state->total_thread_count + i + 1;
+            ctx->queue = state->low_priority_work_queue;
+            wq_thread_launch(ctx);
+        }
+
+        state->total_thread_count += state->low_priority_thread_count;
+    }
 
     {
         state->input_view_n = push_struct(arena, TXT_ViewNode);

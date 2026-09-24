@@ -15,6 +15,7 @@
  * */
 
 #include "base/base_inc.h"
+#include "work_queue/work_queue_inc.h"
 #include "render/render_inc.h"
 #include "font_provider/font_provider_inc.h"
 #include "text/text_inc.h"
@@ -57,6 +58,16 @@ typedef struct {
 
     bool is_opening_file;
     bool show_profiler;
+
+    u32 total_thread_count;
+
+    u32 thread_count;
+    WQ_ThreadCtx *threads;
+    WQ_Queue *work_queue;
+
+    u32 low_priority_thread_count;
+    WQ_ThreadCtx *low_priority_threads;
+    WQ_Queue *low_priority_work_queue;
 } EditorState;
 
 #endif // VARED_H
