@@ -5,12 +5,14 @@
 */ M(OpenFile) /*
 */ M(FocusView) /*
 */ M(TextAction) /*
+*/ M(ChangeFont) /*
 */
 
 #define COMMAND_DEFS(M) /*
 */ M("open", OpenFile) /*
 */ M("focus_view", FocusView) /*
 */ M("text_action", TextAction) /*
+*/ M("change_font", ChangeFont) /*
 */
 
 ////////////////////////////////////////////////////////////////////////////////

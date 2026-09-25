@@ -53,12 +53,18 @@ internal void temp_end(Temp temp);
  * */
 
 
-// TODO(fede): zero flag?
+typedef struct ArenaPushParams ArenaPushParams;
+struct ArenaPushParams {
+    Arena *arena;
+    u64 size;
+    bool mem_zero;
+};
 
-internal void *push_size(Arena *arena, u64 size); 
+#define push_size(arena_, size_, ...) push_size_((ArenaPushParams){.arena = (arena_), .size = (size_), .mem_zero = true, __VA_ARGS__})
+internal void *push_size_(ArenaPushParams params); 
 
-#define push_struct(arena, Type) (Type *)push_size((arena), sizeof(Type))
-#define push_array(arena, Type, count) (Type *)push_size((arena), sizeof(Type) * (count))
+#define push_struct(arena, Type, ...) (Type *)push_size((arena), sizeof(Type), __VA_ARGS__)
+#define push_array(arena, Type, count, ...) (Type *)push_size((arena), sizeof(Type) * (count), __VA_ARGS__)
 
 #endif // VARED_ARENA_H
 

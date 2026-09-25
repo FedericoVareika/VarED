@@ -63,6 +63,8 @@ internal void fc_flush(void) {
     fc_state->glyph_table = push_array(fc_state->caching_arena, FC_GlyphHashSlot, fc_state->glyph_table_size);
     fc_state->first_free_glyph = 0;
 
+    fc_state->atlases = (FC_AtlasList){0};
+
     arena_clear(fc_state->run_hash_arena);
     fc_state->run_table = push_array(fc_state->run_hash_arena, FC_GlyphRunHashSlot, fc_state->run_table_size);
 

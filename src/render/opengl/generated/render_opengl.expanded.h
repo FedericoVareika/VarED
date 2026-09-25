@@ -52,6 +52,7 @@ typedef void (*GLDEBUGPROC)(GLenum source, GLenum type, GLuint id, GLenum severi
 */ typedef void (__VARED_glVertexAttribDivisor)(GLuint index, GLuint divisor); /*
 */ typedef void (__VARED_glVertexAttribPointer)(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer); /*
 */ typedef void (__VARED_glDepthMask)(GLboolean flag); /*
+*/ typedef void (__VARED_glFinish)(void); /*
 */
 /*
 */ global __VARED_glViewport *glViewport = 0; /*
@@ -92,4 +93,5 @@ typedef void (*GLDEBUGPROC)(GLenum source, GLenum type, GLuint id, GLenum severi
 */ global __VARED_glVertexAttribDivisor *glVertexAttribDivisor = 0; /*
 */ global __VARED_glVertexAttribPointer *glVertexAttribPointer = 0; /*
 */ global __VARED_glDepthMask *glDepthMask = 0; /*
+*/ global __VARED_glFinish *glFinish = 0; /*
 */

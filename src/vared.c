@@ -148,7 +148,7 @@ void editor_init(EditorParams *params) {
     ui_init();
     cmd_init();
 
-    state->show_profiler = false;
+    state->show_profiler = true;
 
     printf("R_Rect2DInst size: %ld\n", sizeof(R_Rect2DInst));
     printf("FC_Glyph size: %ld\n", sizeof(FC_Glyph));
@@ -805,6 +805,12 @@ void editor_update_and_render(EditorParams *params) {
             SLL_PushBack(view_n->v.first_action, view_n->v.last_action, action_n);
         } break;
 
+        case CMD_Kind_ChangeFont: {
+            fp_close_font(state->font);
+            fc_flush();
+            state->font = fp_open_font(cmd->filepath.str);
+        } break;
+
         default: {} break;
         }
     }
@@ -871,12 +877,10 @@ void editor_update_and_render(EditorParams *params) {
                                 }
 
                                 if (anchor->processed_byte_count) {
-                                    f64 megabyte = 1024.0f * 1024.0f;
-
                                     f64 seconds = (f64)anchor->inclusive_elapsed_time / (f64)performance_frequency();
                                     f64 bytes_per_second = (f64)anchor->processed_byte_count / seconds;
-                                    f64 megabytes = (f64)anchor->processed_byte_count / (f64)megabyte;
-                                    f64 megabytes_per_second = bytes_per_second / megabyte;
+                                    f64 megabytes = (f64)anchor->processed_byte_count / (f64)megabytes(1);
+                                    f64 megabytes_per_second = bytes_per_second / (f64)megabytes(1);
 
                                     // printf("  %.3fmb at %.2fgb/s", megabytes, gigabytes_per_second);
                                     printf("  %.3fmb at %.2fmb/s", megabytes, megabytes_per_second);
@@ -944,7 +948,7 @@ void editor_update_and_render(EditorParams *params) {
 
                                             ui_spacer(ui_pct(1, 0));
 
-                                            UI_PrefWidth(ui_em(5, 0))
+                                            UI_PrefWidth(ui_em(5, 1))
                                             {
                                                 UI_Box *bandwidth = ui_box_make(UI_BoxFlag_DrawText, S8(""));
                                                 ui_box_equip_string(bandwidth, str8_from_f32(frame_arena, kilobytes, 2));
@@ -965,18 +969,27 @@ void editor_update_and_render(EditorParams *params) {
                         UI_PrefWidth(ui_tc(10, 0))
                     {
                         if (ui_button(S8("Use Iosevka")).clicked) {
+                            CMD *cmd = cmd_push_name(S8("change_font"));
+                            cmd->filepath = S8("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
+
+                            /*
                             fp_close_font(state->font);
                             fc_flush();
                             state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
+                            */
                             printf("Using Iosevka\n");
                         }
 
                         ui_spacer(ui_em(1, 0));
 
                         if (ui_button(S8("Use Google Sans")).clicked) {
+                            CMD *cmd = cmd_push_name(S8("change_font"));
+                            cmd->filepath = S8("data/fonts/GoogleSans-Regular.ttf");
+                            /*
                             fp_close_font(state->font);
                             fc_flush();
                             state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
+                            */
                             printf("Using Google Sans\n");
                         }
                     }

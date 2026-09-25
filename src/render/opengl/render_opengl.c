@@ -277,6 +277,7 @@ internal R_OpenGL_Tex2D *r_ogl_tex2d_from_handle(R_Handle handle) {
 /// NOTE(fede): Consume 
 
 internal void r_consume_pass(R_Pass *pass) {
+    TimeFunction;
     R_BatchGroupList *batch_groups = &pass->batch_groups;
     R_BatchGroupNode *batch_group_n = batch_groups->first;
 
@@ -297,6 +298,7 @@ internal void r_consume_pass(R_Pass *pass) {
         R_BatchList *batches = &batch_group->batches;
 
         if (batches->byte_count > kilobytes(64)) {
+            TimeBandwidth(S8("Buffer alloc"), batches->byte_count);
             u64 buffer_bytes = (batches->byte_count + megabytes(1) - 1) / megabytes(1);
             buffer_bytes *= megabytes(1);
 
@@ -318,6 +320,7 @@ internal void r_consume_pass(R_Pass *pass) {
                 j < batches->batch_count;
                 j++, batch_n = batch_n->next) {
             R_Batch *batch = &batch_n->v;
+            TimeBandwidth(S8("Buffer subdata"), batch->byte_count);
 
             glBufferSubData(GL_ARRAY_BUFFER, offset, batch->byte_count, batch->v);
 
@@ -382,6 +385,7 @@ internal void r_consume_passes(R_PassList *passes) {
 
 // NOTE(fede): Consume hook 
 internal void r_consume_all(void) {
+    TimeFunction;
     glClearColor(0x0, 0x0, 0x0, 0xFF);
     glClear(GL_COLOR_BUFFER_BIT);
 
@@ -394,17 +398,28 @@ internal void r_consume_all(void) {
 }
 
 internal void r_end_frame(void) {
-    for (R_OpenGL_BufferNode *buffer_n = r_ogl_state->buffers.first;
-            buffer_n;
-            buffer_n = buffer_n->next) {
-        glDeleteBuffers(1, &buffer_n->buffer);
+    TimeFunction;
+    
+    {
+        TimeBlock(S8("Delete Buffers"));
+        for (R_OpenGL_BufferNode *buffer_n = r_ogl_state->buffers.first;
+                buffer_n;
+                buffer_n = buffer_n->next) {
+            glDeleteBuffers(1, &buffer_n->buffer);
+        }
     }
 
-    arena_clear(r_ogl_state->buffer_arena);
+    {
+        TimeBlock(S8("Clear buffer arena"));
+        arena_clear(r_ogl_state->buffer_arena);
+    }
 
-    r_state->top_bucket = 0;
-    arena_clear(r_state->frame_arena);
-    arena_clear(r_state->inst_frame_arena);
+    {
+        TimeBandwidth(S8("Clear render state arenas"), r_state->inst_frame_arena->commited);
+        r_state->top_bucket = 0;
+        arena_clear(r_state->frame_arena);
+        arena_clear(r_state->inst_frame_arena);
+    }
 }
 
 ////////////////////////////////////////////////////////////////////////////////

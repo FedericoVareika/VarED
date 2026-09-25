@@ -38,7 +38,7 @@ typedef struct {
 } R_Handle;
 
 // TODO(fede): static assert size of VertexUI and such is smaller than this
-#define BATCH_SIZE kilobytes(32)
+#define BATCH_SIZE kilobytes(64)
 
 typedef struct R_Batch R_Batch;
 struct R_Batch {

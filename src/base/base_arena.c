@@ -25,7 +25,11 @@ internal u64 arena_pos(Arena *arena) {
 }
 
 // TODO(fede): push aligned
-internal void *push_size(Arena *arena, u64 size) {
+internal void *push_size_(ArenaPushParams params) {
+    Arena *arena = params.arena;
+    u64 size = params.size;
+    bool mem_zero = params.mem_zero;
+
     u64 new_pos = arena_pos(arena) + size;
     assert(new_pos <= arena->reserve_size);
 
@@ -37,7 +41,8 @@ internal void *push_size(Arena *arena, u64 size) {
         new_commit_size = n_commits * arena->commit_size;
         u8 *commit_pos = arena->base + arena->commited;
         mem_commit(commit_pos, new_commit_size);
-        mem_zero(commit_pos, new_commit_size);
+        if (mem_zero)
+            mem_zero(commit_pos, new_commit_size);
 
         arena->commited += new_commit_size;
     }
@@ -45,7 +50,8 @@ internal void *push_size(Arena *arena, u64 size) {
     assert(arena->commited >= new_pos);
 
     void *result = (u8 *)arena + arena_pos(arena);
-    mem_zero(result, size);
+    if (mem_zero)
+        mem_zero(result, size);
     arena->pos += size;
     return result;
 }
@@ -80,7 +86,7 @@ internal void arena_pop_to(Arena *arena, u64 to) {
 
 internal void arena_clear(Arena *arena) {
     arena_pop_to(arena, 0);
-    mem_zero(arena->base + arena_pos(arena), arena->commited - arena_pos(arena));
+    // mem_zero(arena->base + arena_pos(arena), arena->commited - arena_pos(arena));
 }
 
 internal Temp temp_begin(Arena *arena) {

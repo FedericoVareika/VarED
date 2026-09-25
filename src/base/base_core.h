@@ -152,6 +152,7 @@ typedef struct {
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): SLL (Singly-Linked-List)
+/// TODO(fede): SLL_Remove
 
 #define SLL_Insert_N_nil(f, l, p, n, next, nil) IsNil(f, nil) ? \
     ((f) = (l) = (n), (n)->next = (nil)) : \

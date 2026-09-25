@@ -27,34 +27,46 @@ internal inline f64 sdl_get_seconds_elapsed(u64 start_counter,
 }
 
 internal void linux_sleep_to_target(u64 last_counter, f64 target_seconds) {
-    f64 seconds_elapsed_for_frame;
+    f64 seconds_elapsed_for_frame = sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+    f64 first_seconds_elapsed = seconds_elapsed_for_frame;
 
-    struct timespec sleep_time = {0};
-    struct timespec remaining_time = {0};
-    do {
+    if (seconds_elapsed_for_frame < target_seconds) {
         seconds_elapsed_for_frame =
             sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
 
         // NOTE(fede): truncate the amount of ms to sleep
         f64 ms_to_sleep =
-            (f64)(u64)(1000.0f * (target_seconds - seconds_elapsed_for_frame));
+            (f64)(1000.0f * (target_seconds - seconds_elapsed_for_frame));
 
-        // NOTE(fede): give 1,000,000 ns of leeway
-        ms_to_sleep -= 1.0f;
+        // NOTE(fede): give 1,000 ns of leeway
+        ms_to_sleep = ms_to_sleep - 1;
+        if (ms_to_sleep > 0) {
+            u64 ns_to_sleep = (u64)(ms_to_sleep * 1000000.0f);
 
-        u64 nsec_to_sleep = (u64)(ms_to_sleep * 1000000.0f);
+            struct timespec sleep_time = {0};
+            struct timespec remaining_time = {0};
+            sleep_time.tv_sec = 0;
+            sleep_time.tv_nsec = ns_to_sleep;
+            while (clock_nanosleep(CLOCK_MONOTONIC, 0, &sleep_time, &remaining_time) != 0) {
+                sleep_time = remaining_time;
+            }
+        }
 
-        sleep_time.tv_sec = 0;
-        sleep_time.tv_nsec = nsec_to_sleep;
-    } while (nanosleep(&sleep_time, &remaining_time) == -1);
+        seconds_elapsed_for_frame =
+            sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+
+        if (seconds_elapsed_for_frame > target_seconds) {
+            printf("Missed target frame rate!\n");
+        }
+    }
 
     seconds_elapsed_for_frame =
         sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
 
     if (seconds_elapsed_for_frame <= target_seconds) {
-        while (seconds_elapsed_for_frame < target_seconds)
-            seconds_elapsed_for_frame = sdl_get_seconds_elapsed(
-                last_counter, SDL_GetPerformanceCounter());
+        // while (seconds_elapsed_for_frame < target_seconds)
+        //     seconds_elapsed_for_frame = sdl_get_seconds_elapsed(
+        //         last_counter, SDL_GetPerformanceCounter());
     } else {
         // TODO(fede): ERROR -- missed target frame rate
         printf("Missed target frame rate!\n");
@@ -606,13 +618,19 @@ int main(void) {
 
         r_consume_all();
 
-        SDL_GL_SwapWindow(window);
+        {
+            TimeBlock(S8("Swap Window"));
+            SDL_GL_SwapWindow(window);
+        }
 
         r_end_frame();
 
+        arena_clear(event_arena);
+
         p_end();
+
 // TODO(fede): Fix this frame limiting, it oversleeps sometimes.
-#if 0
+#if 1
         {
             // TimeBlock(S8("Sleeping"));
             // u64 end_counter = SDL_GetPerformanceCounter();
@@ -637,8 +655,6 @@ int main(void) {
 #endif
         }
 #endif
-
-        arena_clear(event_arena);
     }
 
     SDL_DestroyWindow(window);
