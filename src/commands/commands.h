@@ -8,6 +8,7 @@
 typedef struct CMD CMD;
 struct CMD {
     String8 name;
+    u64 generation;
 
     String8 filepath;
     TXT_ViewNode *view_n;
@@ -47,7 +48,9 @@ struct CMD_Name2KindHashSlot {
 typedef struct CMD_State CMD_State;
 struct CMD_State {
     Arena *arena;
-    Arena *frame_arena;
+    Arena *frame_arenas[2];
+
+    u64 generation;
 
     CMD_Node *first_free_cmd_n;
     CMD_List cmds;
@@ -72,11 +75,14 @@ internal void cmd_tick(void);
 //      a normal frame arena, the string is cleared before command consumption 
 //      in the next frame.
 internal Arena *cmd_frame_arena(void);
+internal Arena *cmd_next_frame_arena(void);
 
 internal CMD *cmd_push_name(String8 name);
 internal CMD_List *cmd_get_pending(void);
 
 internal CMD_Kind cmd_kind_from_name(String8 name);
+
+internal bool cmd_is_for_this_generation(CMD_Node *cmd_n);
 
 ////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): Helpers

@@ -630,7 +630,7 @@ int main(void) {
         p_end();
 
 // TODO(fede): Fix this frame limiting, it oversleeps sometimes.
-#if 1
+#if 0
         {
             // TimeBlock(S8("Sleeping"));
             // u64 end_counter = SDL_GetPerformanceCounter();
@@ -653,6 +653,19 @@ int main(void) {
 
             printf("target: %.02fms/f, actual: %.02fms/f, %.02ffps \n", target_seconds_per_frame * 1000, ms_per_frame, fps);
 #endif
+        }
+#else 
+        {
+            f64 seconds_elapsed_for_frame =
+                sdl_get_seconds_elapsed(last_counter, SDL_GetPerformanceCounter());
+            if (seconds_elapsed_for_frame > target_seconds_per_frame) {
+                printf(
+                        "Missed target frame rate! expected ms: %.4f, real ms: %.4f\n",
+                        target_seconds_per_frame * 1000,
+                        seconds_elapsed_for_frame * 1000);
+            }
+
+            last_counter = SDL_GetPerformanceCounter();
         }
 #endif
     }

@@ -6,10 +6,8 @@
  *  ////////////////////////////////////////////////////////////////////////////
  *  /// HIGH PRIORITY
  *
- *  - Async I/O for file reading, writing. 
- *      - Maybe even file streaming, to not have the entire editing file in memory??
- *
  *  - Lexer (at least C) for code highlighting and basic analysis. 
+ *  - STUDY Deleting from the end of a large file is slow.
  *
  *  ////////////////////////////////////////////////////////////////////////////
  *
@@ -82,7 +80,7 @@
 
 #include "vared.h"
 
-WQ_CALLBACK(load_view) {
+WQ_CALLBACK(load_view_work) {
     TXT_ViewNode *view_n = (TXT_ViewNode *)data;
     TXT_View *view = &view_n->v;
     Temp scratch = scratch_begin(0, 0);
@@ -108,6 +106,30 @@ WQ_CALLBACK(load_view) {
     view->ready = true;
 }
 
+typedef struct ChangeFontWork ChangeFontWork;
+struct ChangeFontWork {
+    WQ_Task *task;
+
+    EditorState *state;
+    String8 filepath;
+};
+
+WQ_CALLBACK(change_font_work) {
+    ChangeFontWork *work = (ChangeFontWork *)data;
+    Arena *arena = work->task->temp.arena;
+
+    Temp scratch = scratch_begin(0, 0);
+
+    FP_Handle handle = fp_open_font(cstr_from_str8(scratch.arena, work->filepath));
+    FP_Handle font_to_close = work->state->font;
+    fc_flush();
+    work->state->font = handle;
+    fp_close_font(font_to_close);
+
+    scratch_end(scratch);
+    wq_end_task_memory(work->task);
+}
+
 void editor_init(EditorParams *params) {
     // STUDY(fede): change to *params->memory = arena_bootstrap_struct(EditorState, arena)
     // STUDY(fede): change commit/reserve sizes for this
@@ -118,6 +140,19 @@ void editor_init(EditorParams *params) {
 
     // STUDY(fede): change commit/reserve sizes for this
     state->frame_arena = arena_alloc();
+
+    {
+        state->task_count = 4;
+        Arena *arena0 = arena_alloc();
+        state->tasks = push_array(arena0, WQ_Task, state->task_count);
+
+        wq_init_task(arena0, &state->tasks[0]);
+        state->tasks[0].arena_ = arena0;
+        for (u32 i = 1; i < state->task_count; i++) {
+            WQ_Task *task = state->tasks + i;
+            wq_init_task(0, task);
+        }
+    }
 
     {
         state->thread_count = t_get_n_logical_cores() - 1;
@@ -187,6 +222,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
 
     TXT_View *view = &view_n->v;
 
+    // TODO(fede): Check if i need to do this with interlocked compare exchange
     if (view->file_view && !view->ready) return;
 
     f32 text_padding_em = 0.4;
@@ -489,7 +525,10 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                                                 at.x + selection_end,
                                                 at.y + line_height_px),
                                     };
-                                    r_push_rect2(.pos = selection_rect, .clip = text_box->rect, R_Color4(RGBA(1, 0, 0, 0.5)));
+                                    r_push_rect2(
+                                            .pos = selection_rect,
+                                            .clip = text_box->rect,
+                                            R_Color4(RGBA(0.70, 0.83, 0.99, 0.5)));
                                 }
                             }
                         }
@@ -779,6 +818,10 @@ void editor_update_and_render(EditorParams *params) {
             cmd_n != 0; 
             cmd_n = cmd_n->next) {
         CMD *cmd = &cmd_n->v;
+        if (!cmd_is_for_this_generation) {
+            continue;
+        }
+
         CMD_Kind kind = cmd_kind_from_name(cmd->name);
 
         switch (kind) {
@@ -803,7 +846,7 @@ void editor_update_and_render(EditorParams *params) {
 
                 DLL_PushBack(state->first_view, state->last_view, view_n);
 
-                wq_push_work_entry(state->low_priority_work_queue, &load_view, (void *)view_n);
+                wq_push_work_entry(state->low_priority_work_queue, &load_view_work, (void *)view_n);
             }
         } break;
 
@@ -826,9 +869,31 @@ void editor_update_and_render(EditorParams *params) {
         } break;
 
         case CMD_Kind_ChangeFont: {
+            Temp scratch = scratch_begin(0, 0);
             fp_close_font(state->font);
             fc_flush();
-            state->font = fp_open_font(cmd->filepath.str);
+            state->font = fp_open_font(cstr_from_str8(scratch.arena, cmd->filepath));
+            scratch_end(scratch);
+
+            /* NOTE(fede): This has racing condition issues, because it changes 
+             *      the font face asynchronously. Idk how to make it work right 
+             *      now, but will keep this commented as an example of how i did 
+             *      work that needs its own memory, it is very similar (or even 
+             *      the same as) caseys implementation (hmh day 140).
+            WQ_Task *task = wq_begin_task_memory(state->tasks, state->task_count);
+            if (!task) {
+                CMD *cmd_redo = cmd_push_name(S8("change_font"));
+                cmd_redo->generation++;
+                cmd_redo->filepath = str8_copy(cmd_next_frame_arena(), cmd->filepath);
+            } else {
+                ChangeFontWork *work = push_struct(task->temp.arena, ChangeFontWork);
+                work->task = task;
+                work->filepath = str8_copy(task->temp.arena, cmd->filepath);
+                work->state = state;
+
+                wq_push_work_entry(state->low_priority_work_queue, &change_font_work, (void *)work);
+            }
+            */
         } break;
 
         default: {} break;
@@ -990,7 +1055,9 @@ void editor_update_and_render(EditorParams *params) {
                     {
                         if (ui_button(S8("Use Iosevka")).clicked) {
                             CMD *cmd = cmd_push_name(S8("change_font"));
-                            cmd->filepath = S8("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
+                            cmd->filepath = str8_copy(
+                                    cmd_frame_arena(), 
+                                    S8("data/fonts/IosevkaTermNerdFontMono-Light.ttf"));
                             printf("Using Iosevka\n");
                         }
 
@@ -998,7 +1065,9 @@ void editor_update_and_render(EditorParams *params) {
 
                         if (ui_button(S8("Use Google Sans")).clicked) {
                             CMD *cmd = cmd_push_name(S8("change_font"));
-                            cmd->filepath = S8("data/fonts/GoogleSans-Regular.ttf");
+                            cmd->filepath = str8_copy(
+                                    cmd_frame_arena(), 
+                                    S8("data/fonts/GoogleSans-Regular.ttf"));
                             printf("Using Google Sans\n");
                         }
                     }

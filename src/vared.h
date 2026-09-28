@@ -52,13 +52,16 @@ typedef struct {
     TXT_ViewNode *selected_file_view;
 
     f32 font_size;
-    FP_Handle font;
+    volatile FP_Handle font;
 
     f32 line_height;
 
     bool show_profiler;
 
     u32 total_thread_count;
+
+    u32 task_count;
+    WQ_Task *tasks;
 
     u32 thread_count;
     WQ_ThreadCtx *threads;

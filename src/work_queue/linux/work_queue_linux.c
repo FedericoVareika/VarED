@@ -20,7 +20,6 @@ internal void wq_thread_launch(WQ_ThreadCtx *ctx) {
 
 internal void wq_push_work_entry(WQ_Queue *queue, WQ_WorkCallback *func, void *data) {
     u32 new_next_idx_to_write = (queue->next_idx_to_write + 1) % array_count(queue->buffer);
-    // assert(new_pending_work != queue->next_work);
 
     WQ_Work *work = queue->buffer + queue->next_idx_to_write;
     work->func = func;
@@ -47,6 +46,8 @@ internal bool wq_do_work(WQ_Queue *queue) {
             __sync_add_and_fetch(&queue->completion_count, 1);
         }
     }
+
+    return result;
 }
 
 internal void wq_complete_all_work(WQ_Queue *queue) {
