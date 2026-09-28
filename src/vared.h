@@ -56,7 +56,6 @@ typedef struct {
 
     f32 line_height;
 
-    bool is_opening_file;
     bool show_profiler;
 
     u32 total_thread_count;

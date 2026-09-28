@@ -638,6 +638,8 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
         }  
     }
 
+    Rect2 child_clip = !!(box->flags & (UI_BoxFlag_ClipChildren)) ? box->rect : clip;
+
     if (!!(box->flags & UI_BoxFlag_DrawText)) {
         // TODO(fede): Text alignment, for now, left aligned.
         FC_GlyphRun *display_run = ui_get_box_display_run(box);
@@ -657,7 +659,7 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
             at.x += box->semantic_size[UI_Axis2_X].value;
         at.x += box->text_padding;
 
-        dr_glyph_run(metrics, display_run, at, clip, box->text_color);
+        dr_glyph_run(metrics, display_run, at, child_clip, box->text_color);
     }
 
     if (!!(box->flags & UI_BoxFlag_RenderBucket)) {
@@ -665,8 +667,6 @@ internal void ui_render_boxes(UI_Box *box, Rect2 clip) {
     }
     
     ui_render_boxes(box->next, clip);
-
-    Rect2 child_clip = !!(box->flags & (UI_BoxFlag_ClipChildren)) ? box->rect : clip;
 
     ui_render_boxes(box->first, child_clip);
 }
