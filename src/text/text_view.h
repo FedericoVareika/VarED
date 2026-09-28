@@ -41,8 +41,15 @@ struct TXT_ViewOp {
     bool keep_mark;
 };
 
+typedef struct TXT_ViewKey TXT_ViewKey;
+struct TXT_ViewKey {
+    u64 v;
+};
+
 typedef struct TXT_View TXT_View;
 struct TXT_View {
+    volatile bool ready;
+    TXT_ViewKey key;
     String8 label;
 
     Arena *text_arena;
@@ -78,5 +85,7 @@ struct TXT_ViewNode {
 };
 
 internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action);
+
+internal TXT_ViewKey txt_view_key_from_label(String8 label);
 
 #endif // TEXT_VIEW_H

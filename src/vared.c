@@ -82,6 +82,32 @@
 
 #include "vared.h"
 
+WQ_CALLBACK(load_view) {
+    TXT_ViewNode *view_n = (TXT_ViewNode *)data;
+    TXT_View *view = &view_n->v;
+    Temp scratch = scratch_begin(0, 0);
+
+    char *path_cstr = cstr_from_str8(scratch.arena, view->label);
+    DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
+
+    if (!file.memory) {
+        printf("Could not open file: %s\n", path_cstr);
+        return;
+    }
+
+    arena_clear(view->text_arena);
+    view->text = push_struct(view->text_arena, TXT_Text);
+    view->cursor.y = 1;
+    view->mark.y = 1;
+
+    txt_insert(view->text_arena, view->text, str8(file.memory, file.size), 0);
+
+    debug_platform_free_file_memory(0, file);
+    scratch_end(scratch);
+
+    view->ready = true;
+}
+
 void editor_init(EditorParams *params) {
     // STUDY(fede): change to *params->memory = arena_bootstrap_struct(EditorState, arena)
     // STUDY(fede): change commit/reserve sizes for this
@@ -148,7 +174,7 @@ void editor_init(EditorParams *params) {
     ui_init();
     cmd_init();
 
-    state->show_profiler = true;
+    state->show_profiler = false;
 
     printf("R_Rect2DInst size: %ld\n", sizeof(R_Rect2DInst));
     printf("FC_Glyph size: %ld\n", sizeof(FC_Glyph));
@@ -160,6 +186,9 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     TimeFunction;
 
     TXT_View *view = &view_n->v;
+
+    if (view->file_view && !view->ready) return;
+
     f32 text_padding_em = 0.4;
 
     // NOTE(fede): Apply per-frame actions
@@ -754,37 +783,28 @@ void editor_update_and_render(EditorParams *params) {
 
         switch (kind) {
         case CMD_Kind_OpenFile: {
-            // TODO(fede): Dispath work to low priority queue, and do 
-            //      something to start reading the result from io_uring 
-            //      (in the case of linux).
-            TXT_ViewNode *view_n = push_struct(state->arena, TXT_ViewNode);
-            TXT_View *view = &view_n->v;
-            view->text_arena = arena_alloc();
-            view->text = push_struct(view->text_arena, TXT_Text);
-
-            DLL_PushBack(state->first_view, state->last_view, view_n);
-            
-            Temp scratch = scratch_begin(0, 0);
-            view->label = str8_copy(state->arena, cmd->filepath);
-
-            char *path_cstr = cstr_from_str8(scratch.arena, cmd->filepath);
-            DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
-
-            if (!file.memory) {
-                printf("Could not open file: %s\n", path_cstr);
-                break;
+            TXT_ViewKey key = txt_view_key_from_label(cmd->filepath);
+            TXT_ViewNode *view_n = 0;
+            for (view_n = state->first_view;
+                    view_n != 0;
+                    view_n = view_n->next) {
+                if (view_n->v.key.v == key.v)
+                    break;
             }
 
-            arena_clear(view->text_arena);
-            view->text = push_struct(view->text_arena, TXT_Text);
-            view->file_view = true;
-            view->cursor.y = 1;
-            view->mark.y = 1;
+            if (!view_n) {
+                view_n = push_struct(state->arena, TXT_ViewNode);
+                TXT_View *view = &view_n->v;
+                view->text_arena = arena_alloc();
+                view->text = push_struct(view->text_arena, TXT_Text);
+                view->label = str8_copy(state->arena, cmd->filepath);
+                view->key = txt_view_key_from_label(view->label);
+                view->file_view = true;
 
-            txt_insert(view->text_arena, view->text, str8(file.memory, file.size), 0);
+                DLL_PushBack(state->first_view, state->last_view, view_n);
 
-            debug_platform_free_file_memory(0, file);
-            scratch_end(scratch);
+                wq_push_work_entry(state->low_priority_work_queue, &load_view, (void *)view_n);
+            }
         } break;
 
         case CMD_Kind_FocusView: {
@@ -971,12 +991,6 @@ void editor_update_and_render(EditorParams *params) {
                         if (ui_button(S8("Use Iosevka")).clicked) {
                             CMD *cmd = cmd_push_name(S8("change_font"));
                             cmd->filepath = S8("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
-
-                            /*
-                            fp_close_font(state->font);
-                            fc_flush();
-                            state->font = fp_open_font("data/fonts/IosevkaTermNerdFontMono-Light.ttf");
-                            */
                             printf("Using Iosevka\n");
                         }
 
@@ -985,11 +999,6 @@ void editor_update_and_render(EditorParams *params) {
                         if (ui_button(S8("Use Google Sans")).clicked) {
                             CMD *cmd = cmd_push_name(S8("change_font"));
                             cmd->filepath = S8("data/fonts/GoogleSans-Regular.ttf");
-                            /*
-                            fp_close_font(state->font);
-                            fc_flush();
-                            state->font = fp_open_font("data/fonts/GoogleSans-Regular.ttf");
-                            */
                             printf("Using Google Sans\n");
                         }
                     }
@@ -1049,8 +1058,10 @@ void editor_update_and_render(EditorParams *params) {
 
                             if (selected)
                                 ui_push_border_color(RGBA(1, 0, 0, 1));
-                            else 
+                            else if (view->ready)
                                 ui_push_border_color(RGBA(0, 0, 1, 1));
+                            else 
+                                ui_push_border_color(RGBA(1, 0, 1, 1));
 
                             draw_view = draw_view || selected;
 
@@ -1064,6 +1075,7 @@ void editor_update_and_render(EditorParams *params) {
                                         UI_BoxFlag_DrawBorder |
                                         UI_BoxFlag_DrawHotEffects |
                                         UI_BoxFlag_DrawActiveEffects |
+                                        UI_BoxFlag_ClipChildren |
                                         UI_BoxFlag_Clickable, 
                                         text_box_label);
                                 ui_box_equip_string(view_tab_box, view->label);

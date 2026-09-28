@@ -95,3 +95,8 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
     return op;
 }
+
+internal TXT_ViewKey txt_view_key_from_label(String8 label) {
+    u64 v = str8_hash_u64(label);
+    return (TXT_ViewKey){v}; 
+}
