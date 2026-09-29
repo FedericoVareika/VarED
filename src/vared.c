@@ -367,7 +367,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                     UI_BoxFlag_DrawBorder |
                     UI_BoxFlag_Clickable |
                     UI_BoxFlag_Draggable |
-                    UI_BoxFlag_Scrollable |
+                    (!view->single_line ? UI_BoxFlag_Scrollable : 0) |
                     UI_BoxFlag_DrawBackground |
                     UI_BoxFlag_OverflowY |
                     UI_BoxFlag_ClipChildren, "##text_box");
