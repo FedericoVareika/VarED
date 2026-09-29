@@ -29,17 +29,29 @@ internal TXT_LinePos txt_advance_line_pos(TXT_Buffer *buffer, TXT_LinePos pos, u
 
     u64 start_byte = buffer->line_starts[result.line_idx];
     start_byte += result.offset;
-
     u64 end_byte = start_byte + n;
 
-    for (; result.line_idx + 1 < buffer->line_count;
-            result.line_idx++) {
-        if (buffer->line_starts[result.line_idx + 1] > end_byte) {
+
+    u64 min_line = result.line_idx;
+    u64 max_line = buffer->line_count;
+
+    // NOTE(fede): Binary search for large pieces.
+    while (true) {
+        if (min_line + 1 == max_line) {
+            result.line_idx = min_line;
             break;
+        }
+
+        u64 result_line = (max_line + min_line) / 2;
+        u64 line_start = buffer->line_starts[result_line];
+
+        if (line_start > end_byte) {
+            max_line = result_line;
+        } else {
+            min_line = result_line;
         }
     }
 
-    // NOTE(fede): Prevent advancing past the buffer end.
     u64 max_offset = buffer->count - buffer->line_starts[result.line_idx];
     result.offset = end_byte - buffer->line_starts[result.line_idx];
     result.offset = min(result.offset, max_offset);
@@ -175,9 +187,42 @@ internal inline bool txt_line_pos_is_continuation(TXT_Buffer *buffer, TXT_LinePo
 //      is there a common alternative, is there any *good* alternative?
 //      File streaming?
 internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
+    TimeFunctionBandwidth(str.size);
     assert(str.size);
 
-    TXT_Buffer *buffer = txt_get_buffer_for_str(arena, text, str);
+    TXT_BufferNode *buffer_n = text->buffer_queue; 
+
+    u64 newline_count = 0;
+    for (u64 i = 0; i < str.size; i++) {
+        if (str.str[i] == '\n') {
+            newline_count++;
+        }
+    }
+
+    if (!buffer_n || str.size > buffer_n->v.size - buffer_n->v.count 
+        || newline_count > TXT_WRITE_BUFFER_MAX_LINES - buffer_n->v.line_count) {
+        buffer_n = push_struct(arena, TXT_BufferNode);
+        buffer_n->next = text->buffer_queue;
+        text->buffer_queue = buffer_n;
+
+        TXT_Buffer *buffer = &buffer_n->v;
+
+        buffer->size = max(TXT_WRITE_BUFFER_SIZE, str.size);
+        buffer->buf = push_array(arena, u8, buffer->size);
+
+        // Consider this insert as a large paste or file open.
+        // TODO(fede): Investigate and support CRLF, LF, and CR modes
+        if (buffer->size > TXT_WRITE_BUFFER_SIZE || newline_count > TXT_WRITE_BUFFER_MAX_LINES) {
+            buffer->line_starts = push_array(arena, u64, newline_count + 1);
+        } else {
+            buffer->line_starts = push_array(arena, u64, TXT_WRITE_BUFFER_MAX_LINES);
+        }
+
+        // NOTE(fede): The result contents are not updated
+        buffer->line_count = 1; 
+    }
+
+    TXT_Buffer *buffer = &buffer_n->v;
 
     u64 piece_newline_count = 0; 
 
@@ -189,30 +234,26 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
     TXT_LinePos start = {0};
     start.line_idx = buffer->line_count - 1;
     start.offset = buffer->count - buffer->line_starts[start.line_idx]; 
-
     TXT_LinePos end = {0};
 
+    mem_copy(buffer->buf + buffer->count, str.str, str.size);
+
     for (u64 i = 0; i < str.size; i++) {
-        // NOTE(fede): Set the line idx to the last inserted byte line idx, if 
-        // the last byte is a '\n', we don't want it to have the end.line_idx be
-        // on the next line. This reassures us of inclusive ranges, not exclusive.
-        end.line_idx = buffer->line_count - 1;
-
-        u64 buf_idx = i + buffer->count;
         if (str.str[i] == '\n') {
-            // The next byte is the start of a line
-            buffer->line_starts[buffer->line_count] = buf_idx + 1;
-            buffer->line_count++;
-
+            buffer->line_starts[buffer->line_count++] = buffer->count + i + 1;
             piece_newline_count++;
         }
-
-        // STUDY perf
-        buffer->buf[buf_idx] = str.str[i];
     }
 
     buffer->count += str.size;
 
+    // NOTE(fede): Set the line idx to the last inserted byte line idx, if 
+    // the last byte is a '\n', we don't want it to have the end.line_idx be
+    // on the next line. This reassures us of inclusive ranges, not exclusive.
+    end.line_idx = buffer->line_count - 1;
+    if (buffer->buf[buffer->count - 1] == '\n')
+        end.line_idx--;
+    
     // NOTE(fede): The -1 is because the range is inclusive: [start, end]
     end.offset = buffer->count - buffer->line_starts[end.line_idx] - 1; 
 
@@ -255,7 +296,6 @@ internal void txt_insert(Arena *arena, TXT_Text *text, String8 str, u64 at) {
     }
 
     // Split the piece.
-    //
     // TODO(fede): if this is at a limit of two pieces, then instead of inserting 
     //      a node in the middle, it would delete the right one, insert the new
     //      one, and add the right one again.
@@ -310,6 +350,7 @@ internal u64 txt_delete_from_node(
 }
 
 internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n) {
+    TimeFunction;
     u64 offset = at;
     TXT_PieceNode *delete_n = text->first;
     for (; delete_n != 0; delete_n = delete_n->next) {

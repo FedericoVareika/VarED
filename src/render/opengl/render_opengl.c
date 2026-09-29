@@ -277,7 +277,6 @@ internal R_OpenGL_Tex2D *r_ogl_tex2d_from_handle(R_Handle handle) {
 /// NOTE(fede): Consume 
 
 internal void r_consume_pass(R_Pass *pass) {
-    TimeFunction;
     R_BatchGroupList *batch_groups = &pass->batch_groups;
     R_BatchGroupNode *batch_group_n = batch_groups->first;
 
@@ -298,7 +297,6 @@ internal void r_consume_pass(R_Pass *pass) {
         R_BatchList *batches = &batch_group->batches;
 
         if (batches->byte_count > kilobytes(64)) {
-            TimeBandwidth(S8("Buffer alloc"), batches->byte_count);
             u64 buffer_bytes = (batches->byte_count + megabytes(1) - 1) / megabytes(1);
             buffer_bytes *= megabytes(1);
 
@@ -320,8 +318,6 @@ internal void r_consume_pass(R_Pass *pass) {
                 j < batches->batch_count;
                 j++, batch_n = batch_n->next) {
             R_Batch *batch = &batch_n->v;
-            TimeBandwidth(S8("Buffer subdata"), batch->byte_count);
-
             glBufferSubData(GL_ARRAY_BUFFER, offset, batch->byte_count, batch->v);
 
             offset += batch->byte_count; 
@@ -345,7 +341,6 @@ internal void r_consume_pass(R_Pass *pass) {
         }
 
         {
-            TimeBandwidth(S8("Draw Call"), batches->byte_count);
             glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, 
                     batches->byte_count / batches->bytes_per_inst);
         }

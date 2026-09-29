@@ -1,7 +1,6 @@
 #include <time.h>
 
-i64 performance_counter(void)
-{
+i64 performance_counter(void) {
     i64 ticks = 0;
     struct timespec now;
 
@@ -13,8 +12,7 @@ i64 performance_counter(void)
     return ticks;
 }
 
-u64 performance_frequency(void)
-{
+u64 performance_frequency(void) {
     return 1000000000;
 }
 

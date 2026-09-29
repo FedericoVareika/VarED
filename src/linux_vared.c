@@ -69,7 +69,9 @@ internal void linux_sleep_to_target(u64 last_counter, f64 target_seconds) {
         //         last_counter, SDL_GetPerformanceCounter());
     } else {
         // TODO(fede): ERROR -- missed target frame rate
-        printf("Missed target frame rate!\n");
+        printf(
+                "Missed target frame rate! %.4fms\n",
+                seconds_elapsed_for_frame * 1000);
     }
 }
 
@@ -473,6 +475,7 @@ int main(void) {
             printf("GL version %d.%d\n", major, minor);
 
             SDL_GLContext gl_context = scp(SDL_GL_CreateContext(window)); 
+            // scc(SDL_GL_SetSwapInterval(1));
 
             printf("SDL Video Driver: %s\n", SDL_GetCurrentVideoDriver());
         }
@@ -630,7 +633,7 @@ int main(void) {
         p_end();
 
 // TODO(fede): Fix this frame limiting, it oversleeps sometimes.
-#if 0
+#if 1
         {
             // TimeBlock(S8("Sleeping"));
             // u64 end_counter = SDL_GetPerformanceCounter();

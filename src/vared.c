@@ -7,7 +7,6 @@
  *  /// HIGH PRIORITY
  *
  *  - Lexer (at least C) for code highlighting and basic analysis. 
- *  - STUDY Deleting from the end of a large file is slow.
  *
  *  ////////////////////////////////////////////////////////////////////////////
  *
@@ -85,8 +84,13 @@ WQ_CALLBACK(load_view_work) {
     TXT_View *view = &view_n->v;
     Temp scratch = scratch_begin(0, 0);
 
-    char *path_cstr = cstr_from_str8(scratch.arena, view->label);
-    DebugReadFileResult file = debug_platform_read_entire_file(0, path_cstr);
+    char *path_cstr;
+    DebugReadFileResult file;
+    {
+        TimeBlock(S8("Read entire file"));
+        path_cstr = cstr_from_str8(scratch.arena, view->label);
+        file = debug_platform_read_entire_file(0, path_cstr);
+    }
 
     if (!file.memory) {
         printf("Could not open file: %s\n", path_cstr);
@@ -428,11 +432,8 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                             metrics = fp_get_font_metrics(state->font, state->font_size);
                         }
 
-                        // String8 line_string = txt_get_line(scratch.arena, view->text, line_num);
-                        // FC_GlyphRun *glyph_run = fc_get_string_glyph_run(state->font, line_string, state->font_size);
-                        // FP_FontMetrics metrics = fp_get_font_metrics(state->font, state->font_size);
-
                         {
+                            // TODO(fede): Do more profiling, this is taking too much time
                             TimeBandwidth(S8("Draw line run"), line_string.size * sizeof(R_Rect2DInst));
                             dr_glyph_run(metrics, glyph_run, at, text_box->rect, text_box->text_color);
                         }
@@ -943,7 +944,7 @@ void editor_update_and_render(EditorParams *params) {
                         u64 total_clocks = p_prev->end_time - p_prev->start_time;
                         f64 total_time_frame_pct = ((f64)total_clocks / performance_frequency()) * 144;
 
-                        if (false && total_time_frame_pct > 1) {
+                        if (total_time_frame_pct > 1) {
                             printf("Total clocks: %lu (Cpu freq: %lu)\n", total_clocks, performance_frequency());
                             for (u32 i = 1; i <= p_prev->last_anchor_idx; i++) {
                                 P_Anchor *anchor = &p_prev->anchors[i];
@@ -1172,15 +1173,9 @@ void editor_update_and_render(EditorParams *params) {
         ui_end_build();
     }
 
-    {
-        TimeBlock(S8("UI Layout"))
-        ui_layout();
-    }
+    ui_layout();
 
-    {
-        TimeBlock(S8("UI render"))
-        ui_render();
-    }
+    ui_render();
 
     events->first = events->last = 0;
 }
