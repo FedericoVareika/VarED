@@ -8,6 +8,8 @@
  *
  *  - Lexer (at least C) for code highlighting and basic analysis. 
  *
+ *  - Directory viewer for opening files visually, and creating files.
+ *
  *  ////////////////////////////////////////////////////////////////////////////
  *
  *  - Embed files that are currently shipped in data:
@@ -22,8 +24,6 @@
  *  - Better movement: 
  *      - Vim or kakoune style movement
  *      - Multiple cursors? 
- *
- *  - Directory viewer for opening files visually, and creating files.
  *
  *  - App config, that is persistent (the following are needed regardless of persistent): 
  *      - Colours
