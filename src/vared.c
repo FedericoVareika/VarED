@@ -16,6 +16,8 @@
  *      - Default font.
  *
  *  - Subpixel font rendering and alignment. 
+ *  - Better Unicode+OpenType usage 
+ *      - https://www.youtube.com/watch?v=7Tr0ty9-yeQ&t=1256s&pp=ugUHEgVlbi1VUw%3D%3D
  *
  *  - More established UI: 
  *      - Tabs, panes, tree-style viewer for these. 
@@ -29,10 +31,14 @@
  *      - Colours
  *      - Keybinds 
  *
- *  - Better profiler:
+ *  - Better profiler (See Anton for simpler profiler):
  *      - Floating pane
  *      - Historic graph (STUDY on how other people do this)
  *      - Memory profiler (arena analysis)
+ *      - GPU profiler (using glQueryCounter)
+ *          - Anton: https://youtu.be/LF-btr48ies?si=mXsdkhdHwg5EQjdg
+ *
+ *  - Copy/Paste
  *
  *  - Undo (maybe even undo trees).
  *
