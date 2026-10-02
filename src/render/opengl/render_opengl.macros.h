@@ -53,6 +53,7 @@
 */  M(glVertexAttribPointer, void, GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer) /*
 */  M(glDepthMask, void,  GLboolean flag) /*
 */  M(glFinish, void, void) /*
+*/  M(glQueryCounter, void, GLuint id, GLenum target) /*
 */
 
 #define GL_ARRAY_BUFFER 0x8892
