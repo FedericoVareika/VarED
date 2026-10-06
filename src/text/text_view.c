@@ -36,19 +36,32 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
     if (action.hor_delta != 0) {
         op.update_cursor_col = true;
 
-        Temp scratch = scratch_begin(&arena, 1);
+        if (!!(action.flags & TXT_ViewAction_Flag_DeltaPicksSelectionSide) &&
+                (view->cursor.x != view->mark.x || 
+                 view->cursor.y != view->mark.y)) {
+            Rng2u pos_range = rng2u(op.new_cursor, op.new_mark);
 
-        String8 line = txt_get_line(scratch.arena, view->text, op.new_cursor.y + row_delta);
-
-        op.new_cursor.x = min(line.size, op.new_cursor.x); 
-
-        if (!!(action.flags & TXT_ViewAction_Flag_ScanWords)) {
-            col_delta = utf8_scan_words(line, op.new_cursor.x, action.hor_delta);
+            if (action.hor_delta > 0) {
+                op.new_cursor = op.new_mark = pos_range.max;
+            } else if (action.hor_delta < 0) {
+                op.new_cursor = op.new_mark = pos_range.min;
+            }
         } else {
-            col_delta = utf8_scan_codepoints(line, op.new_cursor.x, action.hor_delta);
-        }
+            Temp scratch = scratch_begin(&arena, 1);
 
-        scratch_end(scratch);
+            String8 line = txt_get_line(scratch.arena, view->text, op.new_cursor.y + row_delta);
+
+            op.new_cursor.x = min(line.size, op.new_cursor.x); 
+
+            if (!!(action.flags & TXT_ViewAction_Flag_ScanWords)) {
+                col_delta = utf8_scan_words(line, op.new_cursor.x, action.hor_delta);
+            } else {
+                col_delta = utf8_scan_codepoints(line, op.new_cursor.x, action.hor_delta);
+            }
+
+
+            scratch_end(scratch);
+        }
     }
 
     if (!!(action.flags & TXT_ViewAction_Flag_SetHorizontalAnchor)) {
@@ -81,7 +94,7 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
         op.keep_mark = true;
     }
 
-    if (!view->single_line && !!(action.flags & TXT_ViewAction_AutoScrollLines)) {
+    if (!view->single_line && !!(action.flags & TXT_ViewAction_Flag_AutoScrollLines)) {
         if (op.new_cursor.y + 4 > view->last_line) {
             u32 missing = op.new_cursor.y + 4 - view->last_line;
             op.new_line_offset += missing;

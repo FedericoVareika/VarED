@@ -6,6 +6,10 @@
  *  ////////////////////////////////////////////////////////////////////////////
  *  /// HIGH PRIORITY
  *
+ *  - Change text api
+ *      - look into some of the stuff said in (BSC text talk)
+ *      https://www.youtube.com/watch?v=7Tr0ty9-yeQ&t=1256s&pp=ugUHEgVlbi1VUw%3D%3D
+ *
  *  - Lexer (at least C) for code highlighting and basic analysis. 
  *
  *  - Directory viewer for opening files visually, and creating files.
@@ -673,7 +677,7 @@ void editor_update_and_render(EditorParams *params) {
                     {
                         CMD *cmd = cmd_push_name(S8("text_action"));
                         cmd->view_n = view_n;
-                        cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_AutoScrollLines;
                         cmd->view_action.row_delta++;
                         cmd->view_action.hor_delta = -I32_MAX;
                     }
@@ -725,10 +729,15 @@ void editor_update_and_render(EditorParams *params) {
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
                     cmd->view_action.hor_delta--;
-                    if (!!(event.modifiers & WMModifier_shift) )
-                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
-                    if (!!(event.modifiers & WMModifier_ctrl) )
-                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
+
+                    cmd->view_action.flags = 
+                        !!(event.modifiers & WMModifier_shift) ? TXT_ViewAction_Flag_KeepMark : 0 |
+                        !!(event.modifiers & WMModifier_ctrl) ? TXT_ViewAction_Flag_ScanWords : 0;
+
+                    if (!(event.modifiers & WMModifier_shift) && 
+                         !(event.modifiers & WMModifier_ctrl)) {
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_DeltaPicksSelectionSide;
+                    }
                 } break;
                 case WMKey_RIGHT: {
                     if (!state->focused_view)
@@ -739,10 +748,15 @@ void editor_update_and_render(EditorParams *params) {
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
                     cmd->view_action.hor_delta++;
-                    if (!!(event.modifiers & WMModifier_shift) )
-                        cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
-                    if (!!(event.modifiers & WMModifier_ctrl) )
-                        cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
+
+                    cmd->view_action.flags = 
+                        !!(event.modifiers & WMModifier_shift) ? TXT_ViewAction_Flag_KeepMark : 0 |
+                        !!(event.modifiers & WMModifier_ctrl) ? TXT_ViewAction_Flag_ScanWords : 0;
+
+                    if (!(event.modifiers & WMModifier_shift) && 
+                         !(event.modifiers & WMModifier_ctrl)) {
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_DeltaPicksSelectionSide;
+                    }
                 } break;
                 case WMKey_UP: {
                     if (!state->focused_view)
@@ -753,7 +767,7 @@ void editor_update_and_render(EditorParams *params) {
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
                     cmd->view_action.row_delta--;
-                    cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
+                    cmd->view_action.flags |= TXT_ViewAction_Flag_AutoScrollLines;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                     if (!!(event.modifiers & WMModifier_ctrl) )
@@ -768,7 +782,7 @@ void editor_update_and_render(EditorParams *params) {
                     CMD *cmd = cmd_push_name(S8("text_action"));
                     cmd->view_n = view_n;
                     cmd->view_action.row_delta++;
-                    cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
+                    cmd->view_action.flags |= TXT_ViewAction_Flag_AutoScrollLines;
                     if (!!(event.modifiers & WMModifier_shift) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                     if (!!(event.modifiers & WMModifier_ctrl) )
@@ -806,7 +820,7 @@ void editor_update_and_render(EditorParams *params) {
                         CMD *cmd = cmd_push_name(S8("text_action"));
                         cmd->view_n = view_n;
                         cmd->view_action.codepoint = event.character;
-                        cmd->view_action.flags |= TXT_ViewAction_AutoScrollLines;
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_AutoScrollLines;
                     }
                 } break; 
                 }

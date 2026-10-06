@@ -2,12 +2,13 @@
 #define TEXT_VIEW_H
 
 typedef enum {
-    TXT_ViewAction_Flag_KeepMark               = (1 << 0),
-    TXT_ViewAction_Flag_Delete                 = (1 << 1),
-    TXT_ViewAction_Flag_ZeroDeltaWithSelection = (1 << 2),
-    TXT_ViewAction_Flag_SetHorizontalAnchor    = (1 << 3),
-    TXT_ViewAction_Flag_ScanWords              = (1 << 4),
-    TXT_ViewAction_AutoScrollLines             = (1 << 5),
+    TXT_ViewAction_Flag_KeepMark                = (1 << 0),
+    TXT_ViewAction_Flag_Delete                  = (1 << 1),
+    TXT_ViewAction_Flag_ZeroDeltaWithSelection  = (1 << 2),
+    TXT_ViewAction_Flag_SetHorizontalAnchor     = (1 << 3),
+    TXT_ViewAction_Flag_ScanWords               = (1 << 4),
+    TXT_ViewAction_Flag_AutoScrollLines         = (1 << 5),
+    TXT_ViewAction_Flag_DeltaPicksSelectionSide = (1 << 6),
 } TXT_ViewAction_Flag;
 
 typedef struct TXT_ViewAction TXT_ViewAction;
