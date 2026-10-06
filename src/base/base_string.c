@@ -364,6 +364,9 @@ internal i32 utf8_scan_codepoints(String8 str, u32 at, i32 delta) {
             delta_char += sign;
         } while (!utf8_byte_is_header(str.str[at + result + delta_char]));
 
+        if (end) 
+            break;
+
         // NOTE(fede): Border case where we want to go right, but the next 
         //      character is newline, then we cap the movement. 
         if (sign > 0 && str.str[at + result] == '\n') {

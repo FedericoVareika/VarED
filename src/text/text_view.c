@@ -1,5 +1,5 @@
 
-internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action) {
+internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action, String8 clipboard) {
     TXT_ViewOp op = {0};
 
     op.new_cursor = view->cursor;
@@ -17,10 +17,16 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
             .size = count,
         };
         op.insert_text = str8_copy(arena, insert_text);
-
         insertion_col_delta += count;
         op.update_cursor_col = true;
         action.flags |= TXT_ViewAction_Flag_Delete;
+    } 
+
+    if (!!(action.flags & TXT_ViewAction_Flag_Copy) && 
+            (op.new_cursor.y != op.new_mark.y ||
+             op.new_cursor.x != op.new_mark.x)) {
+        Rng2u rng = rng2u(op.new_cursor, op.new_mark);
+        op.copy_text = txt_get_range(arena, view->text, rng); 
     }
 
     i32 col_delta = 0;
@@ -80,6 +86,12 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
 
     op.new_cursor.y = max(op.new_cursor.y, 1);
     op.new_cursor.y = min(op.new_cursor.y, txt_get_n_lines(view->text));
+    
+    if (!action.codepoint && !!(action.flags & TXT_ViewAction_Flag_Paste)) {
+        op.insert_text = clipboard;
+        op.update_cursor_col = true;
+        action.flags |= TXT_ViewAction_Flag_Delete;
+    }
 
     if (!!(action.flags & TXT_ViewAction_Flag_Delete)) {
         op.replace_range = rng2u(op.new_cursor, op.new_mark);

@@ -418,8 +418,51 @@ void PrintKeyInfo( SDL_KeyboardEvent *key ){
     PrintModifiers( (SDL_Keymod)key->keysym.mod );
 }
 
+#include <dirent.h>
+
+void rec_walk_dir(Arena *arena, char *path, int depth) {
+    Temp scratch = scratch_begin(&arena, 1);
+
+    String8 path_str = str8_from_cstr(path);
+
+    DIR *dir = opendir(path);
+    struct dirent *dp;
+    while (dir) {
+        if ((dp = readdir(dir)) != NULL) {
+            if (strcmp(dp->d_name, ".") == 0) {
+            } else if (strcmp(dp->d_name, "..") != 0) {
+                for (int i = 0; i < depth; i++) {
+                    printf("\t");
+                }
+                printf("%s\n", dp->d_name);
+
+                if (dp->d_type == DT_DIR) {
+                    String8 dir_str = str8_from_cstr(dp->d_name);
+                    String8 subpath_str = str8_cat(scratch.arena, path_str, S8("/"));
+                    subpath_str = str8_cat(scratch.arena, subpath_str, dir_str);
+                    char *subpath_cstr = cstr_from_str8(scratch.arena, subpath_str);
+                    rec_walk_dir(scratch.arena, subpath_cstr, depth + 1);
+                }
+            } 
+        } else {
+            closedir(dir);
+            break;
+        }
+    }
+
+    scratch_end(scratch);
+}
+
 int main(void) {
     t_context_init(0);
+
+#if 0
+    // Scratch dir testing
+    {
+        rec_walk_dir(0, "./src", 0);
+    }
+    return 1;
+#endif
 
     LinuxState state = {0};
 
@@ -617,7 +660,21 @@ int main(void) {
         editor_params.events = event_list;
         editor_params.dt = dt_for_frame;
 
-        editor_update_and_render(&editor_params);
+        char *clipboard_cstr = SDL_GetClipboardText();
+        editor_params.clipboard = str8_from_cstr(clipboard_cstr);
+
+        EditorResult result = editor_update_and_render(&editor_params);
+
+        SDL_free(clipboard_cstr);
+
+        if (result.clipboard.size) {
+            Temp scratch = scratch_begin(0, 0); 
+
+            char *result_clip_cstr = cstr_from_str8(scratch.arena, result.clipboard);
+            scc(SDL_SetClipboardText(result_clip_cstr));
+
+            scratch_end(scratch); 
+        }
 
         r_consume_all();
 

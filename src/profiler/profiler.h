@@ -72,6 +72,34 @@ struct P_Block {
 };
 
 ////////////////////////////////////////////////////////////////////////////////
+/// NOTE(fede): New structure
+
+typedef struct P_Sample P_Sample;
+struct P_Sample {
+    u64 time;
+};
+
+typedef struct P_Entry P_Entry;
+struct P_Entry {
+    P_Entry *parent;
+    P_Entry *first;
+    P_Entry *last;
+
+    u64 start_time; 
+    u64 end_time; 
+    f32 ms; 
+};
+
+#define P_MAX_SAMPLES (1024 * 1024)
+typedef struct P_State_ P_State_;
+struct P_State_ {
+    // TODO(fede): Keep the frame states from other impl?
+    u32 count;
+    P_Sample *samples;
+    String8 *labels;
+};
+
+////////////////////////////////////////////////////////////////////////////////
 /// NOTE(fede): API
 
 internal void p_init(void);

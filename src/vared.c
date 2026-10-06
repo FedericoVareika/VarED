@@ -42,8 +42,6 @@
  *      - GPU profiler (using glQueryCounter)
  *          - Anton: https://youtu.be/LF-btr48ies?si=mXsdkhdHwg5EQjdg
  *
- *  - Copy/Paste
- *
  *  - Undo (maybe even undo trees).
  *
  *  - (Maybe) When we do left arrow at the beginning of the line move to the end 
@@ -224,6 +222,7 @@ void editor_init(EditorParams *params) {
     cmd_init();
 
     state->show_profiler = false;
+    state->print_exceeding_profile_times = false;
 
     printf("R_Rect2DInst size: %ld\n", sizeof(R_Rect2DInst));
     printf("FC_Glyph size: %ld\n", sizeof(FC_Glyph));
@@ -249,7 +248,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             action_n != 0;
             action_n = action_n->next) {
         TXT_ViewAction *action = &action_n->v;
-        TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, *action);
+        TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, *action, state->clipboard);
 
         if (op.keep_mark)
             keep_mark = true;
@@ -291,6 +290,11 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             view->horizontal_anchor_em = op.new_hor_anchor_em;
             set_cursor_from_anchor = true;
         }
+
+        if (op.copy_text.size) {
+            CMD *cmd = cmd_push_name(S8("copy_clipboard"));
+            cmd->string = str8_copy(cmd_frame_arena(), op.copy_text);
+        } 
 
         view->mark = op.new_mark;
         view->line_offset = op.new_line_offset;
@@ -605,8 +609,10 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
                         view->line_offset = view->line_offset - (u64)(-delta_line_offset);
                     }
                 } else { 
-                    if (view->line_offset + delta_line_offset > txt_get_n_lines(view->text) - 3) {
-                        view->line_offset = txt_get_n_lines(view->text) - 3;
+                    u64 n_lines = txt_get_n_lines(view->text);
+                    n_lines = max(n_lines, 3);
+                    if (view->line_offset + delta_line_offset > n_lines - 3) {
+                        view->line_offset = n_lines - 3;
                         new_sub_line_offset = 1;
                     } else {
                         view->line_offset += delta_line_offset;
@@ -620,6 +626,8 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         if (!view->single_line) {
             f64 min_scroller_size = 0.05;
             f64 max = (f64)txt_get_n_lines(view->text) - 2;
+            max = max(max, 1);
+
             f64 scroller_size = max(min_scroller_size, (f64)estimated_lines_in_box / max);
 
             f64 line_pct = (f64)view->line_offset + (f32)view->sub_line_offset;
@@ -636,11 +644,15 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     }
 }
 
-void editor_update_and_render(EditorParams *params) {
+EditorResult editor_update_and_render(EditorParams *params) {
     TimeFunction;
+
+    EditorResult result = {0};
 
     EditorState *state = (EditorState *)*params->memory;
     Arena *frame_arena = state->frame_arena;
+
+    state->clipboard = params->clipboard;
 
     arena_clear(frame_arena);
 
@@ -731,8 +743,8 @@ void editor_update_and_render(EditorParams *params) {
                     cmd->view_action.hor_delta--;
 
                     cmd->view_action.flags = 
-                        !!(event.modifiers & WMModifier_shift) ? TXT_ViewAction_Flag_KeepMark : 0 |
-                        !!(event.modifiers & WMModifier_ctrl) ? TXT_ViewAction_Flag_ScanWords : 0;
+                        (!!(event.modifiers & WMModifier_shift) ? TXT_ViewAction_Flag_KeepMark : 0) |
+                        (!!(event.modifiers & WMModifier_ctrl) ? TXT_ViewAction_Flag_ScanWords : 0);
 
                     if (!(event.modifiers & WMModifier_shift) && 
                          !(event.modifiers & WMModifier_ctrl)) {
@@ -750,8 +762,8 @@ void editor_update_and_render(EditorParams *params) {
                     cmd->view_action.hor_delta++;
 
                     cmd->view_action.flags = 
-                        !!(event.modifiers & WMModifier_shift) ? TXT_ViewAction_Flag_KeepMark : 0 |
-                        !!(event.modifiers & WMModifier_ctrl) ? TXT_ViewAction_Flag_ScanWords : 0;
+                        (!!(event.modifiers & WMModifier_shift) ? TXT_ViewAction_Flag_KeepMark : 0) |
+                        (!!(event.modifiers & WMModifier_ctrl) ? TXT_ViewAction_Flag_ScanWords : 0);
 
                     if (!(event.modifiers & WMModifier_shift) && 
                          !(event.modifiers & WMModifier_ctrl)) {
@@ -787,6 +799,68 @@ void editor_update_and_render(EditorParams *params) {
                         cmd->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                     if (!!(event.modifiers & WMModifier_ctrl) )
                         cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
+                } break;
+
+                case WMKey_c: {
+                    if ((event.modifiers & WMModifier_ctrl)) {
+                        if (!state->focused_view)
+                            break;
+                        TXT_ViewNode *view_n = state->focused_view;
+                        TXT_View *view = &view_n->v;
+
+                        CMD *cmd = cmd_push_name(S8("text_action"));
+                        cmd->view_n = view_n;
+                        cmd->view_action.flags |= 
+                            TXT_ViewAction_Flag_Copy |
+                            TXT_ViewAction_Flag_KeepMark;
+                    }
+                } break;
+
+                case WMKey_v: {
+                    if ((event.modifiers & WMModifier_ctrl)) {
+                        if (!state->focused_view)
+                            break;
+                        TXT_ViewNode *view_n = state->focused_view;
+                        TXT_View *view = &view_n->v;
+
+                        CMD *cmd = cmd_push_name(S8("text_action"));
+                        cmd->view_n = view_n;
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_Paste;
+                    }
+                } break;
+
+                case WMKey_x: {
+                    if ((event.modifiers & WMModifier_ctrl)) {
+                        if (!state->focused_view)
+                            break;
+                        TXT_ViewNode *view_n = state->focused_view;
+                        TXT_View *view = &view_n->v;
+
+                        CMD *cmd = cmd_push_name(S8("text_action"));
+                        cmd->view_n = view_n;
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_Copy;
+                        cmd->view_action.flags |= TXT_ViewAction_Flag_Delete;
+                    }
+                } break;
+
+                case WMKey_a: {
+                    if ((event.modifiers & WMModifier_ctrl)) {
+                        if (!state->focused_view)
+                            break;
+                        TXT_ViewNode *view_n = state->focused_view;
+                        TXT_View *view = &view_n->v;
+
+                        CMD *cmd1 = cmd_push_name(S8("text_action"));
+                        cmd1->view_n = view_n;
+                        cmd1->view_action.row_delta = -I32_MAX;
+                        cmd1->view_action.hor_delta = -I32_MAX;
+
+                        CMD *cmd2 = cmd_push_name(S8("text_action"));
+                        cmd2->view_n = view_n;
+                        cmd2->view_action.row_delta = I32_MAX;
+                        cmd2->view_action.hor_delta = I32_MAX;
+                        cmd2->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
+                    }
                 } break;
 
                 // TODO(fede): Fix this input, this never comes through, instead it 
@@ -917,6 +991,16 @@ void editor_update_and_render(EditorParams *params) {
             */
         } break;
 
+        // TODO(fede): Something maybe?
+        case CMD_Kind_PasteClipboard: {
+        } break;
+
+        case CMD_Kind_CopyClipboard: {
+            String8 string = cmd->string;    
+            result.clipboard = string;
+            // state->clipboard = string;
+        } break;
+
         default: {} break;
         }
     }
@@ -955,16 +1039,34 @@ void editor_update_and_render(EditorParams *params) {
                 {
                     ui_spacer(ui_em(1, 0));
 
-                    if (ui_button(S8("Profiler")).clicked) {
-                        state->show_profiler = !state->show_profiler;
+                    UI_ChildLayoutAxis(UI_Axis2_X)
+                        UI_PrefWidth(ui_pct(1, 0))
+                        UI_Parent(ui_box_makef(0, "profiler_settings"))
+                        UI_PrefWidth(ui_tc(5, 0))
+                    {
+                        if (ui_button(S8("Profiler Graph")).clicked) {
+                            state->show_profiler = !state->show_profiler;
+                        }
+
+                        ui_spacer(ui_em(1, 0));
+
+                        if (ui_button(S8("Profiler Messages")).clicked) {
+                            state->print_exceeding_profile_times = !state->print_exceeding_profile_times;
+                            printf("Exceeding times printing %s\n", 
+                                    state->print_exceeding_profile_times ? 
+                                    "on" : "off");
+                        }
                     }
+
+                    // TODO(fede): Checkboxes dont work anymore.
+                    // ui_checkbox(&state->show_profiler, S8("Profiler"));
 
                     {
                         P_FrameState *p_prev = p_previous_state();
                         u64 total_clocks = p_prev->end_time - p_prev->start_time;
                         f64 total_time_frame_pct = ((f64)total_clocks / performance_frequency()) * 144;
 
-                        if (total_time_frame_pct > 1) {
+                        if (state->print_exceeding_profile_times && total_time_frame_pct > 1) {
                             printf("Total clocks: %lu (Cpu freq: %lu)\n", total_clocks, performance_frequency());
                             for (u32 i = 1; i <= p_prev->last_anchor_idx; i++) {
                                 P_Anchor *anchor = &p_prev->anchors[i];
@@ -1198,4 +1300,6 @@ void editor_update_and_render(EditorParams *params) {
     ui_render();
 
     events->first = events->last = 0;
+
+    return result;
 }

@@ -187,20 +187,19 @@ typedef struct {
 } WMEventList;
 
 typedef struct {
-    WMEventList *events;
-    String8 *clipboard;
-
-} Input;
+    String8 clipboard;
+} EditorResult;
 
 typedef struct {
     void **memory;
     WMEventList *events;
+    String8 clipboard;
 
     f32 dt;
 } EditorParams;
 
 void editor_init(EditorParams *params);
-void editor_update_and_render(EditorParams *params);
+EditorResult editor_update_and_render(EditorParams *params);
 
 #endif // VARED_PLATFORM_H
 

@@ -10,6 +10,7 @@ struct CMD {
     String8 name;
     u64 generation;
 
+    String8 string;
     String8 filepath;
     TXT_ViewNode *view_n;
     // TODO(fede): Add txt_action command

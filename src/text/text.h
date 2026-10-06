@@ -45,6 +45,11 @@ struct TXT_PieceNode {
     TXT_Piece v;
 };
 
+typedef struct TXT_Position TXT_Position;
+struct TXT_Position {
+    TXT_LinePos line_pos;
+};
+
 typedef struct TXT_Text TXT_Text;
 struct TXT_Text {
     TXT_BufferNode *buffer_queue;
@@ -83,5 +88,7 @@ internal void txt_delete(Arena *arena, TXT_Text *text, u64 at, u64 n);
 internal u64 txt_get_n_lines(TXT_Text *text);
 internal u64 txt_get_line_offset(TXT_Text *text, u64 row);
 internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row);
+
+internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng);
 
 #endif // TEXT_H

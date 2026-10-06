@@ -9,6 +9,8 @@ typedef enum {
     TXT_ViewAction_Flag_ScanWords               = (1 << 4),
     TXT_ViewAction_Flag_AutoScrollLines         = (1 << 5),
     TXT_ViewAction_Flag_DeltaPicksSelectionSide = (1 << 6),
+    TXT_ViewAction_Flag_Copy                    = (1 << 7),
+    TXT_ViewAction_Flag_Paste                   = (1 << 8),
 } TXT_ViewAction_Flag;
 
 typedef struct TXT_ViewAction TXT_ViewAction;
@@ -37,6 +39,7 @@ struct TXT_ViewOp {
 
     Rng2u replace_range;
     String8 insert_text;
+    String8 copy_text;
 
     bool update_cursor_col;
     bool keep_mark;
@@ -85,7 +88,7 @@ struct TXT_ViewNode {
     TXT_View v;
 };
 
-internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action);
+internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action, String8 clipboard);
 
 internal TXT_ViewKey txt_view_key_from_label(String8 label);
 
