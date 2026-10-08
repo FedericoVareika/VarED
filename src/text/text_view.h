@@ -88,7 +88,7 @@ struct TXT_ViewNode {
     TXT_View v;
 };
 
-internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action, String8 clipboard);
+internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action);
 
 internal TXT_ViewKey txt_view_key_from_label(String8 label);
 

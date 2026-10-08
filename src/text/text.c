@@ -59,42 +59,6 @@ internal TXT_LinePos txt_advance_line_pos(TXT_Buffer *buffer, TXT_LinePos pos, u
     return result;
 }
 
-internal TXT_Buffer *txt_get_buffer_for_str(Arena *arena, TXT_Text *text, String8 str) {
-    TXT_BufferNode *buffer_n = text->buffer_queue; 
-
-    if (!buffer_n || str.size > buffer_n->v.size - buffer_n->v.count) {
-        buffer_n = push_struct(arena, TXT_BufferNode);
-        buffer_n->next = text->buffer_queue;
-        text->buffer_queue = buffer_n;
-
-        TXT_Buffer *buffer = &buffer_n->v;
-
-        buffer->size = max(TXT_WRITE_BUFFER_SIZE, str.size);
-        buffer->buf = push_array(arena, u8, buffer->size);
-
-        // Consider this insert as a large paste or file open.
-        if (buffer->size > TXT_WRITE_BUFFER_SIZE) {
-            u64 newline_count = 0;
-
-            // TODO(fede): Investigate and support CRLF, LF, and CR modes
-            for (u64 i = 0; i < str.size; i++) {
-                if (str.str[i] == '\n') {
-                    newline_count++;
-                }
-            }
-
-            buffer->line_starts = push_array(arena, u64, newline_count + 1);
-        } else {
-            buffer->line_starts = push_array(arena, u64, TXT_WRITE_BUFFER_MAX_LINES);
-        }
-
-        // NOTE(fede): The result contents are not updated
-        buffer->line_count = 1; 
-    }
-
-    return &buffer_n->v;
-}
-
 internal TXT_PieceNode *txt_split_piece_n(
         Arena *arena, TXT_Text *text,
         TXT_PieceNode *piece_n, u64 at, u64 gap) {
@@ -498,6 +462,7 @@ internal String8 txt_get_buffer_substr(
 }
 
 // NOTE(fede): Ends with \n if its not the end of text
+// TODO(fede): Use txt_get_range? 
 internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
     assert(row > 0);
     row--;
@@ -590,6 +555,7 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
 
 internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
     // NOTE(fede): This is what we are getting, the start and end positions + their piece nodes.
+    // Start is index 0, End is index 1.
     TXT_PieceNode *pieces_n[2] = {0};
     TXT_LinePos line_positions[2] = {0};
     {
@@ -627,6 +593,7 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
             TXT_LinePos line_pos;
             TXT_Piece *piece;
             TXT_Buffer *buffer;
+            // NOTE(fede): Now we scan the pieces for the piece that contains cols[i] at this line.
             for (; iter_piece_n != 0; 
                     iter_piece_n = iter_piece_n->next) {
                 piece = &iter_piece_n->v;
@@ -634,6 +601,7 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
 
                 line_pos = piece->start;
                 u64 lines_remaining = rows[i] - line_idx;
+                // If there are lines remaining, move to that line in the piece
                 if (lines_remaining > 0) {
                     line_pos.line_idx = min(
                             buffer->line_count,
@@ -645,42 +613,40 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
                         line_pos.line_idx == piece->end.line_idx &&
                         line_pos.offset <= piece->end.offset);
 
+                // If this is not the last line in the piece, we assume that 
+                // it is big enough for the cols[i] position
                 if (piece->end.line_idx >= line_pos.line_idx) {
                     line_pos.offset += cols[i];
                     break;
                 }
 
+                // It must be the last line, so check if it is big enough, 
+                // this is because if the piece is not large enough, then the 
+                // next piece might be, and so on.
                 assert(piece->end.line_idx == line_pos.line_idx);
                 u32 space_left_in_line = piece->size - line_pos.offset;
                 if (space_left_in_line >= cols[i]) {
+                    // The piece is large enough, so choose it and update the offset.
                     line_pos.offset += cols[i];
                     break;
                 } 
 
+                // The piece is not large enough, so reduce the column offset 
+                // and look in the next one.
                 cols[i] -= space_left_in_line;
             }
 
             if (!iter_piece_n) 
                 return str8(0, 0);
-
-            // // NOTE(fede): There has to be available space in line
-            // // assert(line_size > cols[i]);
-            // if (line_size <= cols[i]) {
-            //     line_pos.offset = 0;
-            //     if (line_size > 0) {
-            //         line_pos.offset = line_size - 1;
-            //     }
-            // } else {
-            //     line_pos.offset = cols[i];
-            // }
-
+            
             // End iteration, assign.
             line_positions[i] = line_pos;
             pieces_n[i] = iter_piece_n;
         }
     }
 
-    // NOTE(fede): Do the string cats between the obtained positions.
+    // NOTE(fede): Do the string cats between start and end positions, these 
+    // might include different pieces, so copy all of the text.
     Temp scratch = scratch_begin(&arena, 1);
     String8 result = S("");
     {
@@ -715,57 +681,13 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
         }
     }
 
-    result.size--;
     result = str8_copy(arena, result);
+    result.str[result.size - 1] = 0;
     scratch_end(scratch);
 
-    return result;
-
-#if 0
-    // NOTE(fede): Do the string cats
-    Temp scratch = scratch_begin(&arena, 1);
-    String8 result = S("");
-    {
-        TimeBlock(S8("BuildTextRange"));
-        TXT_Piece *piece = &piece_n->v;
-        TXT_Buffer *buffer = piece->buffer;
-
-        while (true) {
-            TXT_LinePos line_end_pos = piece->end;
-            if (range_start_pos.line_idx < line_end_pos.line_idx) {
-                assert(buffer->line_starts[range_start_pos.line_idx + 1] >
-                        buffer->line_starts[range_start_pos.line_idx]);
-                line_end_pos.offset =
-                    buffer->line_starts[range_start_pos.line_idx + 1] -
-                    buffer->line_starts[range_start_pos.line_idx] - 1;
-                line_end_pos.line_idx = range_start_pos.line_idx;
-            }
-
-            String8 buf_substr = 
-                txt_get_buffer_substr(buffer, range_start_pos, line_end_pos);
-
-            result = str8_cat(scratch.arena, result, buf_substr);
-
-            if (txt_line_pos_is_end_of_line(buffer, line_end_pos)) {
-                break;
-            }
-
-            piece_n = piece_n->next;
-            if (!piece_n) {
-                break;
-            }
-
-            piece = &piece_n->v;
-            range_start_pos = piece->start;
-            buffer = piece->buffer;
-        }
-    }
-
-    result = str8_copy(arena, result);
-    scratch_end(scratch);
+    printf("%ld\n", result.size);
 
     return result;
-#endif
 }
 
 

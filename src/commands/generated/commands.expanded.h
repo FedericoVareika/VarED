@@ -12,7 +12,6 @@ typedef enum {
 */ CMD_Kind_TextAction, /*
 */ CMD_Kind_ChangeFont, /*
 */ CMD_Kind_CopyClipboard, /*
-*/ CMD_Kind_PasteClipboard, /*
 */
     CMD_Kind_COUNT,
 } CMD_Kind;

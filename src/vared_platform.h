@@ -19,6 +19,9 @@ internal void debug_platform_free_file_memory(ThreadContext *thread, DebugReadFi
 internal bool debug_platform_write_entire_file(ThreadContext *thread, char *filename, u64 size, void *memory);
 
 #endif // VARED_INTERNAL
+       
+internal String8 platform_get_clipboard(Arena *arena);
+internal void platform_set_clipboard(String8 string, bool is_cstr);
 
 typedef u32 WMModifiers;
 enum {
@@ -187,19 +190,14 @@ typedef struct {
 } WMEventList;
 
 typedef struct {
-    String8 clipboard;
-} EditorResult;
-
-typedef struct {
     void **memory;
     WMEventList *events;
-    String8 clipboard;
 
     f32 dt;
 } EditorParams;
 
 void editor_init(EditorParams *params);
-EditorResult editor_update_and_render(EditorParams *params);
+void editor_update_and_render(EditorParams *params);
 
 #endif // VARED_PLATFORM_H
 

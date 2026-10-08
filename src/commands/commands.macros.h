@@ -7,7 +7,6 @@
 */ M(TextAction) /*
 */ M(ChangeFont) /*
 */ M(CopyClipboard) /*
-*/ M(PasteClipboard) /*
 */
 
 #define COMMAND_DEFS(M) /*
@@ -16,7 +15,6 @@
 */ M("text_action", TextAction) /*
 */ M("change_font", ChangeFont) /*
 */ M("copy_clipboard", CopyClipboard) /*
-*/ M("paste_clipboard", PasteClipboard) /*
 */
 
 ////////////////////////////////////////////////////////////////////////////////

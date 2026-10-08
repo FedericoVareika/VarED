@@ -228,8 +228,6 @@ void editor_init(EditorParams *params) {
     printf("FC_Glyph size: %ld\n", sizeof(FC_Glyph));
 }
 
-// STUDY(fede): Editing lines in sqlite3.c (middle/bottom) produces spikes in 
-//      this function. Check out further.
 void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     TimeFunction;
 
@@ -248,7 +246,7 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
             action_n != 0;
             action_n = action_n->next) {
         TXT_ViewAction *action = &action_n->v;
-        TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, *action, state->clipboard);
+        TXT_ViewOp op = txt_op_from_view_action(state->frame_arena, view, *action);
 
         if (op.keep_mark)
             keep_mark = true;
@@ -292,6 +290,8 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
         }
 
         if (op.copy_text.size) {
+            // TODO(fede): Error here, should not copy string maybe, do 
+            // something because this is being freed before it is used
             CMD *cmd = cmd_push_name(S8("copy_clipboard"));
             cmd->string = str8_copy(cmd_frame_arena(), op.copy_text);
         } 
@@ -644,15 +644,11 @@ void text_view(EditorState *state, TXT_ViewNode *view_n, String8 label) {
     }
 }
 
-EditorResult editor_update_and_render(EditorParams *params) {
+void editor_update_and_render(EditorParams *params) {
     TimeFunction;
-
-    EditorResult result = {0};
 
     EditorState *state = (EditorState *)*params->memory;
     Arena *frame_arena = state->frame_arena;
-
-    state->clipboard = params->clipboard;
 
     arena_clear(frame_arena);
 
@@ -852,13 +848,17 @@ EditorResult editor_update_and_render(EditorParams *params) {
 
                         CMD *cmd1 = cmd_push_name(S8("text_action"));
                         cmd1->view_n = view_n;
-                        cmd1->view_action.row_delta = -I32_MAX;
                         cmd1->view_action.hor_delta = -I32_MAX;
+                        if (!view->single_line) {
+                            cmd1->view_action.row_delta = -I32_MAX;
+                        }
 
                         CMD *cmd2 = cmd_push_name(S8("text_action"));
                         cmd2->view_n = view_n;
-                        cmd2->view_action.row_delta = I32_MAX;
                         cmd2->view_action.hor_delta = I32_MAX;
+                        if (!view->single_line) {
+                            cmd2->view_action.row_delta = I32_MAX;
+                        }
                         cmd2->view_action.flags |= TXT_ViewAction_Flag_KeepMark;
                     }
                 } break;
@@ -991,14 +991,14 @@ EditorResult editor_update_and_render(EditorParams *params) {
             */
         } break;
 
-        // TODO(fede): Something maybe?
-        case CMD_Kind_PasteClipboard: {
-        } break;
-
         case CMD_Kind_CopyClipboard: {
-            String8 string = cmd->string;    
-            result.clipboard = string;
-            // state->clipboard = string;
+            // TODO(fede): If the string is too large (definitely 1GB),
+            // it crashes with an X11 error. I do not know how to find the 
+            // limit of the clipboard in a cross-platform way. I do not know 
+            // if there is more to linux than x11 and wayland, but definitely 
+            // want to support wayland (which i am doing by using sdl and no 
+            // x11 dependent code). 
+            platform_set_clipboard(cmd->string, true);
         } break;
 
         default: {} break;
@@ -1100,10 +1100,12 @@ EditorResult editor_update_and_render(EditorParams *params) {
                         if (state->show_profiler) {
                             UI_PrefWidth(ui_pct(1, 1))
                                 UI_PrefHeight(ui_cs(1))
+                                UI_NamedColumn(S8("__anchors__"))
+                                UI_PrefHeight(ui_em(1.2, 1))
                             {
                                 bool red = total_time_frame_pct > 1;
 
-                                UI_PrefHeight(ui_em(1, 1));
+                                UI_PrefHeight(ui_em(3, 1));
                                 {
                                     UI_Box *total_time_box = ui_box_makef(UI_BoxFlag_DrawText, "##total_time");
                                     ui_box_equip_string(total_time_box, 
@@ -1112,8 +1114,6 @@ EditorResult editor_update_and_render(EditorParams *params) {
                                                 4));
                                 }
 
-                                UI_NamedColumn(S8("__anchors__"))
-                                    UI_PrefHeight(ui_em(1.2, 1))
                                 for (u32 i = 1; i <= p_prev->last_anchor_idx; i++) {
                                     P_Anchor *anchor = &p_prev->anchors[i];
                                     f64 pct = (f64)anchor->exclusive_elapsed_time / (f64)total_clocks;
@@ -1224,7 +1224,6 @@ EditorResult editor_update_and_render(EditorParams *params) {
                                 path = str8_strip(path);
 
                                 // TODO(fede): Command kind fast-paths.
-                                // TODO(fede): Do async I/O 
                                 CMD *cmd = cmd_push_name(S8("open"));
                                 cmd->filepath = path;
                             }
@@ -1300,6 +1299,4 @@ EditorResult editor_update_and_render(EditorParams *params) {
     ui_render();
 
     events->first = events->last = 0;
-
-    return result;
 }

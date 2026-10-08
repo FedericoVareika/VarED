@@ -1,5 +1,5 @@
 
-internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action, String8 clipboard) {
+internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_ViewAction action) {
     TXT_ViewOp op = {0};
 
     op.new_cursor = view->cursor;
@@ -34,7 +34,7 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
     if ((i64)op.new_cursor.y + row_delta < 0) {
         row_delta = -(i64)op.new_cursor.y + 1;
     } else if ((u64)((i64)op.new_cursor.y + row_delta) > txt_get_n_lines(view->text)) {
-        row_delta = txt_get_n_lines(view->text) - op.new_cursor.y;
+        row_delta = txt_get_n_lines(view->text) - op.new_cursor.y - 1;
     }
 
     // NOTE(fede): Consume characters
@@ -88,7 +88,7 @@ internal TXT_ViewOp txt_op_from_view_action(Arena *arena, TXT_View *view, TXT_Vi
     op.new_cursor.y = min(op.new_cursor.y, txt_get_n_lines(view->text));
     
     if (!action.codepoint && !!(action.flags & TXT_ViewAction_Flag_Paste)) {
-        op.insert_text = clipboard;
+        op.insert_text = platform_get_clipboard(arena);
         op.update_cursor_col = true;
         action.flags |= TXT_ViewAction_Flag_Delete;
     }

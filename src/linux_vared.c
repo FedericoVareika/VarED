@@ -150,6 +150,29 @@ internal bool debug_platform_write_entire_file(ThreadContext *thread,
 
 #endif
 
+internal String8 platform_get_clipboard(Arena *arena) {
+    char *clip_text = SDL_GetClipboardText();
+    String8 result = str8_from_cstr(clip_text);
+    result = str8_copy(arena, result);
+    SDL_free(clip_text);
+    return result;
+}
+
+#include <X11/Xlib.h>
+
+internal void platform_set_clipboard(String8 string, bool is_cstr) {
+    if (is_cstr) {
+        if (SDL_SetClipboardText(string.str) < 0) {
+            printf("hihi\n");
+        }
+    } else {
+        Temp scratch = scratch_begin(0, 0);
+        char *cstr = cstr_from_str8(scratch.arena, string);
+        scc(SDL_SetClipboardText(cstr));
+        scratch_end(scratch);
+    }
+}
+
 internal int string_len(char *str) {
     int result = 0;
     while (*str++)
@@ -660,21 +683,7 @@ int main(void) {
         editor_params.events = event_list;
         editor_params.dt = dt_for_frame;
 
-        char *clipboard_cstr = SDL_GetClipboardText();
-        editor_params.clipboard = str8_from_cstr(clipboard_cstr);
-
-        EditorResult result = editor_update_and_render(&editor_params);
-
-        SDL_free(clipboard_cstr);
-
-        if (result.clipboard.size) {
-            Temp scratch = scratch_begin(0, 0); 
-
-            char *result_clip_cstr = cstr_from_str8(scratch.arena, result.clipboard);
-            scc(SDL_SetClipboardText(result_clip_cstr));
-
-            scratch_end(scratch); 
-        }
+        editor_update_and_render(&editor_params);
 
         r_consume_all();
 

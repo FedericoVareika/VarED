@@ -38,8 +38,6 @@ typedef struct {
     Arena *arena;
     Arena *frame_arena;
 
-    String8 clipboard;
-
     TXT_ViewNode *input_view_n;
 
     TXT_ViewNode *first_view;
