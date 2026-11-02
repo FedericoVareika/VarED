@@ -158,13 +158,10 @@ internal String8 platform_get_clipboard(Arena *arena) {
     return result;
 }
 
-#include <X11/Xlib.h>
-
+// TODO(fede): This crashes on very large copies.
 internal void platform_set_clipboard(String8 string, bool is_cstr) {
     if (is_cstr) {
-        if (SDL_SetClipboardText(string.str) < 0) {
-            printf("hihi\n");
-        }
+        SDL_SetClipboardText(string.str);
     } else {
         Temp scratch = scratch_begin(0, 0);
         char *cstr = cstr_from_str8(scratch.arena, string);
@@ -567,6 +564,7 @@ int main(void) {
         WMEventList *event_list = push_struct(event_arena, WMEventList);
         SDL_Event event = {0};
 
+#if 1
         while (SDL_PollEvent(&event)) {
             switch (event.type) {
             case SDL_QUIT: {
@@ -679,6 +677,7 @@ int main(void) {
             } break;
             }
         }
+#endif
 
         editor_params.events = event_list;
         editor_params.dt = dt_for_frame;
@@ -699,7 +698,7 @@ int main(void) {
         p_end();
 
 // TODO(fede): Fix this frame limiting, it oversleeps sometimes.
-#if 1
+#if 0
         {
             // TimeBlock(S8("Sleeping"));
             // u64 end_counter = SDL_GetPerformanceCounter();

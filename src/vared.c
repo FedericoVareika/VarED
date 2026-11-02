@@ -6,6 +6,8 @@
  *  ////////////////////////////////////////////////////////////////////////////
  *  /// HIGH PRIORITY
  *
+ *  - Save file
+ *
  *  - Change text api
  *      - look into some of the stuff said in (BSC text talk)
  *      https://www.youtube.com/watch?v=7Tr0ty9-yeQ&t=1256s&pp=ugUHEgVlbi1VUw%3D%3D
@@ -47,6 +49,17 @@
  *  - (Maybe) When we do left arrow at the beginning of the line move to the end 
  *      of the previous line. Same thing with moving right at the end of the 
  *      line, where we should move to the beginning of the next line.
+ *
+ *  - Redo render api to map/unmap buffers, like in instructobots: 
+ *      - https://www.youtube.com/watch?v=AvVgYcvaY0c&list=WL&index=1&t=1798s
+ *
+ *  - STUDY(fede): Scrolling trashes performance. It does not need to be scrolling 
+ *      on an open file, just scrolling at startup increases frame time. 
+ *      - This seems to be an issue with SDL2 calling X11_UpdateUserTime on 
+ *          KeyPress: https://github.com/libsdl-org/SDL/blob/SDL2/src/video/x11/SDL_x11events.c#L1184
+ *      - Do not know what to do with this for now. I do not want to stop 
+ *          using SDL because it can do both x11 and wayland, but maybe we 
+ *          should just implement this ourselves.
  *
  *  ////////////////////////////////////////////////////////////////////////////
  *  ////////////////////////////////////////////////////////////////////////////

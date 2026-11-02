@@ -23,18 +23,6 @@
 #include "vared_platform.h"
 
 typedef struct {
-    u64 count;
-    u64 size;
-    u8 *buf;
-} Line;
-
-typedef struct {
-    Line *lines; 
-    u32 count;
-    u32 size;
-} LineBuffer;
-
-typedef struct {
     Arena *arena;
     Arena *frame_arena;
 
