@@ -458,6 +458,7 @@ internal String8 txt_get_buffer_substr(
     size -= start.offset;
 
     u64 buf_offset = buffer->line_starts[start.line_idx] + start.offset;
+    size = min(buffer->count - buf_offset, size);
     return str8(buffer->buf + buf_offset, size);
 }
 
@@ -497,7 +498,7 @@ internal String8 txt_get_line(Arena *arena, TXT_Text *text, u64 row) {
         u64 lines_remaining = row - line_idx;
         if (lines_remaining > 0) {
             line_start_pos.line_idx = min(
-                    buffer->line_count,
+                    buffer->line_count - 1,
                     line_start_pos.line_idx + lines_remaining);
             line_start_pos.offset = 0;
         } 
@@ -587,8 +588,9 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
                 line_idx += piece->newline_count;
             }
 
-            if (!iter_piece_n) 
-                return str8(0, 0);
+            if (!iter_piece_n) {
+                iter_piece_n = text->last;
+            }
 
             TXT_LinePos line_pos;
             TXT_Piece *piece;
@@ -604,7 +606,7 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
                 // If there are lines remaining, move to that line in the piece
                 if (lines_remaining > 0) {
                     line_pos.line_idx = min(
-                            buffer->line_count,
+                            piece->end.line_idx, 
                             line_pos.line_idx + lines_remaining);
                     line_pos.offset = 0;
                     lines_remaining = 0;
@@ -636,8 +638,10 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
                 cols[i] -= space_left_in_line;
             }
 
-            if (!iter_piece_n) 
-                return str8(0, 0);
+            if (!iter_piece_n) {
+                // TODO(fede): Debug message to check for end of line ranges
+                printf("Column range is outside line.");
+            } 
             
             // End iteration, assign.
             line_positions[i] = line_pos;
@@ -684,8 +688,6 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
     result = str8_copy(arena, result);
     result.str[result.size - 1] = 0;
     scratch_end(scratch);
-
-    printf("%ld\n", result.size);
 
     return result;
 }

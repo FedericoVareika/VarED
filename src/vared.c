@@ -6,7 +6,7 @@
  *  ////////////////////////////////////////////////////////////////////////////
  *  /// HIGH PRIORITY
  *
- *  - Save file
+ *  - Save file (end of file after saving has an extra character)
  *
  *  - Change text api
  *      - look into some of the stuff said in (BSC text talk)
@@ -99,6 +99,34 @@
 #include "text/text_inc.c"
 
 #include "vared.h"
+
+WQ_CALLBACK(save_view_work) {
+    TXT_ViewNode *view_n = (TXT_ViewNode *)data;
+    TXT_View *view = &view_n->v;
+    Temp scratch = scratch_begin(0, 0);
+
+    {
+        TimeBlock(S8("Save entire file"));
+        char *path_cstr = cstr_from_str8(scratch.arena, view->label);
+
+        // TODO(fede): This does not work
+        String8 text = txt_get_range(scratch.arena, view->text, 
+                (Rng2u){
+                    .xmin = 0, 
+                    .ymin = 1, 
+                    .xmax = U32_MAX,
+                    .ymax = U32_MAX,
+                });
+
+
+        if (!debug_platform_write_entire_file(0, path_cstr, text.size, text.str)) {
+            // TODO(fede): Error out
+            printf("Error saving file %s\n", path_cstr);
+        }
+    }
+
+    scratch_end(scratch);
+}
 
 WQ_CALLBACK(load_view_work) {
     TXT_ViewNode *view_n = (TXT_ViewNode *)data;
@@ -810,6 +838,18 @@ void editor_update_and_render(EditorParams *params) {
                         cmd->view_action.flags |= TXT_ViewAction_Flag_ScanWords;
                 } break;
 
+                case WMKey_s: {
+                    if ((event.modifiers & WMModifier_ctrl)) {
+                        if (!state->selected_file_view)
+                            break;
+                        TXT_ViewNode *view_n = state->selected_file_view;
+                        TXT_View *view = &view_n->v;
+
+                        CMD *cmd = cmd_push_name(S8("save"));
+                        cmd->view_n = view_n;
+                    }
+                } break;
+
                 case WMKey_c: {
                     if ((event.modifiers & WMModifier_ctrl)) {
                         if (!state->focused_view)
@@ -955,6 +995,16 @@ void editor_update_and_render(EditorParams *params) {
                 DLL_PushBack(state->first_view, state->last_view, view_n);
 
                 wq_push_work_entry(state->low_priority_work_queue, &load_view_work, (void *)view_n);
+            }
+        } break;
+
+        case CMD_Kind_SaveFile: {
+            TXT_ViewKey key = txt_view_key_from_label(cmd->filepath);
+            TXT_ViewNode *view_n = cmd->view_n;
+            if (view_n) {
+                wq_push_work_entry(state->low_priority_work_queue, &save_view_work, (void *)view_n);
+            } else {
+                printf("Error trying to save non-existant view: %s\n", cmd->filepath.str);
             }
         } break;
 

@@ -85,6 +85,9 @@ typedef struct {
         struct {
             v2u min, max;
         };
+        struct {
+            u32 xmin, ymin, xmax, ymax;
+        };
     };
 } Rng2u;
 

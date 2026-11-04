@@ -8,6 +8,7 @@ typedef enum {
     CMD_Kind_NONE,
 /*
 */ CMD_Kind_OpenFile, /*
+*/ CMD_Kind_SaveFile, /*
 */ CMD_Kind_FocusView, /*
 */ CMD_Kind_TextAction, /*
 */ CMD_Kind_ChangeFont, /*

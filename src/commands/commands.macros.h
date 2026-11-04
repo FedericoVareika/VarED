@@ -3,6 +3,7 @@
 
 #define COMMAND_KIND_DEFS(M) /*
 */ M(OpenFile) /*
+*/ M(SaveFile) /*
 */ M(FocusView) /*
 */ M(TextAction) /*
 */ M(ChangeFont) /*
@@ -11,6 +12,7 @@
 
 #define COMMAND_DEFS(M) /*
 */ M("open", OpenFile) /*
+*/ M("save", SaveFile) /*
 */ M("focus_view", FocusView) /*
 */ M("text_action", TextAction) /*
 */ M("change_font", ChangeFont) /*
