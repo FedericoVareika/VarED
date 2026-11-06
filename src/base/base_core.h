@@ -58,6 +58,7 @@ typedef double f64;
 #define I32_MAX 0x7FFFFFF
 #define I64_MAX 0x7FFFFFFFFFFFFFF
 #define U32_MAX 0xFFFFFFF
+#define U64_MAX 0xFFFFFFFFFFFFFFF
 
 // STUDY(fede): This is added because of SDL, check if this is necessary.
 #if !defined(__bool_true_false_are_defined)

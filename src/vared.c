@@ -100,6 +100,10 @@
 
 #include "vared.h"
 
+// NOTE(fede): This can be cleverer in the future. 
+//      - Write starting at the first edit point
+//      - debug_platform_write_entire_file does O_TRUNC on linux, meaning that 
+//          it clears the entire file before saving it. (maybe it is a perf issue) 
 WQ_CALLBACK(save_view_work) {
     TXT_ViewNode *view_n = (TXT_ViewNode *)data;
     TXT_View *view = &view_n->v;
@@ -118,6 +122,9 @@ WQ_CALLBACK(save_view_work) {
                     .ymax = U32_MAX,
                 });
 
+        if (text.str[text.size - 1] == 0) {
+            text.size--;
+        }
 
         if (!debug_platform_write_entire_file(0, path_cstr, text.size, text.str)) {
             // TODO(fede): Error out

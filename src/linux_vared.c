@@ -131,7 +131,7 @@ internal bool debug_platform_write_entire_file(ThreadContext *thread,
      *
      */
 
-    int fd = open(filename, O_RDWR | O_CREAT, S_IRWXU);
+    int fd = open(filename, O_RDWR | O_CREAT | O_TRUNC, S_IRWXU);
     if (fd == -1) {
         // handle error
         return false;

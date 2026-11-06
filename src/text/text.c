@@ -559,6 +559,7 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
     // Start is index 0, End is index 1.
     TXT_PieceNode *pieces_n[2] = {0};
     TXT_LinePos line_positions[2] = {0};
+    bool include_end = false;
     {
         u64 start_row = rng.min.y;
         assert(start_row > 0);
@@ -589,7 +590,9 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
             }
 
             if (!iter_piece_n) {
-                iter_piece_n = text->last;
+                assert(i == 1);
+                include_end = true;
+                break;
             }
 
             TXT_LinePos line_pos;
@@ -675,21 +678,29 @@ internal String8 txt_get_range(Arena *arena, TXT_Text *text, Rng2u rng) {
 
             result = str8_cat(scratch.arena, result, buf_substr);
 
-            if (piece_n == end_piece_n) {
+            if (piece_n == end_piece_n || !piece_n->next) {
                 break;
             }
 
             piece_n = piece_n->next;
-            assert(piece_n);
             substr_start = piece_n->v.start;
         }
     }
 
-    result = str8_copy(arena, result);
+    {
+        u64 aux_size = result.size;
+        if (include_end) {
+            aux_size++;
+        }
+
+        u8 *aux_dst = push_size(arena, aux_size);
+        mem_copy(aux_dst, result.str, aux_size);
+        result.str = aux_dst;
+        result.size = aux_size;
+    }
+
     result.str[result.size - 1] = 0;
     scratch_end(scratch);
 
     return result;
 }
-
-
